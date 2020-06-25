@@ -1,0 +1,29 @@
+# Only enables the callback if value is yes
+enable-image=yes
+enable-csv=yes
+enable-norm=no
+enable-segy=yes
+enable-su=yes
+enable-binary=yes
+## Format option
+su.write_in_little_endian=no
+## What to write for all write callbacks.
+write_backward=yes
+write_forward=yes
+write_reverse=yes
+write_single_shot_correlation=no
+write_each_stacked_shot=no
+write_traces_raw=yes
+write_traces_preprocessed=yes
+write_re_extended_velocity=yes
+write_migration=yes
+write_velocity=yes
+## Show-each
+image.show_each=200
+csv.show_each=200
+norm.show_each=100
+segy.show_each=200
+su.show_each=200
+binary.show_each=200
+## Percentile setting(value from 0 to 100).
+image.percentile=98.5

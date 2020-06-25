@@ -1,0 +1,5 @@
+source=(250,0,0)
+receiver_start=(0,0,0)
+receiver_inc=(1,0,0)
+receiver_end=(500,1,1)
+simulation_time=2.5

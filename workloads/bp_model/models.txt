@@ -1,0 +1,2 @@
+data/vel_z6.25m_x12.5m_exact.segy
+data/density_z6.25m_x12.5m.segy

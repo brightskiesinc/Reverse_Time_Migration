@@ -1,0 +1,9 @@
+stencil-order=8
+boundary-length=20
+source-frequency=20
+dt-relax=0.9
+block-x=5500
+block-z=55
+block-y=1
+cor-block=256
+device=cpu

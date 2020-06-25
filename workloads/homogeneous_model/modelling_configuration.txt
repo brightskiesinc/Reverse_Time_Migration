@@ -1,0 +1,36 @@
+########################## Ideally version control settings ahead ##################
+## Supported values for physics: acoustic
+physics=acoustic
+## Supported values for approximation: isotropic
+approximation=isotropic
+## Supported values for equation order : second | first
+equation-order=second
+## Supported values for grid-sampling : uniform
+grid-sampling=uniform
+## Supported values for technology : openmp
+technology=openmp
+############################ Component Settings ahead #######################
+#### Model handler possible values : homogenous | segy
+model-handler=homogenous
+#### Source Injectior possible values : ricker
+source-injector=ricker
+#### Boundary manager possible values : none | random | cpml | sponge
+boundary-manager=random
+#### Use top boundary for forward propagation or not - Option only effective when using CPML/Sponge boundary conditions ####
+#### By default yes , supported options yes | no #####
+boundary-manager.use-top-layer=yes
+#### Uncomment the following to fine tune some parameters for the boundary conditions
+#boundary-manager.reflect-coeff=0.05
+#boundary-manager.shift-ratio=0.2
+#boundary-manager.relax-cp=0.9
+#### Trace writer possible values : binary
+trace-writer=binary
+#### modelling configuration parser possible values : text
+modelling-configuration-parser=text
+############################# File directories ahead ###########################################
+#### The file to write the recorded traces to.
+trace-file=data/shot_homogeneous.trace
+#### Containing the actual modelling configuration like source point, receiver distribution and so on.
+modelling-configuration-file=workloads/homogeneous_model/modelling.txt
+#### models-list should point to a text file containing the model files directories each in a line.
+models-list=workloads/homogeneous_model/models.txt
