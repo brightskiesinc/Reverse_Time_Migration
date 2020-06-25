@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
   WriteSegy(mig->nx, mig->nz, mig->nt, mig->ny, mig->dx, mig->dz, mig->dt,
             mig->dy, filtered_migration,
             write_path + "/filtered_migration.segy", false);
+  WriteBinary(filtered_migration,mig->nx, mig->nz, (write_path + "/filtered_migration.bin").c_str());
   delete[] filtered_migration;
   cout <<endl<<"Timings of the application are: "<<endl;
   cout <<"------------------------------"<<endl;
