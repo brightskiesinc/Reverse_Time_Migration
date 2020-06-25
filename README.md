@@ -1,4 +1,4 @@
-# Reverse Time Migratio (RTM)
+# Reverse Time Migration (RTM)
 ## Table of content
 - [Description](#description)
 - [Features](#features)
