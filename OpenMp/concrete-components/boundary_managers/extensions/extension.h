@@ -15,15 +15,12 @@
  */
 class Extension {
 private:
-  // used to store the values of velocities before changing them to zeros
-  float *backup_array;
-  // used to point to the start and end point of the last used window
-  Point3D start_point;
-  Point3D end_point;
   // The grid to extend its velocities/properties.
   GridBox *grid;
   // The property to be extended by an extensions object.
   float *property_array;
+  // The window proeprty array to be used if provided for moving window.
+  float *window_property_array;
   // The boundary length.
   uint boundary_length;
   // The half length of the used kernel.
@@ -37,11 +34,6 @@ private:
                                          int start_z, int start_y, int end_x,
                                          int end_y, int end_z, int nx, int nz,
                                          int ny, uint boundary_length) = 0;
-  // Save the original_array values at the boundaries to backup_array.
-  void SaveBoundary(float *original_array, int nx, int nz, int ny);
-  // Restore the original_array values from backup_array at the boundaries
-  // of the last used window to its original location.
-  void RestoreBoundary(float *original_array, int nx, int nz, int ny);
   // A helper function responsible of the extensions of the velocities for only
   // the top layer. Called in the ReExtend original_array function. This
   // function will be overridden by each subclass of extensions providing
@@ -79,7 +71,7 @@ public:
   // Sets the gridbox that the operations are ran on.
   void SetGridBox(GridBox *grid);
   // Sets the property that will be extended by this extensions object.
-  void SetProperty(float *property);
+  void SetProperty(float *property, float *w_property);
 };
 
 #endif // ACOUSTIC2ND_RTM_EXTENSION_H

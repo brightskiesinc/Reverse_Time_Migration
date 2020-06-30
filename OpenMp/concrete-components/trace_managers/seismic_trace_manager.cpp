@@ -88,13 +88,64 @@ void SeismicTraceManager::ReadShot(vector<string> filenames, uint shot_number, s
   float scale = abs(sio->Atraces.at(0).TraceMetaData.scalar) * 1.0;
 
   // cout << "you are ere " << endl;
-  this->source_point.x = (sio->Atraces.at(0).TraceMetaData.source_location_x) /
+  this->source_point.x = (sio->Atraces.at(0).TraceMetaData.source_location_x - (int)grid->reference_point.x) /
                          (grid->cell_dimensions.dx * scale);
-  this->source_point.z = (sio->Atraces.at(0).TraceMetaData.source_location_z) /
+  this->source_point.z = (sio->Atraces.at(0).TraceMetaData.source_location_z - (int)grid->reference_point.z) /
                          (grid->cell_dimensions.dz * scale);
-  this->source_point.y = (sio->Atraces.at(0).TraceMetaData.source_location_y) /
+  this->source_point.y = (sio->Atraces.at(0).TraceMetaData.source_location_y - (int)grid->reference_point.y) /
                          (grid->cell_dimensions.dy * scale);
-
+  // If window model, need to setup the starting point of the window.
+  // Handle 3 cases : no room for left window, no room for right window, room for both.
+  // Those 3 cases can apply to y-direction as well if 3D.
+  if (parameters->use_window) {
+      grid->window_size.window_start.x = 0;
+      // No room for left window.
+      if (this->source_point.x < parameters->left_window || (parameters->left_window == 0 && parameters->right_window == 0)) {
+        grid->window_size.window_start.x = 0;
+      // No room for right window.
+      } else if (this->source_point.x >= grid->grid_size.nx
+            - parameters->boundary_length - parameters->half_length - parameters->right_window) {
+        grid->window_size.window_start.x = grid->grid_size.nx
+                - parameters->boundary_length - parameters->half_length - parameters->right_window
+                - parameters->left_window - 1;
+        this->source_point.x = grid->window_size.window_nx - parameters->boundary_length
+                - parameters->half_length - parameters->right_window - 1;
+      } else {
+          grid->window_size.window_start.x = this->source_point.x - parameters->left_window;
+          this->source_point.x = parameters->left_window;
+      }
+      grid->window_size.window_start.y = 0;
+      if (grid->grid_size.ny != 1) {
+          if (this->source_point.y < parameters->back_window || (parameters->front_window == 0 && parameters->back_window == 0)) {
+              grid->window_size.window_start.y = 0;
+          } else if (this->source_point.y >= grid->grid_size.ny
+                                             - parameters->boundary_length - parameters->half_length - parameters->front_window) {
+              grid->window_size.window_start.y = grid->grid_size.ny
+                                                 - parameters->boundary_length - parameters->half_length - parameters->front_window
+                                                 - parameters->back_window - 1;
+              this->source_point.y = grid->window_size.window_ny - parameters->boundary_length
+                                     - parameters->half_length - parameters->front_window - 1;
+          } else {
+              grid->window_size.window_start.y = this->source_point.y - parameters->back_window;
+              this->source_point.y = parameters->back_window;
+          }
+      }
+  }
+  int intern_x = grid->window_size.window_nx - 2 * parameters->half_length - 2 * parameters->boundary_length;
+  int intern_y = grid->window_size.window_ny - 2 * parameters->half_length - 2 * parameters->boundary_length;
+  for (int i = sio->Atraces.size() - 1; i >= 0; i--) {
+      int gx = (sio->Atraces[i].TraceMetaData.receiver_location_x - (int)grid->reference_point.x) /
+        (grid->cell_dimensions.dx * scale);
+      int gy = (sio->Atraces[i].TraceMetaData.receiver_location_y - (int)grid->reference_point.y) /
+               (grid->cell_dimensions.dy * scale);
+      if (gx < grid->window_size.window_start.x || gx >= grid->window_size.window_start.x + intern_x) {
+          sio->Atraces.erase(sio->Atraces.begin() + i);
+      } else if (grid->grid_size.ny != 1) {
+            if (gy < grid->window_size.window_start.y || gy >= grid->window_size.window_start.y + intern_y) {
+                sio->Atraces.erase(sio->Atraces.begin() + i);
+            }
+      }
+  }
   traces->sample_dt = sio->DM.dt;
 
   this->absolute_shot_num++;
@@ -326,6 +377,12 @@ void SeismicTraceManager::ReadShot(vector<string> filenames, uint shot_number, s
   if (r_end.y == 0) {
     r_end.y = 1;
   }
+  r_start.x -= grid->window_size.window_start.x;
+  r_start.y -= grid->window_size.window_start.y;
+  r_start.z -= grid->window_size.window_start.z;
+  r_end.x -= grid->window_size.window_start.x;
+  r_end.y -= grid->window_size.window_start.y;
+  r_end.z -= grid->window_size.window_start.z;
   delete sio;
 }
 void SeismicTraceManager::PreprocessShot(uint cut_off_timestep) {

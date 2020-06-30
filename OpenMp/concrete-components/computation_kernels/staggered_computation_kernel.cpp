@@ -30,16 +30,14 @@ void Computation(StaggeredGrid *grid,
   float *particle_vel_x = grid->particle_velocity_x_current;
   float *particle_vel_y = grid->particle_velocity_y_current;
   float *particle_vel_z = grid->particle_velocity_z_current;
-  float *vel_base = grid->velocity;
-  float *density_base = grid->density;
+  float *vel_base = grid->window_velocity;
+  float *density_base = grid->window_density;
   int wnx = grid->window_size.window_nx;
   int wny = grid->window_size.window_ny;
   int wnz = grid->window_size.window_nz;
   float dx = grid->cell_dimensions.dx;
   float dy;
   float dz = grid->cell_dimensions.dz;
-  int nx = grid->grid_size.nx;
-  int nz = grid->grid_size.nz;
   float dt = grid->dt;
   float *coeff = parameters->first_derivative_staggered_fd_coeff;
   int block_x = parameters->block_x;
@@ -49,8 +47,10 @@ void Computation(StaggeredGrid *grid,
   int nyEnd = 1;
   int nzEnd = wnz - half_length;
   int wnxnz = wnx * wnz;
+  int nx = wnx;
+  int nz = wnz;
   int nxnz = nx * nz;
-  int size = (nx - 2 * half_length) * (nz - 2 * half_length);
+  int size = (wnx - 2 * half_length) * (wnz - 2 * half_length);
 
   // General note: floating point operations for forward is the same as backward
   // (calculated below are for forward). number of floating point operations for
@@ -72,13 +72,6 @@ void Computation(StaggeredGrid *grid,
   // curr,den,vel_x(load),vel_x(store),vel_z(load),vel_z(store)
   int num_of_arrays_velocity = 6;
 
-  // Move velocity to match the window we are operating on.
-  vel_base = vel_base + (grid->window_size.window_start.y * nxnz) +
-             (grid->window_size.window_start.z * nx) +
-             grid->window_size.window_start.x;
-  density_base = density_base + (grid->window_size.window_start.y * nxnz) +
-                 (grid->window_size.window_start.z * nx) +
-                 grid->window_size.window_start.x;
   int y_start = 0;
   if (!is_2D) {
     dy = grid->cell_dimensions.dy;
@@ -150,7 +143,7 @@ void Computation(StaggeredGrid *grid,
               int offset = iy * wnxnz + iz * wnx + bx;
               // Velocity moves with the full nx and nz not the windows ones.
               curr = curr_base + offset;
-              den = density_base + iy * nxnz + iz * nx + bx;
+              den = density_base + offset;
               vel_x = particle_vel_x + offset;
               vel_y = particle_vel_y + offset;
               vel_z = particle_vel_z + offset;
@@ -227,7 +220,7 @@ void Computation(StaggeredGrid *grid,
               // start point of the processing.
               int offset = iy * wnxnz + iz * wnx + bx;
               // Velocity moves with the full nx and nz not the windows ones.
-              vel = vel_base + iy * nxnz + iz * nx + bx;
+              vel = vel_base + offset;
               curr = curr_base + offset;
               next = next_base + offset;
               vel_x = particle_vel_x + offset;

@@ -429,10 +429,7 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
   int nz = grid->grid_size.nz;
   int ny = grid->grid_size.ny;
 
-  float *vel_base = grid->velocity +
-                    (grid->window_size.window_start.y * nx * nz) +
-                    (grid->window_size.window_start.z * nx) +
-                    grid->window_size.window_start.x;
+  float *vel_base = grid->window_velocity;
 
   int nxEnd = wnx - half_length;
   int nyEnd = 1;
@@ -527,7 +524,7 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
       for (ix = x_start; ix < nxEnd; ix++) {
         int offset = iy * wnxnz + iz * wnx;
         float *curr = curr_base + offset;
-        float *vel = vel_base + iy * nxnz + iz * nx;
+        float *vel = vel_base + offset;
         float *next = next_base + offset;
         float pressure_value = 0.0;
         float d_first_value = 0.0;
@@ -733,7 +730,7 @@ void CPMLBoundaryManager::SetComputationParameters(
 
 void CPMLBoundaryManager::SetGridBox(GridBox *grid_box) {
   this->extension->SetGridBox(grid_box);
-  this->extension->SetProperty(grid_box->velocity);
+  this->extension->SetProperty(grid_box->velocity, grid_box->window_velocity);
   this->grid = (AcousticSecondGrid *)(grid_box);
   if (this->grid == nullptr) {
     std::cout << "Not a compatible gridbox : "

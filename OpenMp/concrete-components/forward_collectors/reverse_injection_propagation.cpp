@@ -63,6 +63,7 @@ void ReverseInjectionPropagation::ResetGrid(bool forward_run) {
     memcpy(&internal_grid->cell_dimensions, &main_grid->cell_dimensions,
            sizeof(main_grid->cell_dimensions));
     internal_grid->velocity = main_grid->velocity;
+    internal_grid->window_velocity = main_grid->window_velocity;
     // Swap previous and current to reverse time.
     temp = internal_grid->pressure_previous;
     internal_grid->pressure_previous = internal_grid->pressure_current;

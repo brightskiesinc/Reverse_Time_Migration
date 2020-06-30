@@ -28,9 +28,6 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
   float *curr_1;
   float *curr_2;
   float *output = out;
-  output = output + (in_grid_2->window_size.window_start.y * nx * nz) +
-           (in_grid_2->window_size.window_start.z * nx) +
-           in_grid_2->window_size.window_start.x;
   float *curr_o;
   uint offset = parameters->half_length;
   int nxEnd = wnx - offset;
@@ -61,9 +58,10 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 
           for (int iy = by; iy < iyEnd; ++iy) {
             for (int iz = bz; iz < izEnd; ++iz) {
-              curr_1 = frame_1 + iy * wnx * wnz + iz * wnx;
-              curr_2 = frame_2 + iy * wnx * wnz + iz * wnx;
-              curr_o = output + iy * nx * nz + iz * nx;
+              uint b_offset = iy * wnx * wnz + iz * wnx;
+              curr_1 = frame_1 + b_offset;
+              curr_2 = frame_2 + b_offset;
+              curr_o = output + b_offset;
 #pragma vector aligned
 #pragma ivdep
               for (int ix = bx; ix < ixEnd; ++ix) {
@@ -91,24 +89,28 @@ void CrossCorrelationKernel ::Correlate(GridBox *in_1) {
 }
 
 void CrossCorrelationKernel ::Stack() {
+  int wnx = grid->window_size.window_nx;
+  int wny = grid->window_size.window_ny;
+  int wnz = grid->window_size.window_nz;
   int nx = grid->grid_size.nx;
   int ny = grid->grid_size.ny;
   int nz = grid->grid_size.nz;
   float *in = this->shot_correlation;
-  float *out = this->total_correlation;
+  float *out = this->total_correlation + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+          + grid->window_size.window_start.y * nx * nz;
   float *input;
   float *output;
   uint block_x = parameters->block_x;
   uint block_z = parameters->block_z;
   uint block_y = parameters->block_y;
   uint offset = parameters->half_length + parameters->boundary_length;
-  int nxEnd = nx - offset;
+  int nxEnd = wnx - offset;
   int nyEnd;
-  int nzEnd = nz - offset;
+  int nzEnd = wnz - offset;
   int y_start;
   if (ny > 1) {
     y_start = offset;
-    nyEnd = ny - offset;
+    nyEnd = wny - offset;
   } else {
     y_start = 0;
     nyEnd = 1;
@@ -124,7 +126,7 @@ void CrossCorrelationKernel ::Stack() {
 
         for (int iy = by; iy < iyEnd; iy++) {
           for (int iz = bz; iz < izEnd; iz++) {
-            input = in + iy * nx * nz + iz * nx;
+            input = in + iy * wnx * nz + iz * wnx;
             output = out + iy * nx * nz + iz * nx;
 #pragma ivdep
 #pragma vector aligned
@@ -152,7 +154,7 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
   this->grid = grid_box;
   shot_correlation = (float *)mem_allocate(
       sizeof(float),
-      grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
+      grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
       "shot_correlation");
   total_correlation = (float *)mem_allocate(
       sizeof(float),
@@ -166,7 +168,9 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
 CrossCorrelationKernel::CrossCorrelationKernel() {}
 
 void CrossCorrelationKernel::ResetShotCorrelation() {
-  memset(shot_correlation, 0, num_bytes);
+  uint window_bytes = sizeof(float) * grid->window_size.window_nx *
+          grid->window_size.window_nz * grid->window_size.window_ny;
+  memset(shot_correlation, 0, window_bytes);
 }
 
 float *CrossCorrelationKernel::GetShotCorrelation() {

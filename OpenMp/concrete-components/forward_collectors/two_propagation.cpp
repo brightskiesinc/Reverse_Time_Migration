@@ -96,6 +96,7 @@ void TwoPropagation::ResetGrid(bool forward_run) {
     memcpy(&internal_grid->cell_dimensions, &main_grid->cell_dimensions,
            sizeof(main_grid->cell_dimensions));
     internal_grid->velocity = main_grid->velocity;
+    internal_grid->window_velocity = main_grid->window_velocity;
   } else {
     memset(temp_prev, 0.0f, pressure_size * sizeof(float));
     memset(temp_curr, 0.0f, pressure_size * sizeof(float));

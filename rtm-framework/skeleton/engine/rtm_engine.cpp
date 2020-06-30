@@ -71,13 +71,13 @@ MigrationData *RTMEngine::Migrate(vector<uint> shot_ids) {
 #endif
     this->configuration->trace_manager->PreprocessShot(
         this->configuration->source_injector->GetCutOffTimestep());
-// grid_box->nt=5000;
 #ifndef NDEBUG
     this->callbacks->AfterShotPreprocessing(
         this->configuration->trace_manager->GetTraces());
 #endif
     this->configuration->source_injector->SetSourcePoint(
         this->configuration->trace_manager->GetSourcePoint());
+    this->configuration->model_handler->SetupWindow();
     this->configuration->boundary_manager->ReExtendModel();
     this->configuration->forward_collector->ResetGrid(true);
 

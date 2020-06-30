@@ -128,6 +128,9 @@ void StaggeredTwoPropagation::ResetGrid(bool forward_run) {
     memcpy(&internal_grid->cell_dimensions, &main_grid->cell_dimensions,
            sizeof(main_grid->cell_dimensions));
     internal_grid->velocity = main_grid->velocity;
+    internal_grid->density = main_grid->density;
+    internal_grid->window_velocity = main_grid->window_velocity;
+    internal_grid->window_density = main_grid->window_density;
   } else {
     memset(temp_curr, 0.0f, pressure_size * sizeof(float));
     memset(temp_next, 0.0f, pressure_size * sizeof(float));

@@ -21,6 +21,28 @@ void PrintParameters(AcousticOmpComputationParameters *parameters) {
   cout << "\tblock factor in x-direction : " << parameters->block_x << endl;
   cout << "\tblock factor in z-direction : " << parameters->block_z << endl;
   cout << "\tblock factor in y-direction : " << parameters->block_y << endl;
+  if (parameters->use_window) {
+      cout << "\tWindow mode : enabled" << endl;
+      if (parameters->left_window == 0 && parameters->right_window == 0) {
+          cout <<"\t\tNO WINDOW IN X-axis" << endl;
+      } else {
+          cout << "\t\tLeft window : " << parameters->left_window << endl;
+          cout << "\t\tRight window : " << parameters->right_window << endl;
+      }
+      if (parameters->front_window == 0 && parameters->back_window == 0) {
+          cout <<"\t\tNO WINDOW IN Y-axis" << endl;
+      } else {
+          cout << "\t\tFrontal window : " << parameters->front_window << endl;
+          cout << "\t\tBackward window : " << parameters->back_window << endl;
+      }
+      if (parameters->depth_window != 0) {
+          cout << "\t\tDepth window : " << parameters->depth_window << endl;
+      } else {
+          cout <<"\t\tNO WINDOW IN Z-axis" << endl;
+      }
+  } else {
+      cout << "\tWindow mode : disabled (To enable set use-window=yes)..." << endl;
+  }
   cout << endl;
 }
 
@@ -33,6 +55,7 @@ ComputationParameters *ParseParameterFile(string &file_name) {
   cout << "Parsing acoustic OpenMP computation properties..." << endl;
   string temp_line;
   int boundary_length = -1, block_x = -1, block_z = -1, block_y = -1,order = -1;
+  int left_win = -1, right_win = -1, front_win = -1, back_win = -1, depth_win = -1, use_window = -1;
     int n_threads;
 #pragma omp parallel
     {
@@ -126,6 +149,57 @@ ComputationParameters *ParseParameterFile(string &file_name) {
       } else {
         block_y = value;
       }
+    } else if (key == "use-window") {
+        if (value_s == "yes") {
+            use_window = 1;
+        } else {
+            use_window = 0;
+        }
+    } else if (key == "left-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for left window in x-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            left_win = value;
+        }
+    } else if (key == "right-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for right window in x-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            right_win = value;
+        }
+    } else if (key == "depth-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for depth window in z-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            depth_win = value;
+        }
+    } else if (key == "front-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for front window in y-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            front_win = value;
+        }
+    } else if (key == "back-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for back window in y-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            back_win = value;
+        }
     }
   }
   if (order == -1) {
@@ -159,10 +233,37 @@ ComputationParameters *ParseParameterFile(string &file_name) {
     cout << "Using default blocking factor in z-direction of 35" << endl;
     block_z = 35;
   }
-  if (block_y == -1) {
-    cout << "No valid value provided for key 'block-y'..." << endl;
-    cout << "Using default blocking factor in y-direction of 5" << endl;
-    block_y = 5;
+  if (use_window == -1) {
+    cout << "No valid value provided for key 'use-window'..." << endl;
+    cout << "Disabling window by default.." << endl;
+    use_window = 0;
+  }
+  if (use_window) {
+      if (left_win == -1) {
+          cout << "No valid value provided for key 'left-window'..." << endl;
+          cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+          left_win = 0;
+      }
+      if (right_win == -1) {
+          cout << "No valid value provided for key 'right-window'..." << endl;
+          cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+          right_win = 0;
+      }
+      if (depth_win == -1) {
+          cout << "No valid value provided for key 'depth-window'..." << endl;
+          cout << "Using default window size of 0 - notice if window is 0, no windowing happens" << endl;
+          depth_win = 0;
+      }
+      if (front_win == -1) {
+          cout << "No valid value provided for key 'front-window'..." << endl;
+          cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+          front_win = 0;
+      }
+      if (back_win == -1) {
+          cout << "No valid value provided for key 'back-window'..." << endl;
+          cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+          back_win = 0;
+      }
   }
   auto *parameters = new AcousticOmpComputationParameters(half_length);
   parameters->boundary_length = boundary_length;
@@ -172,6 +273,12 @@ ComputationParameters *ParseParameterFile(string &file_name) {
   parameters->block_x = block_x;
   parameters->block_z = block_z;
   parameters->block_y = block_y;
+  parameters->use_window = use_window == 1;
+  parameters->left_window = left_win;
+  parameters->right_window = right_win;
+  parameters->depth_window = depth_win;
+  parameters->front_window = front_win;
+  parameters->back_window = back_win;
   PrintParameters(parameters);
   omp_set_num_threads(parameters->n_threads);
   return parameters;

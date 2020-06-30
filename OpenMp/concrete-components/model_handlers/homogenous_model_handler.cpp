@@ -116,21 +116,35 @@ HomogenousModelHandler ::ReadModel(vector<string> filenames,
   unsigned int model_size = nx * nz * ny;
 
   // if there is no window then window size equals full model size
-#ifndef WINDOW_MODEL
-  grid->window_size.window_start.x = 0;
-  grid->window_size.window_start.z = 0;
-  grid->window_size.window_start.y = 0;
-  grid->window_size.window_nx = nx;
-  grid->window_size.window_nz = nz;
-  grid->window_size.window_ny = ny;
-#else
-  grid->window_size.window_start.x = val[2][0];
-  grid->window_size.window_start.z = val[2][1];
-  grid->window_size.window_start.y = val[2][2];
-  grid->window_size.window_nx = val[2][3];
-  grid->window_size.window_nz = val[2][4];
-  grid->window_size.window_ny = val[2][5];
-#endif
+  if (parameters->use_window) {
+      grid->window_size.window_start.x = 0;
+      grid->window_size.window_start.z = 0;
+      grid->window_size.window_start.y = 0;
+      if (parameters->left_window == 0 && parameters->right_window == 0) {
+          grid->window_size.window_nx = nx;
+      } else {
+          grid->window_size.window_nx = std::min(
+                  parameters->left_window + parameters->right_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length,
+                  nx);
+      }
+      if (parameters->depth_window == 0) {
+          grid->window_size.window_nz = nz;
+      } else {
+          grid->window_size.window_nz = std::min(parameters->depth_window + 2 * parameters->boundary_length + 2 * parameters->half_length, nz);
+      }
+      if ((parameters->front_window == 0 && parameters->back_window == 0) || ny == 1) {
+          grid->window_size.window_ny = ny;
+      } else {
+          grid->window_size.window_ny = std::min(parameters->front_window + parameters->back_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length, ny);
+      }
+  } else {
+      grid->window_size.window_start.x = 0;
+      grid->window_size.window_start.z = 0;
+      grid->window_size.window_start.y = 0;
+      grid->window_size.window_nx = nx;
+      grid->window_size.window_nz = nz;
+      grid->window_size.window_ny = ny;
+  }
 
   // Allocation and Zeroing the velocity model
   float *velocity = (float *)mem_allocate(sizeof(float), model_size, "velocity",
@@ -144,6 +158,17 @@ HomogenousModelHandler ::ReadModel(vector<string> filenames,
   float max = this->SetModelField(velocity, val[1], nx, nz, ny);
 
   grid->velocity = velocity;
+  if (parameters->use_window) {
+      grid->window_velocity = (float *)mem_allocate(sizeof(float),
+              grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny,
+              "window_velocity", parameters->half_length, 0);
+      computational_kernel->FirstTouch(grid->window_velocity, grid->window_size.window_nx,
+                                       grid->window_size.window_nz, grid->window_size.window_ny);
+      memset(grid->window_velocity, 0,
+              sizeof(float) * grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny);
+  } else {
+      grid->window_velocity = grid->velocity;
+  }
 
   if (is_staggered) {
     StaggeredGrid *s_grid = (StaggeredGrid *)grid;
@@ -154,6 +179,17 @@ HomogenousModelHandler ::ReadModel(vector<string> filenames,
     memset(density, 0, sizeof(float) * model_size);
     this->SetModelField(density, val[3], nx, nz, ny);
     s_grid->density = density;
+    if (parameters->use_window) {
+        s_grid->window_density = (float *)mem_allocate(sizeof(float),
+                grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny,
+                "window_density", parameters->half_length, 0);
+        computational_kernel->FirstTouch(s_grid->window_density, grid->window_size.window_nx,
+                grid->window_size.window_nz, grid->window_size.window_ny);
+        memset(s_grid->window_density, 0,
+                sizeof(float) * grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny);
+    } else {
+        s_grid->window_density = s_grid->density;
+    }
   }
 
   GetSuitableDt(dx, dz, dy, &grid->dt, parameters->second_derivative_fd_coeff,
@@ -308,3 +344,49 @@ HomogenousModelHandler::HomogenousModelHandler(bool staggered) {
 }
 
 HomogenousModelHandler ::~HomogenousModelHandler() = default;
+
+void HomogenousModelHandler::SetupWindow() {
+    if (parameters->use_window) {
+        uint wnx = grid_box->window_size.window_nx;
+        uint wnz = grid_box->window_size.window_nz;
+        uint wny = grid_box->window_size.window_ny;
+        uint nx = grid_box->grid_size.nx;
+        uint nz = grid_box->grid_size.nz;
+        uint ny = grid_box->grid_size.ny;
+        uint sx = grid_box->window_size.window_start.x;
+        uint sz = grid_box->window_size.window_start.z;
+        uint sy = grid_box->window_size.window_start.y;
+        uint offset = parameters->half_length + parameters->boundary_length;
+        uint start_x = offset;
+        uint end_x = wnx - offset;
+        uint start_z = offset;
+        uint end_z = wnz - offset;
+        uint start_y = 0;
+        uint end_y = 1;
+        if (ny != 1) {
+            start_y = offset;
+            end_y = wny - offset;
+        }
+        for (uint iy = start_y; iy < end_y; iy++) {
+            for (uint iz = start_z; iz < end_z; iz++) {
+                for (uint ix = start_x; ix < end_x; ix++) {
+                    uint offset_window = iy * wnx * wnz + iz * wnx + ix;
+                    uint offset_full = (iy + sy) * nx * nz + (iz + sz) * nx + ix + sx;
+                    grid_box->window_velocity[offset_window] = grid_box->velocity[offset_full];
+                }
+            }
+        }
+        if (is_staggered) {
+            StaggeredGrid *s_grid = (StaggeredGrid *)grid_box;
+            for (uint iy = start_y; iy < end_y; iy++) {
+                for (uint iz = start_z; iz < end_z; iz++) {
+                    for (uint ix = start_x; ix < end_x; ix++) {
+                        uint offset_window = iy * wnx * wnz + iz * wnx + ix;
+                        uint offset_full = (iy + sy) * nx * nz + (iz + sz) * nx + ix + sx;
+                        s_grid->window_density[offset_window] = s_grid->density[offset_full];
+                    }
+                }
+            }
+        }
+    }
+}
