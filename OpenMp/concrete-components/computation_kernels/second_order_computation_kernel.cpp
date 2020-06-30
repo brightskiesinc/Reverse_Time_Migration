@@ -40,7 +40,7 @@ void Computation(AcousticSecondGrid *grid,
   int nzEnd = wnz - half_length;
   int wnxnz = wnx * wnz;
   int nxnz = nx * nz;
-  int size = (nx - 2 * half_length) * (nz - 2 * half_length);
+  int size = (wnx - 2 * half_length) * (wnz - 2 * half_length);
 
   // General note: floating point operations for forward is the same as backward
   // (calculated below are for forward). number of floating point operations for
