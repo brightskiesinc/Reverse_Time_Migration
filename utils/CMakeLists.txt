@@ -19,6 +19,7 @@ add_library(
 		general-utils
 		SHARED
 		write_utils.cpp
+		read_utils.cpp
 )
 
 add_library(
