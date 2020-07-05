@@ -56,6 +56,8 @@ void SeismicModelHandler ::PreprocessModel(
   float dt = grid_box->dt;
   float dt2 = grid_box->dt * grid_box->dt;
   int full_nx = grid_box->grid_size.nx;
+  int full_nz = grid_box->grid_size.nz;
+  int full_ny = grid_box->grid_size.ny;
   unsigned long full_nx_nz =
       (unsigned long)grid_box->grid_size.nx * grid_box->grid_size.nz;
 
@@ -101,7 +103,7 @@ void SeismicModelHandler ::PreprocessModel(
     // the wave equation.
     AcousticDpcComputationParameters::device_queue->submit(
         [&](sycl::handler &cgh) {
-          auto global_range = range<3>(nx, ny, nz);
+          auto global_range = range<3>(full_nx, full_ny, full_nz);
           auto local_range = range<3>(1, 1, 1);
           auto global_nd_range = nd_range<3>(global_range, local_range);
           float *vel_device = grid_box->velocity;
@@ -166,6 +168,36 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
   }
   uint org_nx = nx;
   uint org_nz = nz;
+    // Setup window if available.
+    if (parameters->use_window) {
+        grid->window_size.window_start.x = 0;
+        grid->window_size.window_start.z = 0;
+        grid->window_size.window_start.y = 0;
+        if (parameters->left_window == 0 && parameters->right_window == 0) {
+            grid->window_size.window_nx = nx;
+        } else {
+            grid->window_size.window_nx = std::min(
+                    parameters->left_window + parameters->right_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length,
+                    nx);
+        }
+        if (parameters->depth_window == 0) {
+            grid->window_size.window_nz = nz;
+        } else {
+            grid->window_size.window_nz = std::min(parameters->depth_window + 2 * parameters->boundary_length + 2 * parameters->half_length, nz);
+        }
+        if ((parameters->front_window == 0 && parameters->back_window == 0) || ny == 1) {
+            grid->window_size.window_ny = ny;
+        } else {
+            grid->window_size.window_ny = std::min(parameters->front_window + parameters->back_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length, ny);
+        }
+    } else {
+        grid->window_size.window_start.x = 0;
+        grid->window_size.window_start.z = 0;
+        grid->window_size.window_start.y = 0;
+        grid->window_size.window_nx = nx;
+        grid->window_size.window_nz = nz;
+        grid->window_size.window_ny = ny;
+    }
   add_helper_padding(grid, parameters);
   nx = grid->grid_size.nx;
   nz = grid->grid_size.nz;
@@ -202,14 +234,6 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
             << grid->reference_point.y << std::endl;
   unsigned int model_size = nx * nz * ny;
 
-#ifndef WINDOW_MODEL
-  grid->window_size.window_start.x = 0;
-  grid->window_size.window_start.z = 0;
-  grid->window_size.window_start.y = 0;
-  grid->window_size.window_nx = nx;
-  grid->window_size.window_nz = nz;
-  grid->window_size.window_ny = ny;
-#endif
 
   grid->velocity = (float *)cl::sycl::malloc_device(
       sizeof(float) * model_size + 16 * sizeof(float),
@@ -221,6 +245,23 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
     cgh.memset(grid->velocity, 0, sizeof(float) * model_size);
   });
   AcousticDpcComputationParameters::device_queue->wait();
+    if (parameters->use_window) {
+        unsigned int window_model_size = grid->window_size.window_nx *
+                                         grid->window_size.window_nz * grid->window_size.window_ny;
+        grid->window_velocity = (float *)cl::sycl::malloc_device(
+                sizeof(float) * window_model_size + 16 * sizeof(float),
+                AcousticDpcComputationParameters::device_queue->get_device(),
+                AcousticDpcComputationParameters::device_queue->get_context());
+        grid->window_velocity = &(grid->window_velocity[16 - parameters->half_length]);
+        computational_kernel->FirstTouch(grid->window_velocity, grid->window_size.window_nx,
+                                         grid->window_size.window_nz, grid->window_size.window_ny);
+        AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
+            cgh.memset(grid->window_velocity, 0, sizeof(float) * window_model_size);
+        });
+        AcousticDpcComputationParameters::device_queue->wait();
+    } else {
+        grid->window_velocity = grid->velocity;
+    }
   float *velocity =
       (float *)mem_allocate(sizeof(float), model_size, "temp_model");
   memset(velocity, 0, model_size * sizeof(float));
@@ -259,3 +300,44 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
 }
 
 SeismicModelHandler ::~SeismicModelHandler() = default;
+
+void SeismicModelHandler::SetupWindow() {
+    if (parameters->use_window) {
+        uint wnx = grid_box->window_size.window_nx;
+        uint wnz = grid_box->window_size.window_nz;
+        uint wny = grid_box->window_size.window_ny;
+        uint nx = grid_box->grid_size.nx;
+        uint nz = grid_box->grid_size.nz;
+        uint ny = grid_box->grid_size.ny;
+        uint sx = grid_box->window_size.window_start.x;
+        uint sz = grid_box->window_size.window_start.z;
+        uint sy = grid_box->window_size.window_start.y;
+        uint offset = parameters->half_length + parameters->boundary_length;
+        uint start_x = offset;
+        uint end_x = wnx - offset;
+        uint start_z = offset;
+        uint end_z = wnz - offset;
+        uint start_y = 0;
+        uint end_y = 1;
+        if (ny != 1) {
+            start_y = offset;
+            end_y = wny - offset;
+        }
+        AcousticDpcComputationParameters::device_queue->submit([&](sycl::handler &cgh) {
+            auto global_range = range<3>(end_x - start_x, end_y - start_y, end_z - start_z);
+            auto local_range = range<3>(1, 1, 1);
+            auto global_nd_range = nd_range<3>(global_range, local_range);
+            float *vel = grid_box->velocity;
+            float *w_vel = grid_box->window_velocity;
+            cgh.parallel_for<class model_handler>(global_nd_range, [=](sycl::nd_item<3> it) {
+                int x = it.get_global_id(0) + start_x;
+                int y = it.get_global_id(1) + start_y;
+                int z = it.get_global_id(2) + start_z;
+                uint offset_window = y * wnx * wnz + z * wnx + x;
+                uint offset_full = (y + sy) * nx * nz + (z + sz) * nx + x + sx;
+                w_vel[offset_window] = vel[offset_full];
+            });
+        });
+        AcousticDpcComputationParameters::device_queue->wait();
+    }
+}

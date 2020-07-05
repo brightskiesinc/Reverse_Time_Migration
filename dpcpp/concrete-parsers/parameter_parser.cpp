@@ -11,6 +11,38 @@ using namespace std;
 
 sycl::queue *AcousticDpcComputationParameters::device_queue = nullptr;
 
+// This is the class provided to SYCL runtime by the application to decide
+// on which device to run, or whether to run at all.
+// When selecting a device, SYCL runtime first takes (1) a selector provided by
+// the program or a default one and (2) the set of all available devices. Then
+// it passes each device to the '()' operator of the selector. Device, for
+// which '()' returned the highest number, is selected. If a negative number
+// was returned for all devices, then the selection process will cause an
+// exception.
+class MyDeviceSelector : public cl::sycl::device_selector {
+public:
+    MyDeviceSelector(const std::string &p) : pattern(p) {
+        // std::cout << "Looking for \"" << p << "\" devices" << std::endl;
+    }
+
+    // This is the function which gives a "rating" to devices.
+    virtual int operator()(const cl::sycl::device &device) const override {
+        // The template parameter to device.get_info can be a variety of properties
+        // defined by the SYCL spec's cl::sycl::info:: enum. Properties may have
+        // different types. Here we query name which is a string.
+        const std::string name = device.get_info<cl::sycl::info::device::name>();
+        // std::cout << "Trying device: " << name << "..." << std::endl;
+        // std::cout << "  Vendor: " <<
+        // device.get_info<cl::sycl::info::device::vendor>() << std::endl;
+
+        // Device with pattern in the name is prioritized:
+        return (name.find(pattern) != std::string::npos) ? 100 : 1;
+    }
+
+private:
+    std::string pattern;
+};
+
 /*
  * Host-Code
  * Utility function to check blocking factor.
@@ -173,6 +205,28 @@ void PrintParameters(AcousticDpcComputationParameters *parameters) {
   } else if (parameters->device == GPU) {
     cout << "\tUsing GPU device - Slice z + Shared x Hybrid" << std::endl;
   }
+  if (parameters->use_window) {
+    cout << "\tWindow mode : enabled" << endl;
+    if (parameters->left_window == 0 && parameters->right_window == 0) {
+      cout <<"\t\tNO WINDOW IN X-axis" << endl;
+    } else {
+      cout << "\t\tLeft window : " << parameters->left_window << endl;
+      cout << "\t\tRight window : " << parameters->right_window << endl;
+    }
+    if (parameters->front_window == 0 && parameters->back_window == 0) {
+      cout <<"\t\tNO WINDOW IN Y-axis" << endl;
+    } else {
+      cout << "\t\tFrontal window : " << parameters->front_window << endl;
+      cout << "\t\tBackward window : " << parameters->back_window << endl;
+    }
+    if (parameters->depth_window != 0) {
+      cout << "\t\tDepth window : " << parameters->depth_window << endl;
+    } else {
+      cout <<"\t\tNO WINDOW IN Z-axis" << endl;
+    }
+  } else {
+    cout << "\tWindow mode : disabled (To enable set use-window=yes)..." << endl;
+  }
   cout << std::endl;
 }
 
@@ -203,7 +257,9 @@ ComputationParameters *ParseParameterFile(string &file_name) {
   float dt_relax = -1, source_frequency = -1;
   uint cor_block = -1;
   HALF_LENGTH half_length = O_8;
+  string device_pattern;
   int device_selected = -1;
+  int left_win = -1, right_win = -1, front_win = -1, back_win = -1, depth_win = -1, use_window = -1, device_name=-1;
   SYCL_DEVICE selected_device = CPU;
   while (param_file >> temp_line) {
     string key = temp_line.substr(0, temp_line.find('='));
@@ -300,7 +356,7 @@ ComputationParameters *ParseParameterFile(string &file_name) {
       } else {
         cor_block = value;
       }
-    } else if (key == "device") {
+    } else if (key == "algorithm") {
       if (value_s == "cpu") {
         device_selected = 1;
         selected_device = CPU;
@@ -314,10 +370,66 @@ ComputationParameters *ParseParameterFile(string &file_name) {
         device_selected = 1;
         selected_device = GPU;
       } else {
-        cout << "Invalid value entered for device : must be <cpu> , <gpu> , "
+        cout << "Invalid value entered for algorithm : must be <cpu> , <gpu> , "
                 "<gpu-shared> or <gpu-semi-shared>"
              << std::endl;
       }
+    } else if (key == "use-window") {
+        if (value_s == "yes") {
+            use_window = 1;
+        } else {
+            use_window = 0;
+        }
+    } else if (key == "left-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for left window in x-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            left_win = value;
+        }
+    } else if (key == "right-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for right window in x-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            right_win = value;
+        }
+    } else if (key == "depth-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for depth window in z-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            depth_win = value;
+        }
+    } else if (key == "front-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for front window in y-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            front_win = value;
+        }
+    } else if (key == "back-window") {
+        int value = stoi(value_s);
+        if (value < 0) {
+            cout << "Invalid value entered for back window in y-direction : must "
+                    "be positive..."
+                 << endl;
+        } else {
+            back_win = value;
+        }
+    } else if (key == "device") {
+        if (value_s != "none") {
+            device_name = 1;
+            device_pattern = value_s;
+        }
     }
   }
   if (order == -1) {
@@ -367,6 +479,38 @@ ComputationParameters *ParseParameterFile(string &file_name) {
     cout << "Using default device : CPU" << std::endl;
     selected_device = CPU;
   }
+    if (use_window == -1) {
+        cout << "No valid value provided for key 'use-window'..." << endl;
+        cout << "Disabling window by default.." << endl;
+        use_window = 0;
+    }
+    if (use_window) {
+        if (left_win == -1) {
+            cout << "No valid value provided for key 'left-window'..." << endl;
+            cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+            left_win = 0;
+        }
+        if (right_win == -1) {
+            cout << "No valid value provided for key 'right-window'..." << endl;
+            cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+            right_win = 0;
+        }
+        if (depth_win == -1) {
+            cout << "No valid value provided for key 'depth-window'..." << endl;
+            cout << "Using default window size of 0 - notice if window is 0, no windowing happens" << endl;
+            depth_win = 0;
+        }
+        if (front_win == -1) {
+            cout << "No valid value provided for key 'front-window'..." << endl;
+            cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+            front_win = 0;
+        }
+        if (back_win == -1) {
+            cout << "No valid value provided for key 'back-window'..." << endl;
+            cout << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis" << endl;
+            back_win = 0;
+        }
+    }
   auto *parameters = new AcousticDpcComputationParameters(half_length);
   parameters->boundary_length = boundary_length;
   parameters->dt_relax = dt_relax;
@@ -376,6 +520,12 @@ ComputationParameters *ParseParameterFile(string &file_name) {
   parameters->block_y = block_y;
   parameters->cor_block = cor_block;
   parameters->device = selected_device;
+  parameters->use_window = use_window == 1;
+  parameters->left_window = left_win;
+  parameters->right_window = right_win;
+  parameters->depth_window = depth_win;
+  parameters->front_window = front_win;
+  parameters->back_window = back_win;
   auto asyncHandler = [&](cl::sycl::exception_list eL) {
     for (auto &e : eL) {
       try {
@@ -389,15 +539,23 @@ ComputationParameters *ParseParameterFile(string &file_name) {
       }
     }
   };
-  if (selected_device == CPU) {
-    sycl::cpu_selector cpu_sel;
-    sycl::device cpu_device(cpu_sel);
-    AcousticDpcComputationParameters::device_queue =
-        new sycl::queue(cpu_device, asyncHandler);
+  if (device_name == -1) {
+      if (selected_device == CPU) {
+          cout << "Using default CPU selector" << std::endl;
+          sycl::cpu_selector cpu_sel;
+          AcousticDpcComputationParameters::device_queue =
+                  new sycl::queue(cpu_sel, asyncHandler);
+      } else {
+          cout << "Using default GPU selector" << std::endl;
+          sycl::gpu_selector gpu_sel;
+          AcousticDpcComputationParameters::device_queue =
+                  new sycl::queue(gpu_sel, asyncHandler);
+      }
   } else {
-    sycl::gpu_selector gpu_sel;
-    AcousticDpcComputationParameters::device_queue =
-        new sycl::queue(gpu_sel, asyncHandler);
+      std::cout << "Trying to select the device that is closest to the given pattern '" << device_pattern << "'" << std::endl;
+      MyDeviceSelector dev_sel(device_pattern);
+      AcousticDpcComputationParameters::device_queue =
+              new sycl::queue(dev_sel, asyncHandler);
   }
   PrintParameters(parameters);
   PrintTargetInfo(AcousticDpcComputationParameters::device_queue);

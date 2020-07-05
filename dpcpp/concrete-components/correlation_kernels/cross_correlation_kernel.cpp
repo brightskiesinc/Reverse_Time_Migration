@@ -12,9 +12,9 @@ template <bool is_2D, bool stack>
 void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
                  AcousticSecondGrid *in_2,
                  AcousticDpcComputationParameters *parameters) {
-  int nx = in_2->grid_size.nx;
-  int ny = in_2->grid_size.ny;
-  int nz = in_2->grid_size.nz;
+  int nx = in_2->window_size.window_nx;
+  int ny = in_2->window_size.window_ny;
+  int nz = in_2->window_size.window_nz;
   AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
     auto global_range = range<1>(nx * ny * nz);
     auto local_range = range<1>(parameters->cor_block);
@@ -56,9 +56,9 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
 }
 
 void CrossCorrelationKernel::ResetShotCorrelation() {
-  int nx = grid->grid_size.nx;
-  int ny = grid->grid_size.ny;
-  int nz = grid->grid_size.nz;
+  int nx = grid->window_size.window_nx;
+  int ny = grid->window_size.window_ny;
+  int nz = grid->window_size.window_nz;
   uint sizeTotal = nx * ny * nz;
   if (correlation_buffer == nullptr) {
     correlation_buffer = (float *)cl::sycl::malloc_device(
@@ -76,6 +76,12 @@ void CrossCorrelationKernel::Stack() {
   int nx = grid->grid_size.nx;
   int ny = grid->grid_size.ny;
   int nz = grid->grid_size.nz;
+  int wnx = grid->window_size.window_nx;
+  int wny = grid->window_size.window_ny;
+  int wnz = grid->window_size.window_nz;
+  int ele_x = grid->original_dimensions.nx;
+  int ele_y = grid->original_dimensions.ny;
+  int ele_z = grid->original_dimensions.nz;
 
   size_t sizeTotal = nx * nz * ny;
   if (stack_buffer == nullptr) {
@@ -90,11 +96,16 @@ void CrossCorrelationKernel::Stack() {
     internal_queue->wait();
   }
   internal_queue->submit([&](handler &cgh) {
-    auto global_range = range<1>(nx * ny * nz);
-    float *stack_buf = stack_buffer;
+    auto global_range = range<3>(ele_x, ele_z, ele_y);
+    float *stack_buf = stack_buffer + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+                       + grid->window_size.window_start.y * nx * nz;
     float *cor_buf = correlation_buffer;
     cgh.parallel_for<class cross_correlation>(
-        global_range, [=](id<1> idx) { stack_buf[idx[0]] += cor_buf[idx[0]]; });
+        global_range, [=](id<3> idx) {
+            uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz;
+            uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz;
+            stack_buf[offset] += cor_buf[offset_window];
+        });
   });
   internal_queue->wait();
 }
@@ -116,9 +127,9 @@ void CrossCorrelationKernel::Correlate(GridBox *in_1) {
 
 float *CrossCorrelationKernel::GetShotCorrelation() {
 
-  int nx = grid->grid_size.nx;
-  int ny = grid->grid_size.ny;
-  int nz = grid->grid_size.nz;
+  int nx = grid->window_size.window_nx;
+  int ny = grid->window_size.window_ny;
+  int nz = grid->window_size.window_nz;
   size_t sizeTotal = nx * nz * ny;
   if (temp_correlation_buffer == nullptr) {
       temp_correlation_buffer = new float[sizeTotal];
@@ -155,17 +166,17 @@ MigrationData *CrossCorrelationKernel::GetMigrationData() {
   float *temp = GetStackedShotCorrelation();;
   uint nz = grid->grid_size.nz;
   uint nx = grid->grid_size.nx;
-  uint org_nx = grid->original_dimensions.nx;
-  uint org_nz = grid->original_dimensions.nz;
+  uint org_nx = grid->full_original_dimensions.nx;
+  uint org_nz = grid->full_original_dimensions.nz;
   auto unpadded_temp = new float[org_nx * org_nz];
   for (int i = 0; i < org_nz; i++) {
     for (int j = 0; j < org_nx; j++) {
       unpadded_temp[i * org_nx + j] = temp[i * nx + j];
     }
   }
-  return new MigrationData(grid->original_dimensions.nx,
-                           grid->original_dimensions.nz,
-                           grid->original_dimensions.ny, grid->nt,
+  return new MigrationData(grid->full_original_dimensions.nx,
+                           grid->full_original_dimensions.nz,
+                           grid->full_original_dimensions.ny, grid->nt,
                            grid->cell_dimensions.dx, grid->cell_dimensions.dz,
                            grid->cell_dimensions.dy, grid->dt, unpadded_temp);
 }

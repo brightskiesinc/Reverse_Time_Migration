@@ -63,21 +63,64 @@ void BinaryTraceManager::ReadShot(vector<string> filenames, uint shot_number, st
   trace_file->read((char *)&this->r_end, sizeof(this->r_end));
   trace_file->read((char *)&total_time, sizeof(total_time));
   trace_file->read((char *)&traces.sample_dt, sizeof(traces.sample_dt));
+    // If window model, need to setup the starting point of the window.
+    // Handle 3 cases : no room for left window, no room for right window, room for both.
+    // Those 3 cases can apply to y-direction as well if 3D.
+    if (parameters->use_window) {
+        grid->window_size.window_start.x = 0;
+        // No room for left window.
+        if (this->source_point.x < parameters->left_window || (parameters->left_window == 0 && parameters->right_window == 0)) {
+            grid->window_size.window_start.x = 0;
+            // No room for right window.
+        } else if (this->source_point.x >= grid->grid_size.nx
+                                           - parameters->boundary_length - parameters->half_length - parameters->right_window) {
+            grid->window_size.window_start.x = grid->grid_size.nx
+                                               - parameters->boundary_length - parameters->half_length - parameters->right_window
+                                               - parameters->left_window - 1;
+            this->source_point.x = grid->window_size.window_nx - parameters->boundary_length
+                                   - parameters->half_length - parameters->right_window - 1;
+        } else {
+            grid->window_size.window_start.x = this->source_point.x - parameters->left_window;
+            this->source_point.x = parameters->left_window;
+        }
+        grid->window_size.window_start.y = 0;
+        if (grid->grid_size.ny != 1) {
+            if (this->source_point.y < parameters->back_window || (parameters->front_window == 0 && parameters->back_window == 0)) {
+                grid->window_size.window_start.y = 0;
+            } else if (this->source_point.y >= grid->grid_size.ny
+                                               - parameters->boundary_length - parameters->half_length - parameters->front_window) {
+                grid->window_size.window_start.y = grid->grid_size.ny
+                                                   - parameters->boundary_length - parameters->half_length - parameters->front_window
+                                                   - parameters->back_window - 1;
+                this->source_point.y = grid->window_size.window_ny - parameters->boundary_length
+                                       - parameters->half_length - parameters->front_window - 1;
+            } else {
+                grid->window_size.window_start.y = this->source_point.y - parameters->back_window;
+                this->source_point.y = parameters->back_window;
+            }
+        }
+    }
   uint num_elements_per_time_step = 0;
   uint num_rec_x = 0;
   uint num_rec_y = 0;
   uint x_inc = r_inc.x == 0 ? 1 : r_inc.x;
   uint y_inc = r_inc.y == 0 ? 1 : r_inc.y;
   uint z_inc = r_inc.z == 0 ? 1 : r_inc.z;
+  int intern_x = grid->window_size.window_nx - 2 * parameters->half_length - 2 * parameters->boundary_length;
+  int intern_y = grid->window_size.window_ny - 2 * parameters->half_length - 2 * parameters->boundary_length;
   for (int iz = r_start.z; iz < r_end.z; iz += z_inc) {
     num_rec_y = 0;
     for (int iy = r_start.y; iy < r_end.y; iy += y_inc) {
-      num_rec_y++;
-      num_rec_x = 0;
-      for (int ix = r_start.x; ix < r_end.x; ix += x_inc) {
-        num_elements_per_time_step++;
-        num_rec_x++;
-      }
+        if (iy >= grid->window_size.window_start.y && iy < grid->window_size.window_start.y + intern_y) {
+            num_rec_y++;
+            num_rec_x = 0;
+            for (int ix = r_start.x; ix < r_end.x; ix += x_inc) {
+                if (ix >= grid->window_size.window_start.x && ix < grid->window_size.window_start.x + intern_x ) {
+                    num_elements_per_time_step++;
+                    num_rec_x++;
+                }
+            }
+        }
     }
   }
   traces.trace_size_per_timestep = num_elements_per_time_step;
@@ -94,13 +137,35 @@ void BinaryTraceManager::ReadShot(vector<string> filenames, uint shot_number, st
         for (int ix = r_start.x; ix < r_end.x; ix += x_inc) {
           float value = 0;
           trace_file->read((char *)&value, sizeof(value));
-          traces.traces[t * num_elements_per_time_step + index] = value;
-          index++;
+            if (iy >= grid->window_size.window_start.y && iy < grid->window_size.window_start.y + intern_y) {
+                if (ix >= grid->window_size.window_start.x && ix < grid->window_size.window_start.x + intern_x ) {
+                    traces.traces[t * num_elements_per_time_step + index] = value;
+                    index++;
+                }
+            }
         }
       }
     }
   }
+    while (r_start.y < grid->window_size.window_start.y) {
+        r_start.y += y_inc;
+    }
+    while (r_end.y >=  grid->window_size.window_start.y + intern_y) {
+        r_end.y -= y_inc;
+    }
+    while (r_start.x < grid->window_size.window_start.x) {
+        r_start.x += x_inc;
+    }
+    while (r_end.x >=  grid->window_size.window_start.x + intern_x) {
+        r_end.x -= x_inc;
+    }
   grid->nt = int(total_time / grid->dt);
+    r_start.x -= grid->window_size.window_start.x;
+    r_start.y -= grid->window_size.window_start.y;
+    r_start.z -= grid->window_size.window_start.z;
+    r_end.x -= grid->window_size.window_start.x;
+    r_end.y -= grid->window_size.window_start.y;
+    r_end.z -= grid->window_size.window_start.z;
 }
 
 void BinaryTraceManager::PreprocessShot(uint cut_off_timestep) {

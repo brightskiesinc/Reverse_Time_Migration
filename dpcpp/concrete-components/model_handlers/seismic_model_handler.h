@@ -29,6 +29,8 @@ public:
 
   void SetGridBox(GridBox *grid_box) override;
 
+  void SetupWindow() override;
+
 private:
   IOManager *IO;
   SeIO *sio;
