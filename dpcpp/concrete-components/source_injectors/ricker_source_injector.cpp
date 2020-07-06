@@ -22,6 +22,7 @@ void RickerSourceInjector::ApplySource(uint time_step) {
                    (((time_step - 1) * dt) - 1 / freq) *
                    (((time_step - 1) * dt) - 1 / freq);
       float ricker = (2 * temp - 1) * exp(-temp);
+      ricker = ricker * dt * dt;
       int location = y * nx * nz + z * nx + x;
       AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
         auto pressure = grid->pressure_current;

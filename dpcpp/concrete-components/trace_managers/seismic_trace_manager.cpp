@@ -134,6 +134,7 @@ void SeismicTraceManager::ApplyTraces(uint time_step) {
     int wnz_wnx = grid->window_size.window_nz * wnx;
     int std_offset = (parameters->boundary_length + parameters->half_length) * wnx;
     float current_time = (time_step - 1) * grid->dt;
+    float dt = grid->dt;
 
     uint trace_step = uint(current_time / traces->sample_dt);
     trace_step = std::min(trace_step, traces->sample_nt - 1);
@@ -150,7 +151,7 @@ void SeismicTraceManager::ApplyTraces(uint time_step) {
         cgh.parallel_for<class trace_manager>(global_nd_range, [=](nd_item<1> it) {
             int i = it.get_global_id(0);
             int offset = y_pos[i] * wnz_wnx + std_offset + x_pos[i];
-            current[offset] += d_traces[(trace_step)*trace_size + i];
+            current[offset] += d_traces[(trace_step)*trace_size + i] * dt * dt;
         });
     });
     AcousticDpcComputationParameters::device_queue->wait();

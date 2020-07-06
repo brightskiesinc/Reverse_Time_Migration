@@ -16,7 +16,16 @@ private:
   GridBox *grid;
   float *shot_correlation;
   float *total_correlation;
+  float *source_illumination;
+  float *receiver_illumination;
+
+  float *source_illumination_compensation;
+  float *receiver_illumination_compensation;
+  float *combined_illumination_compensation;
+
   size_t num_bytes;
+
+  CompensationType compensation_type;
 
 public:
   void Stack() override;
@@ -33,7 +42,15 @@ public:
 
   void SetGridBox(GridBox *grid_box) override;
 
+  void SetCompensation(CompensationType c) override;
+
   MigrationData *GetMigrationData() override;
+
+  float *GetSourceCompensationCorrelation() override;
+
+  float *GetReceiverCompensationCorrelation() override;
+
+  float *GetCombinedCompensationCorrelation() override;
 
   ~CrossCorrelationKernel() override;
 

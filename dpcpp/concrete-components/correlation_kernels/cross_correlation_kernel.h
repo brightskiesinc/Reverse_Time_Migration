@@ -18,6 +18,15 @@ private:
   float *temp_correlation_buffer = nullptr;
   float *temp_stack_buffer = nullptr;
 
+  float *source_illumination;
+  float *receiver_illumination;
+
+  float *source_illumination_compensation;
+  float *receiver_illumination_compensation;
+  float *combined_illumination_compensation;
+
+  CompensationType compensation_type;
+
 public:
   void ResetShotCorrelation() override;
 
@@ -30,6 +39,15 @@ public:
   float *GetStackedShotCorrelation() override;
   void SetComputationParameters(ComputationParameters *parameters) override;
   void SetGridBox(GridBox *grid_box) override;
+
+  void SetCompensation(CompensationType c) override;
+
+  float *GetSourceCompensationCorrelation() override;
+
+  float *GetReceiverCompensationCorrelation() override;
+
+  float *GetCombinedCompensationCorrelation() override;
+
   MigrationData *GetMigrationData() override;
   ~CrossCorrelationKernel() override;
 };

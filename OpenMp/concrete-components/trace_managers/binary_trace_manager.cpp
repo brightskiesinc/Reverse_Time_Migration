@@ -235,6 +235,8 @@ void BinaryTraceManager::ApplyTraces(uint time_step) {
   int wnz_wnx = grid->window_size.window_nz * wnx;
   int index = 0;
   float current_time = (time_step - 1) * grid->dt;
+  float dt = grid->dt;
+
   uint trace_step = uint(current_time / traces->sample_dt);
   trace_step = min(trace_step, traces->sample_nt - 1);
   for (int iz = r_start.z; iz < r_end.z; iz += z_inc) {
@@ -242,7 +244,7 @@ void BinaryTraceManager::ApplyTraces(uint time_step) {
       for (int ix = r_start.x; ix < r_end.x; ix += x_inc) {
         int offset = iy * wnz_wnx + iz * wnx + ix;
         grid->pressure_current[offset] +=
-            traces->traces[(trace_step)*trace_size + index];
+            traces->traces[(trace_step)*trace_size + index] * dt * dt;
         index++;
       }
     }
