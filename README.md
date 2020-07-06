@@ -79,11 +79,11 @@
 * **ZFP compression(only needed with OpenMp technology)**:
     1.  Download ZFP source code archive from any of the following sites.
     
-        ZFP 0.5.2 https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.2.tar.gz
+        ZFP 0.5.2: wget https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.2.tar.gz
 
-        ZFP 0.5.4 https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.4.tar.gz
+        ZFP 0.5.4: wget https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.4.tar.gz
     
-        ZFP 0.5.5 https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.5.tar.gz 
+        ZFP 0.5.5: wget https://computation.llnl.gov/projects/floating-point-compression/download/zfp-0.5.5.tar.gz 
         
     2.  Unarchive the source code.
     
@@ -97,15 +97,28 @@
         
     4.  **Optional** patching with IPP (**icpc only**).
     
-        a.  To get the patch file.
+        a.echo $IPPROOT
+	this command will output a path in the terminal(only if icpc is used).
+	
+	b.change directory to this output path. 
+	
+	c.Go to the examples directory
         ```
-        cd "intel_parallel_studio_path"/intel/compilers_and_libraries_2020.0.166/linux/ipp/components/components_and_examples_lin_ps/components/interfaces/ipp_zfp
+        cd examples
         ```
-        b.  Copy any zfp-0.5.x.patch to your zfp directory.
+	d.Unarchive the folder components_and_examples_lin_ps.tgz
+	```
+        tar xf components_and_examples_lin_ps.tgz
+        ```
+	e.Change directory to the zfp patch files directory
+	```
+        cd components/interfaces/ipp_zfp
+        ```
+        f.  Copy any zfp-0.5.x.patch to your zfp directory.
          ```
-        cp "intel_parallel_stdio_path"/intel/compilers_and_libraries_2020.0.166/linux/ipp/components/components_and_examples_lin_ps/components/interfaces/ipp_zfp/zfp-0.5.x.patch ./"zfp_directory"
+        cp ./zfp-0.5.x.patch ./"zfp_directory"
         ```
-        c.Patch with any IPP version.
+        g.Patch with any IPP version.
         ```
         patch -p1 < ./zfp-0.5.x.patch.
         ```
