@@ -106,19 +106,23 @@
         ```
         cd examples
         ```
+	
 	d.Unarchive the folder components_and_examples_lin_ps.tgz
 	```
         tar xf components_and_examples_lin_ps.tgz
         ```
+	
 	e.Change directory to the zfp patch files directory
 	```
         cd components/interfaces/ipp_zfp
         ```
-        f.  Copy any zfp-0.5.x.patch to your zfp directory.
-         ```
+        
+	f.  Copy any zfp-0.5.x.patch to your zfp directory.
+        ```
         cp ./zfp-0.5.x.patch ./"zfp_directory"
         ```
-        g.Patch with any IPP version.
+        
+	g.Patch with any IPP version.
         ```
         patch -p1 < ./zfp-0.5.x.patch.
         ```
