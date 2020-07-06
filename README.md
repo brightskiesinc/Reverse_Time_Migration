@@ -99,23 +99,29 @@
     
         a.echo $IPPROOT
 	this command will output a path in the terminal(only if icpc is used).
-	b.change directory to this output path. 
-	c.Go to the examples directory
+	
+	b.change directory to this output path.
+	
+	c.Go to the examples directory.
         ```
         cd examples
         ```
-	d.Unarchive the folder components_and_examples_lin_ps.tgz
+	
+	d.Unarchive the folder components_and_examples_lin_ps.tgz.
 	```
         tar xf components_and_examples_lin_ps.tgz
         ```
-	e.Change directory to the zfp patch files directory
+	
+	e.Change directory to the zfp patch files directory.
 	```
         cd components/interfaces/ipp_zfp
         ```
+	
 	f.Copy any zfp-0.5.x.patch to your zfp directory.
         ```
         cp ./zfp-0.5.x.patch ./"zfp_directory"
         ```
+	
 	g.Patch with any IPP version.
         ```
         patch -p1 < ./zfp-0.5.x.patch.
