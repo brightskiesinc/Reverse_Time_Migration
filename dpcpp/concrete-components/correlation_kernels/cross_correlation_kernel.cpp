@@ -17,7 +17,7 @@ void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
 	int nx = in_2->window_size.window_nx;
 	int ny = in_2->window_size.window_ny;
 	int nz = in_2->window_size.window_nz;
-	parameters->device_queue->submit([&](handler &cgh) {
+	AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
 		auto global_range = range<1>(nx * ny * nz);
 		auto local_range = range<1>(parameters->cor_block);
 		auto global_nd_range = nd_range<1>(global_range, local_range);
@@ -35,7 +35,7 @@ void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
 			receiver_illumination[idx + offset] += pressure_2[idx] * pressure_2[idx];
 		});
 	});
-	parameters->device_queue->wait();
+	AcousticDpcComputationParameters::device_queue->wait();
 }
 
 CrossCorrelationKernel ::~CrossCorrelationKernel() = default;
@@ -202,8 +202,8 @@ MigrationData *CrossCorrelationKernel::GetMigrationData() {
 
 	uint nz = grid->grid_size.nz;
 	uint nx = grid->grid_size.nx;
-	uint org_nx = grid->original_dimensions.nx;
-	uint org_nz = grid->original_dimensions.nz;
+	uint org_nx = grid->full_original_dimensions.nx;
+	uint org_nz = grid->full_original_dimensions.nz;
 
 	float *temp;
 	float *unpadded_temp;
@@ -248,8 +248,8 @@ float *CrossCorrelationKernel::GetSourceCompensationCorrelation()
 	uint nz = grid->grid_size.nz;
 	uint nx = grid->grid_size.nx;
 	uint ny = grid->grid_size.ny;
-	uint org_nx = grid->original_dimensions.nx;
-	uint org_nz = grid->original_dimensions.nz;
+	uint org_nx = grid->full_original_dimensions.nx;
+	uint org_nz = grid->full_original_dimensions.nz;
 	uint size = nx * nz * ny;
 	// getting host buffers
 	float* temp = new float[size];
@@ -284,8 +284,8 @@ float *CrossCorrelationKernel::GetReceiverCompensationCorrelation()
 	uint nz = grid->grid_size.nz;
 	uint nx = grid->grid_size.nx;
 	uint ny = grid->grid_size.ny;
-	uint org_nx = grid->original_dimensions.nx;
-	uint org_nz = grid->original_dimensions.nz;
+	uint org_nx = grid->full_original_dimensions.nx;
+	uint org_nz = grid->full_original_dimensions.nz;
 	uint size = nx * nz * ny;
 	// getting host buffers
 	float* temp = new float[size];
@@ -320,8 +320,8 @@ float *CrossCorrelationKernel::GetCombinedCompensationCorrelation()
 	uint nz = grid->grid_size.nz;
 	uint nx = grid->grid_size.nx;
 	uint ny = grid->grid_size.ny;
-	uint org_nx = grid->original_dimensions.nx;
-	uint org_nz = grid->original_dimensions.nz;
+	uint org_nx = grid->full_original_dimensions.nx;
+	uint org_nz = grid->full_original_dimensions.nz;
 	uint size = nx * nz * ny;
 	// getting host buffers
 	float* temp = new float[size];
