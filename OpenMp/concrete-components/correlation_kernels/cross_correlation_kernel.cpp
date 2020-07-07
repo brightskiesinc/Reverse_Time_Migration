@@ -11,7 +11,7 @@
 using namespace std;
 #define EPSILON 1e-20
 
-template <bool is_2D>
+template <bool is_2D, CompensationType comp>
 void Correlation(float *out, GridBox *in_1, GridBox *in_2,
                  AcousticOmpComputationParameters *parameters,
 				 float* source_illumination, float* receiver_illumination) {
@@ -72,10 +72,20 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 #pragma ivdep
               for (int ix = 0; ix < ixEnd; ++ix) {
                 float value;
+
                 value = curr_1[ix] * curr_2[ix];
-                source_i[ix] += curr_1[ix] * curr_1[ix];
-                receive_i[ix] += curr_2[ix] * curr_2[ix];
                 curr_o[ix] += value;
+
+                if(comp == SOURCE_COMPENSATION){
+                	source_i[ix] += curr_1[ix] * curr_1[ix];
+                }
+                else if(comp == RECEIVER_COMPENSATION){
+                	receive_i[ix] += curr_2[ix] * curr_2[ix];
+                }
+                else if(comp == COMBINED_COMPENSATION){
+                	source_i[ix] += curr_1[ix] * curr_1[ix];
+                	receive_i[ix] += curr_2[ix] * curr_2[ix];
+                }
               }
             }
           }
@@ -86,11 +96,47 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 }
 
 void CrossCorrelationKernel ::Correlate(GridBox *in_1) {
-  if (grid->grid_size.ny == 1) {
-    Correlation<true>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
-  } else {
-    Correlation<false>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
-  }
+	if (grid->grid_size.ny == 1) {
+		switch(compensation_type){
+
+		case NO_COMPENSATION:
+			Correlation<true, NO_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case SOURCE_COMPENSATION:
+			Correlation<true, SOURCE_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case RECEIVER_COMPENSATION:
+			Correlation<true, RECEIVER_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case COMBINED_COMPENSATION:
+			Correlation<true, COMBINED_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		}
+	} else {
+		switch(compensation_type){
+
+		case NO_COMPENSATION:
+			Correlation<false, NO_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case SOURCE_COMPENSATION:
+			Correlation<false, SOURCE_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case RECEIVER_COMPENSATION:
+			Correlation<false, RECEIVER_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		case COMBINED_COMPENSATION:
+			Correlation<false, COMBINED_COMPENSATION>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
+			break;
+
+		}
+	}
 }
 
 void CrossCorrelationKernel ::Stack() {

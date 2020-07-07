@@ -8,7 +8,7 @@
 using namespace cl::sycl;
 #define EPSILON 1e-20
 
-template <bool is_2D, bool stack>
+template <bool is_2D, CompensationType comp>
 void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
 		AcousticSecondGrid *in_2,
 		AcousticDpcComputationParameters *parameters,
@@ -21,15 +21,23 @@ void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
 		auto local_range = range<1>(parameters->cor_block);
 		auto global_nd_range = nd_range<1>(global_range, local_range);
 
-
 		float *pressure_1 = in_1->pressure_current;
 		float *pressure_2 = in_2->pressure_current;
 		cgh.parallel_for<class cross_correlation>(
 				global_nd_range, [=](nd_item<1> it) {
 			int idx = it.get_global_linear_id();
 			output_buffer[idx] += pressure_1[idx] * pressure_2[idx];
-			source_illumination[idx] += pressure_1[idx] * pressure_1[idx];
-			receiver_illumination[idx] += pressure_2[idx] * pressure_2[idx];
+
+			if(comp == SOURCE_COMPENSATION){
+				source_illumination[idx] += pressure_1[idx] * pressure_1[idx];
+			}
+			else if(comp == RECEIVER_COMPENSATION){
+				receiver_illumination[idx] += pressure_2[idx] * pressure_2[idx];
+			}
+			else if(comp == COMBINED_COMPENSATION){
+				source_illumination[idx] += pressure_1[idx] * pressure_1[idx];
+				receiver_illumination[idx] += pressure_2[idx] * pressure_2[idx];
+			}
 		});
 	});
 	AcousticDpcComputationParameters::device_queue->wait();
@@ -158,12 +166,44 @@ void CrossCorrelationKernel::Stack() {
 void CrossCorrelationKernel::Correlate(GridBox *in_1) {
   AcousticSecondGrid *in_grid = (AcousticSecondGrid *)in_1;
 
-
-
   if (grid->grid_size.ny == 1) {
-    Correlation<true, true>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+	  switch(compensation_type){
+
+	  case NO_COMPENSATION:
+		  Correlation<true, NO_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case SOURCE_COMPENSATION:
+		  Correlation<true, SOURCE_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case RECEIVER_COMPENSATION:
+		  Correlation<true, RECEIVER_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case COMBINED_COMPENSATION:
+		  Correlation<true, COMBINED_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+	  }
   } else {
-    Correlation<false, true>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+	  switch(compensation_type){
+
+	  case NO_COMPENSATION:
+		  Correlation<false, NO_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case SOURCE_COMPENSATION:
+		  Correlation<false, SOURCE_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case RECEIVER_COMPENSATION:
+		  Correlation<false, RECEIVER_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+
+	  case COMBINED_COMPENSATION:
+		  Correlation<false, COMBINED_COMPENSATION>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
+		  break;
+	  }
   }
 
 }
