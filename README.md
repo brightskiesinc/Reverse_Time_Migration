@@ -382,7 +382,9 @@ boundary-manager.use-top-layer=yes
 #boundary-manager.relax-cp=0.9
 #### Correlation kernel possible values : cross-correlation
 correlation-kernel=cross-correlation
-#### Forward collector possible values : two | three | two-compression | optimal-checkpointing
+## compensation type for final correlation possible values : no | source | receiver | combined
+correlation-kernel.compensation=combined
+#### Forward collector possible values : two | three | two-compression
 forward-collector=three
 #### Uncomment the following to fine tune some parameters for the compression
 #forward-collector.zfp-tolerance=0.05

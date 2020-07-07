@@ -18,6 +18,8 @@ private:
   float *total_correlation;
   float *source_illumination;
   float *receiver_illumination;
+  float *total_source_illumination;
+  float *total_receiver_illumination;
 
   float *source_illumination_compensation;
   float *receiver_illumination_compensation;

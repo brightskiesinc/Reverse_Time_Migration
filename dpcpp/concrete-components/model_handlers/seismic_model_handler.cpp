@@ -5,6 +5,7 @@
 #include "seismic_model_handler.h"
 #include "model_handler_helpers/model_handler_utils.h"
 #include <bits/stdc++.h>
+#include <skeleton/helpers/timer/timer.hpp>
 
 using namespace cl::sycl;
 
@@ -141,8 +142,10 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
                                ComputationKernel *computational_kernel) {
 
   string file_name = filenames[0];
-
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ReadVelocityFromSegyFile");
   IO->ReadVelocityDataFromFile(file_name, "CSR", this->sio);
+  timer->stop_timer("IO::ReadVelocityFromSegyFile");
 
   AcousticSecondGrid *grid;
   if (is_staggered) {

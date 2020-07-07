@@ -3,6 +3,8 @@
 #include <compress.h>
 #include <iostream>
 #include <sys/stat.h>
+#include <skeleton/helpers/timer/timer.hpp>
+
 //
 // Created by mirnamoawad on 1/15/20.
 //
@@ -35,6 +37,8 @@ void StaggeredTwoPropagation::SaveForward() {
     time_counter++;
     if ((time_counter + 1) % max_nt == 0) {
       if (this->compression) {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("ForwardCollector::Compression");
         for (int it = 0; it < max_nt; it++) {
           size_t resultSize;
           zfp::compression(forward_pressure + it * pressure_size,
@@ -46,10 +50,14 @@ void StaggeredTwoPropagation::SaveForward() {
                            &resultSize, "forward_pressure",
                            this->zfp_is_relative);
         }
+        timer->stop_timer("ForwardCollector::Compression");
       } else {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("IO::WriteForward");
         string s =
             this->write_path + "/temp_" + to_string(time_counter / max_nt);
         bin_file_save(s.c_str(), forward_pressure, max_nt * pressure_size);
+        timer->stop_timer("IO::WriteForward");
       }
     }
     main_grid->pressure_current =
@@ -66,6 +74,8 @@ void StaggeredTwoPropagation::FetchForward(void) {
   } else {
     if ((time_counter + 1) % max_nt == 0) {
       if (this->compression) {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("ForwardCollector::Decompression");
         for (int it = 0; it < max_nt; it++) {
           size_t resultSize;
           zfp::decompression(&forward_pressure[it * pressure_size],
@@ -77,10 +87,14 @@ void StaggeredTwoPropagation::FetchForward(void) {
                              &resultSize, "forward_pressure",
                              this->zfp_is_relative);
         }
+        timer->stop_timer("ForwardCollector::Decompression");
       } else {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("IO::ReadForward");
         string s =
             this->write_path + "/temp_" + to_string(time_counter / max_nt);
         bin_file_load(s.c_str(), forward_pressure, max_nt * pressure_size);
+        timer->stop_timer("IO::ReadForward");
       }
     }
     internal_grid->pressure_current =

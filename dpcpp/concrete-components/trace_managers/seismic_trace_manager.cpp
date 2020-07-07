@@ -9,6 +9,8 @@
 #include <skeleton/helpers/memory_allocation/memory_allocator.h>
 #include <utility>
 #include <read_utils.h>
+#include <skeleton/helpers/timer/timer.hpp>
+
 
 using namespace cl::sycl;
 
@@ -89,7 +91,10 @@ void SeismicTraceManager::ReadShot(vector<string> filenames, uint shot_number, s
         << std::endl;
   }
   sio = new SeIO();
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ReadSelectedShotFromSegyFile");
   IO->ReadSelectiveDataFromFile(file_name, sort_key, sio, shot_number);
+  timer->stop_timer("IO::ReadSelectedShotFromSegyFile");
   uint *temp_x_position, *temp_y_position;
   ParseSeioToTraces(sio, &this->source_point, this->traces, &temp_x_position,
           &temp_y_position, this->grid, this->parameters, &this->total_time);

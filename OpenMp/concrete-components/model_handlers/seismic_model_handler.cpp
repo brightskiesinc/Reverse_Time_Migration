@@ -6,6 +6,8 @@
 #include <bits/stdc++.h>
 #include <concrete-components/data_units/staggered_grid.h>
 #include <seismic-io-framework/datatypes.h>
+#include <skeleton/helpers/timer/timer.hpp>
+
 
 SeismicModelHandler::SeismicModelHandler(bool is_staggered) {
   sio = new SeIO();
@@ -161,14 +163,17 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
                                ComputationKernel *computational_kernel) {
 
   string file_name = filenames[0];
-
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ReadVelocityFromSegyFile");
   IO->ReadVelocityDataFromFile(file_name, "CSR", this->sio);
-
+  timer->stop_timer("IO::ReadVelocityFromSegyFile");
   GridBox *grid;
   if (is_staggered) {
     grid = (GridBox *)mem_allocate(sizeof(StaggeredGrid), 1, "StaggeredGrid");
     string d_file_name = filenames[1];
+    timer->start_timer("IO::ReadDensityFromSegyFile");
     IO->ReadDensityDataFromFile(d_file_name, "CSR", this->sio); // case density
+    timer->stop_timer("IO::ReadDensityFromSegyFile");
   } else {
     grid = (GridBox *)mem_allocate(sizeof(AcousticSecondGrid), 1, "GridBox");
   }

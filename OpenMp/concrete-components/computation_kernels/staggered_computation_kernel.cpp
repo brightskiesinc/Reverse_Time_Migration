@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 using namespace std;
-extern double mysecond();
 
 StaggeredComputationKernel::StaggeredComputationKernel(bool is_forward) {
   this->is_forward = is_forward;
@@ -117,7 +116,7 @@ void Computation(StaggeredGrid *grid,
   // start the timers for the velocity kernel.
   Timer *timer = Timer::getInstance();
   // timer->start_timer("ComputationKernel:velocity kernel");
-  timer->_start_timer_for_kernel("ComputationKernel:velocity kernel", size,
+  timer->_start_timer_for_kernel("ComputationKernel::velocity kernel", size,
                                  num_of_arrays_velocity, true,
                                  flops_per_velocity);
 // Start the computation by creating the threads.
@@ -192,12 +191,14 @@ void Computation(StaggeredGrid *grid,
   }
 
   // the end of time of particle velocity kernel
-  timer->stop_timer("ComputationKernel:velocity kernel");
+  timer->stop_timer("ComputationKernel::velocity kernel");
+  timer->start_timer("BoundaryManager::ApplyBoundary(Velocity)");
   if (boundary_manager != nullptr) {
     boundary_manager->ApplyBoundary(1);
   }
+  timer->stop_timer("BoundaryManager::ApplyBoundary(Velocity)");
   // start the timer of the pressure kernel
-  timer->_start_timer_for_kernel("ComputationKernel:pressure kernel", size,
+  timer->_start_timer_for_kernel("ComputationKernel::pressure kernel", size,
                                  num_of_arrays_pressure, true,
                                  flops_per_pressure);
 #pragma omp parallel default(shared)
@@ -274,7 +275,7 @@ void Computation(StaggeredGrid *grid,
       }
     }
   }
-  timer->stop_timer("ComputationKernel:pressure kernel");
+  timer->stop_timer("ComputationKernel::pressure kernel");
 }
 
 template void
@@ -449,9 +450,12 @@ void StaggeredComputationKernel::Step() {
   float *temp = grid->pressure_current;
   grid->pressure_current = grid->pressure_next;
   grid->pressure_next = temp;
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("BoundaryManager::ApplyBoundary(Pressure)");
   if (this->boundary_manager != nullptr) {
     this->boundary_manager->ApplyBoundary(0);
   }
+  timer->stop_timer("BoundaryManager::ApplyBoundary(Pressure)");
 }
 
 void StaggeredComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,
@@ -474,6 +478,8 @@ void StaggeredComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,
   int block_x = parameters->block_x;
   int block_y = parameters->block_y;
   int block_z = parameters->block_z;
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("ComputationKernel::FirstTouch");
   // First touch : access elements in the same way used in the computation
   // kernel step.
 #pragma omp parallel for schedule(static, 1) collapse(3)
@@ -495,6 +501,7 @@ void StaggeredComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,
       }
     }
   }
+  timer->stop_timer("ComputationKernel::FirstTouch");
 }
 void StaggeredComputationKernel::SetComputationParameters(
     ComputationParameters *parameters) {
@@ -516,12 +523,4 @@ void StaggeredComputationKernel::SetGridBox(GridBox *grid_box) {
               << std::endl;
     exit(-1);
   }
-}
-
-double mysecond() {
-  struct timeval tp;
-  struct timezone tzp;
-  int i;
-  i = gettimeofday(&tp, &tzp);
-  return ((double)tp.tv_sec + (double)tp.tv_usec * 1.e-6);
 }

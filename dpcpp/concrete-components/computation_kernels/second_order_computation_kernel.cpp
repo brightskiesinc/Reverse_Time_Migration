@@ -659,7 +659,7 @@ void SecondOrderComputationKernel::Step() {
 
   // Take a step in time.
   Timer *timer = Timer::getInstance();
-  timer->_start_timer_for_kernel("SecondOrderComputationKernel::Step", size, 4,
+  timer->_start_timer_for_kernel("ComputationKernel::kernel", size, 4,
                                  true, flops_per_second);
   if ((grid->grid_size.ny) == 1) {
     switch (parameters->half_length) {
@@ -716,10 +716,12 @@ void SecondOrderComputationKernel::Step() {
     grid->pressure_previous = grid->pressure_current;
     grid->pressure_current = temp;
   }
-  timer->stop_timer("SecondOrderComputationKernel::Step");
+  timer->stop_timer("ComputationKernel::kernel");
+  timer->start_timer("BoundaryManager::ApplyBoundary");
   if (this->boundary_manager != nullptr) {
     this->boundary_manager->ApplyBoundary(0);
   }
+  timer->stop_timer("BoundaryManager::ApplyBoundary");
 }
 
 void SecondOrderComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,

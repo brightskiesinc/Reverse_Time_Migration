@@ -246,8 +246,6 @@ Computation<true, O_16>(AcousticSecondGrid *grid,
                         AcousticOmpComputationParameters *parameters);
 
 void SecondOrderComputationKernel::Step() {
-  Timer *timer = Timer::getInstance();
-  timer->start_timer("ComputationKernel::Step");
   // Take a step in time.
   if ((grid->grid_size.ny) == 1) {
     switch (parameters->half_length) {
@@ -301,7 +299,7 @@ void SecondOrderComputationKernel::Step() {
     grid->pressure_previous = grid->pressure_current;
     grid->pressure_current = temp;
   }
-  timer->stop_timer("ComputationKernel::Step");
+  Timer *timer = Timer::getInstance();
   timer->start_timer("BoundaryManager::ApplyBoundary");
   if (this->boundary_manager != nullptr) {
     this->boundary_manager->ApplyBoundary();

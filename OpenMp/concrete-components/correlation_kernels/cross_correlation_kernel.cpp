@@ -7,7 +7,6 @@
 #include <iostream>
 #include <omp.h>
 #include <skeleton/helpers/memory_allocation/memory_allocator.h>
-#include <skeleton/helpers/timer/timer.hpp>
 
 using namespace std;
 #define EPSILON 1e-20
@@ -87,14 +86,11 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 }
 
 void CrossCorrelationKernel ::Correlate(GridBox *in_1) {
-  Timer *timer = Timer::getInstance();
-  timer->start_timer("CrossCorrelationKernel::Correlate");
   if (grid->grid_size.ny == 1) {
     Correlation<true>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
   } else {
     Correlation<false>(this->shot_correlation, in_1, grid, parameters, source_illumination, receiver_illumination);
   }
-  timer->stop_timer("CrossCorrelationKernel::Correlate");
 }
 
 void CrossCorrelationKernel ::Stack() {
@@ -107,8 +103,18 @@ void CrossCorrelationKernel ::Stack() {
   float *in = this->shot_correlation;
   float *out = this->total_correlation + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
           + grid->window_size.window_start.y * nx * nz;
+  float *in_src = this->source_illumination;
+  float *out_src = this->total_source_illumination + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+          + grid->window_size.window_start.y * nx * nz;
+  float *in_rcv = this->receiver_illumination;
+  float *out_rcv = this->total_receiver_illumination + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+          + grid->window_size.window_start.y * nx * nz;
   float *input;
   float *output;
+  float *input_src;
+  float *output_src;
+  float *input_rcv;
+  float *output_rcv;
   uint block_x = parameters->block_x;
   uint block_z = parameters->block_z;
   uint block_y = parameters->block_y;
@@ -135,12 +141,20 @@ void CrossCorrelationKernel ::Stack() {
 
         for (int iy = by; iy < iyEnd; iy++) {
           for (int iz = bz; iz < izEnd; iz++) {
-            input = in + iy * wnx * nz + iz * wnx;
-            output = out + iy * nx * nz + iz * nx;
+            uint offset_w = iy * wnx * nz + iz * wnx;
+            uint offset = iy * nx * nz + iz * nx;
+            input = in + offset_w;
+            output = out + offset;
+            input_src = in_src + offset_w;
+            output_src = out_src + offset;
+            input_rcv = in_rcv + offset_w;
+            output_rcv = out_rcv + offset;
 #pragma ivdep
 #pragma vector aligned
             for (int ix = bx; ix < ixEnd; ix++) {
               output[ix] += input[ix];
+              output_rcv[ix] += input_rcv[ix];
+              output_src[ix] += input_src[ix];
             }
           }
         }
@@ -152,6 +166,10 @@ void CrossCorrelationKernel ::Stack() {
 CrossCorrelationKernel ::~CrossCorrelationKernel() {
   mem_free((void *)shot_correlation);
   mem_free((void *)total_correlation);
+  mem_free((void *)source_illumination);
+  mem_free((void *)receiver_illumination);
+  mem_free((void *)total_source_illumination);
+  mem_free((void *)total_receiver_illumination);
 }
 
 void CrossCorrelationKernel::SetComputationParameters(
@@ -180,19 +198,23 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
 
   source_illumination = (float *)mem_allocate(
       sizeof(float),
+      grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
+      "source_illumination");
+  receiver_illumination = (float *)mem_allocate(\
+      sizeof(float),
+      grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
+      "source_illumination");
+  total_source_illumination = (float *)mem_allocate(
+      sizeof(float),
       grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
       "stacked_source_illumination");
-  num_bytes = grid_box->grid_size.nx * grid_box->grid_size.nz *
-              grid_box->grid_size.ny * sizeof(float);
-  memset(source_illumination, 0, num_bytes);
+  memset(total_source_illumination, 0, num_bytes);
 
-  receiver_illumination = (float *)mem_allocate(
+  total_receiver_illumination = (float *)mem_allocate(
       sizeof(float),
       grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
       "stacked_reciever_illumination");
-  num_bytes = grid_box->grid_size.nx * grid_box->grid_size.nz *
-              grid_box->grid_size.ny * sizeof(float);
-  memset(receiver_illumination, 0, num_bytes);
+  memset(total_receiver_illumination, 0, num_bytes);
 }
 
 CrossCorrelationKernel::CrossCorrelationKernel() {}
@@ -201,6 +223,8 @@ void CrossCorrelationKernel::ResetShotCorrelation() {
   uint window_bytes = sizeof(float) * grid->window_size.window_nx *
           grid->window_size.window_nz * grid->window_size.window_ny;
   memset(shot_correlation, 0, window_bytes);
+  memset(source_illumination, 0, window_bytes);
+  memset(receiver_illumination, 0, window_bytes);
 }
 
 float *CrossCorrelationKernel::GetShotCorrelation() {
@@ -244,7 +268,7 @@ float *CrossCorrelationKernel::GetSourceCompensationCorrelation()
 	source_illumination_compensation = new float[size];
 	for(int i = 0; i < size; i++)
 	{
-            source_illumination_compensation[i] = total_correlation[i] / (source_illumination[i] + EPSILON);
+            source_illumination_compensation[i] = total_correlation[i] / (total_source_illumination[i] + EPSILON);
 	}
 
 	return source_illumination_compensation;
@@ -256,7 +280,7 @@ float *CrossCorrelationKernel::GetReceiverCompensationCorrelation()
 	receiver_illumination_compensation = new float[size];
 	for(int i = 0; i < size; i++)
 	{
-		    receiver_illumination_compensation[i] = total_correlation[i] / (receiver_illumination[i] + EPSILON);
+		    receiver_illumination_compensation[i] = total_correlation[i] / (total_receiver_illumination[i] + EPSILON);
 	}
 
 	return receiver_illumination_compensation;
@@ -268,7 +292,7 @@ float *CrossCorrelationKernel::GetCombinedCompensationCorrelation()
 	combined_illumination_compensation = new float[size];
 	for(int i = 0; i < size; i++)
 	{
-		combined_illumination_compensation[i] = total_correlation[i] / sqrt(source_illumination[i] * receiver_illumination[i]  + EPSILON);
+		combined_illumination_compensation[i] = total_correlation[i] / sqrt(total_source_illumination[i] * total_receiver_illumination[i]  + EPSILON);
 	}
 
 	return combined_illumination_compensation;

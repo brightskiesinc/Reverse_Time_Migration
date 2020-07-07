@@ -4,7 +4,6 @@
 #include "cross_correlation_kernel.h"
 #include <cmath>
 #include <iostream>
-#include <rtm-framework/skeleton/helpers/timer/timer.hpp>
 
 using namespace cl::sycl;
 #define EPSILON 1e-20
@@ -22,17 +21,15 @@ void Correlation(float *output_buffer, AcousticSecondGrid *in_1,
 		auto local_range = range<1>(parameters->cor_block);
 		auto global_nd_range = nd_range<1>(global_range, local_range);
 
-		uint offset = in_2->window_size.window_start.x +
-				in_2->window_size.window_start.z * in_2->grid_size.nx
-                + in_2->window_size.window_start.y * in_2->grid_size.nx * in_2->grid_size.nz;
+
 		float *pressure_1 = in_1->pressure_current;
 		float *pressure_2 = in_2->pressure_current;
 		cgh.parallel_for<class cross_correlation>(
 				global_nd_range, [=](nd_item<1> it) {
 			int idx = it.get_global_linear_id();
 			output_buffer[idx] += pressure_1[idx] * pressure_2[idx];
-			source_illumination[idx + offset] += pressure_1[idx] * pressure_1[idx];
-			receiver_illumination[idx + offset] += pressure_2[idx] * pressure_2[idx];
+			source_illumination[idx] += pressure_1[idx] * pressure_1[idx];
+			receiver_illumination[idx] += pressure_2[idx] * pressure_2[idx];
 		});
 	});
 	AcousticDpcComputationParameters::device_queue->wait();
@@ -65,30 +62,6 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
               << std::endl;
     exit(-1);
   }
-
-  int nx = grid->grid_size.nx;
-  int ny = grid->grid_size.ny;
-  int nz = grid->grid_size.nz;
-
-  size_t sizeTotal = nx * nz * ny;
-
-  source_illumination = (float *)cl::sycl::malloc_device(
-      sizeof(float) * sizeTotal + 16 * sizeof(float),
-      internal_queue->get_device(), internal_queue->get_context());
-  source_illumination = &(source_illumination[16 - parameters->half_length]);
-  internal_queue->submit([&](handler &cgh) {
-    cgh.memset(source_illumination, 0, sizeof(float) * sizeTotal);
-  });
-  internal_queue->wait();
-
-  receiver_illumination = (float *)cl::sycl::malloc_device(
-      sizeof(float) * sizeTotal + 16 * sizeof(float),
-      internal_queue->get_device(), internal_queue->get_context());
-  receiver_illumination = &(receiver_illumination[16 - parameters->half_length]);
-  internal_queue->submit([&](handler &cgh) {
-    cgh.memset(receiver_illumination, 0, sizeof(float) * sizeTotal);
-  });
-  internal_queue->wait();
 }
 
 void CrossCorrelationKernel::ResetShotCorrelation() {
@@ -101,9 +74,23 @@ void CrossCorrelationKernel::ResetShotCorrelation() {
         sizeof(float) * sizeTotal + 16 * sizeof(float),
         internal_queue->get_device(), internal_queue->get_context());
     correlation_buffer = &(correlation_buffer[16 - parameters->half_length]);
+    source_illumination = (float *)cl::sycl::malloc_device(
+            sizeof(float) * sizeTotal + 16 * sizeof(float),
+            internal_queue->get_device(), internal_queue->get_context());
+    source_illumination = &(source_illumination[16 - parameters->half_length]);
+    receiver_illumination = (float *)cl::sycl::malloc_device(
+            sizeof(float) * sizeTotal + 16 * sizeof(float),
+            internal_queue->get_device(), internal_queue->get_context());
+    receiver_illumination = &(receiver_illumination[16 - parameters->half_length]);
   }
   internal_queue->submit([&](handler &cgh) {
     cgh.memset(correlation_buffer, 0, sizeof(float) * sizeTotal);
+  });
+  internal_queue->submit([&](handler &cgh) {
+    cgh.memset(source_illumination, 0, sizeof(float) * sizeTotal);
+  });
+  internal_queue->submit([&](handler &cgh) {
+    cgh.memset(receiver_illumination, 0, sizeof(float) * sizeTotal);
   });
   internal_queue->wait();
 }
@@ -125,9 +112,23 @@ void CrossCorrelationKernel::Stack() {
         sizeof(float) * sizeTotal + 16 * sizeof(float),
         internal_queue->get_device(), internal_queue->get_context());
     stack_buffer = &(stack_buffer[16 - parameters->half_length]);
+    stack_source_illumination = (float *)cl::sycl::malloc_device(
+        sizeof(float) * sizeTotal + 16 * sizeof(float),
+        internal_queue->get_device(), internal_queue->get_context());
+    stack_source_illumination = &(stack_source_illumination[16 - parameters->half_length]);
+    stack_receiver_illumination = (float *)cl::sycl::malloc_device(
+        sizeof(float) * sizeTotal + 16 * sizeof(float),
+        internal_queue->get_device(), internal_queue->get_context());
+    stack_receiver_illumination = &(stack_receiver_illumination[16 - parameters->half_length]);
 
     internal_queue->submit([&](handler &cgh) {
       cgh.memset(stack_buffer, 0, sizeof(float) * sizeTotal);
+    });
+    internal_queue->submit([&](handler &cgh) {
+      cgh.memset(stack_source_illumination, 0, sizeof(float) * sizeTotal);
+    });
+    internal_queue->submit([&](handler &cgh) {
+      cgh.memset(stack_receiver_illumination, 0, sizeof(float) * sizeTotal);
     });
     internal_queue->wait();
   }
@@ -136,11 +137,19 @@ void CrossCorrelationKernel::Stack() {
     float *stack_buf = stack_buffer + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
                        + grid->window_size.window_start.y * nx * nz;
     float *cor_buf = correlation_buffer;
+    float *stack_src = stack_source_illumination + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+                         + grid->window_size.window_start.y * nx * nz;
+    float *cor_src = source_illumination;
+    float *stack_rcv = stack_receiver_illumination + grid->window_size.window_start.x + grid->window_size.window_start.z * nx
+                         + grid->window_size.window_start.y * nx * nz;
+    float *cor_rcv = receiver_illumination;
     cgh.parallel_for<class cross_correlation>(
         global_range, [=](id<3> idx) {
             uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz;
             uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz;
             stack_buf[offset] += cor_buf[offset_window];
+            stack_src[offset] += cor_src[offset_window];
+            stack_rcv[offset] += cor_rcv[offset_window];
         });
   });
   internal_queue->wait();
@@ -149,8 +158,7 @@ void CrossCorrelationKernel::Stack() {
 void CrossCorrelationKernel::Correlate(GridBox *in_1) {
   AcousticSecondGrid *in_grid = (AcousticSecondGrid *)in_1;
 
-  Timer *timer = Timer::getInstance();
-  timer->start_timer("CrossCorrelationKernel::Correlate");
+
 
   if (grid->grid_size.ny == 1) {
     Correlation<true, true>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
@@ -158,7 +166,6 @@ void CrossCorrelationKernel::Correlate(GridBox *in_1) {
     Correlation<false, true>(correlation_buffer, in_grid, grid, parameters, source_illumination, receiver_illumination);
   }
 
-  timer->stop_timer("CrossCorrelationKernel::Correlate");
 }
 
 float *CrossCorrelationKernel::GetShotCorrelation() {
@@ -262,7 +269,7 @@ float *CrossCorrelationKernel::GetSourceCompensationCorrelation()
     internal_queue->wait();
 
     internal_queue->submit([&](handler &cgh) {
-      cgh.memcpy(temp_source, source_illumination, size * sizeof(float));
+      cgh.memcpy(temp_source, stack_source_illumination, size * sizeof(float));
     });
     internal_queue->wait();
 
@@ -298,7 +305,7 @@ float *CrossCorrelationKernel::GetReceiverCompensationCorrelation()
     internal_queue->wait();
 
     internal_queue->submit([&](handler &cgh) {
-      cgh.memcpy(temp_receiver, receiver_illumination, size * sizeof(float));
+      cgh.memcpy(temp_receiver, stack_receiver_illumination, size * sizeof(float));
     });
     internal_queue->wait();
 
@@ -335,12 +342,12 @@ float *CrossCorrelationKernel::GetCombinedCompensationCorrelation()
     internal_queue->wait();
 
     internal_queue->submit([&](handler &cgh) {
-      cgh.memcpy(temp_source, source_illumination, size * sizeof(float));
+      cgh.memcpy(temp_source, stack_source_illumination, size * sizeof(float));
     });
     internal_queue->wait();
 
     internal_queue->submit([&](handler &cgh) {
-      cgh.memcpy(temp_receiver, receiver_illumination, size * sizeof(float));
+      cgh.memcpy(temp_receiver, stack_receiver_illumination, size * sizeof(float));
     });
     internal_queue->wait();
 

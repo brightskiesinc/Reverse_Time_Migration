@@ -17,8 +17,9 @@ private:
   float *stack_buffer = nullptr;
   float *temp_correlation_buffer = nullptr;
   float *temp_stack_buffer = nullptr;
-
+  float *stack_source_illumination;
   float *source_illumination;
+  float *stack_receiver_illumination;
   float *receiver_illumination;
 
   float *source_illumination_compensation;

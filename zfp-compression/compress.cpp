@@ -1,5 +1,6 @@
 #include "compress.h"
 #include <fstream>
+#include <skeleton/helpers/timer/timer.hpp>
 
 namespace zfp {
 // this namespace contains all the functions related to zfp compression
@@ -150,13 +151,18 @@ size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
       MINBLOCKSIZE; // calculating the number of blocks to be written, a block
                     // will consist of a number of rows in nx dimension
   size_t bytesWritten = 0;
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ZFP::Compression::Header");
   bytesWritten =
       fwrite(&totalBlocks, 4, 1,
              compressedFile); // write the number of blocks to be written
+  timer->stop_timer("IO::ZFP::Compression::Header");
   resultSize += 4;            // accumulate the size of the written data
   // fprintf(stderr, "\n BytesWritten = %d", bytesWritten);
 
   //#pragma omp parallel for schedule(static)
+    timer->start_timer("ZFP::Compress");
+
 #pragma omp parallel for schedule(static)
   for (unsigned int block = 0; block < totalBlocks; block++) {
     // loop on blocks, each is compressed and then written
@@ -211,7 +217,9 @@ size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
     }
   }
 
-  // Write Block Sizes in serial
+  timer->stop_timer("ZFP::Compress");
+  timer->start_timer("IO::ZFP::Compression");
+    // Write Block Sizes in serial
   for (int block = 0; block < totalBlocks; block++) {
     // fprintf(stderr, "\n ZFPSize : %d", zfpsize[block]);
     bytesWritten =
@@ -224,6 +232,7 @@ size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
     // fprintf(stderr, "\n data: BytesWritten = %d", bytesWritten);
     resultSize += zfpsize[block]; // accumulate the written data size
   }
+  timer->stop_timer("IO::ZFP::Compression");
   // fprintf(stderr, "\n resultSize  = %d", resultSize);
   /* clean up */
   for (int block = 0; block < totalBlocks; block++) {
@@ -366,10 +375,13 @@ size_t decompressZFP_Parallel(float *array, int nx, int ny, int nz,
 
   FILE *compressedFile;
   compressedFile = fopen(filename, "rb");
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ZFP::Decompression::Header");
   fread(&totalBlocks, 4, 1, compressedFile);
+  timer->stop_timer("IO::ZFP::Decompression::Header");
   // numThreads = 1;
   // fprintf(stderr, "\n Decompression: NumThreads = %d", numThreads);
-
+  timer->start_timer("ZFP::Decompression::SetupProperties");
 #pragma omp parallel for schedule(static)
   // Boilerplate ZFP setup in serial
   for (unsigned int block = 0; block < totalBlocks; block++) {
@@ -422,16 +434,17 @@ size_t decompressZFP_Parallel(float *array, int nx, int ny, int nz,
     zfp_stream_set_bit_stream(zfp[block], stream[block]);
     zfp_stream_rewind(zfp[block]);
   }
-
+  timer->stop_timer("ZFP::Decompression::SetupProperties");
+  timer->start_timer("IO::ZFP::Decompression");
   // read the data serially
   for (unsigned int block = 0; block < totalBlocks; block++) {
     fread(&bufsize[block], sizeof(bufsize[block]), 1, compressedFile);
 
     size_t readsize = fread(buffer[block], 1, bufsize[block], compressedFile);
   }
-
+  timer->stop_timer("IO::ZFP::Decompression");
   fclose(compressedFile);
-
+  timer->start_timer("ZFP::Decompress");
 #pragma omp parallel for schedule(static)
   for (unsigned int block = 0; block < totalBlocks; block++) {
 
@@ -446,7 +459,7 @@ size_t decompressZFP_Parallel(float *array, int nx, int ny, int nz,
         resultSize_block[block] = nx * blockDim[block] * sizeof(float);
     }
   }
-
+  timer->stop_timer("ZFP::Decompress");
   for (int block = 0; block < totalBlocks; block++) {
     resultSize += resultSize_block[block];
   }
@@ -485,7 +498,8 @@ size_t applyZFPOperation(float *array, int nx, int ny, int nz, double tolerance,
     compressedFile = fopen(filename, "rb");
   /* allocate meta data for the 3D array a[nz][ny][nx] */
   type = zfp_type_float;
-
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("ZFP::SetupProperties");
   // To choose between 1d,2d or 3d representation
   if ((nx > 1) && (ny > 1) && (nz > 1)) // handle 3d
     field = zfp_field_3d(array, type, nx, ny, nz);
@@ -517,27 +531,35 @@ size_t applyZFPOperation(float *array, int nx, int ny, int nz, double tolerance,
   stream = stream_open(buffer, bufsize);
   zfp_stream_set_bit_stream(zfp, stream);
   zfp_stream_rewind(zfp);
-
+  timer->stop_timer("ZFP::SetupProperties");
   /* compress or decompress entire array */
   if (decompress) {
     /* read compressed stream and decompress array */
+    timer->start_timer("IO::ZFP::Decompression");
     zfpsize = fread(buffer, 1, bufsize, compressedFile);
+    timer->stop_timer("IO::ZFP::Decompression");
+    timer->start_timer("ZFP::Decompress");
     if (!zfp_decompress(zfp, field)) {
       fprintf(stderr, "decompression failed\n");
       status = 1;
     } else {
       resultSize = nx * ny * nz * sizeof(float);
     }
+    timer->stop_timer("ZFP::Decompress");
   } else {
     /* compress array and output compressed stream */
+    timer->start_timer("ZFP::Compress");
     zfpsize = zfp_compress(zfp, field);
+    timer->stop_timer("ZFP::Compress");
     if (!zfpsize) {
       fprintf(stderr, "compression failed\n");
       status = 1;
     } else
     // fwrite(buffer, 1, zfpsize, stdout);
     {
+      timer->start_timer("IO::ZFP::Compression");
       fwrite(buffer, 1, zfpsize, compressedFile);
+      timer->stop_timer("IO::ZFP::Compression");
       resultSize = zfpsize;
     }
   }

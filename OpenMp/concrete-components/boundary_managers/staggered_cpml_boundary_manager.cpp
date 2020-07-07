@@ -162,10 +162,6 @@ void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *grid_box) {
 }
 
 void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
-  Timer *timer = Timer::getInstance();
-
-  // start the timer of the total apply boundary
-  timer->start_timer("ApplyBoundary::Total");
 
   // Read parameters into local variables to be shared.
   float *curr_base = grid->pressure_current;
@@ -205,8 +201,6 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
   }
 
   if (kernel_id == 0) {
-    // start the timer of the pressure
-    timer->start_timer("ApplyBoundary::pressure");
 
     // Apply cpml on pressure.
     int is_2d;
@@ -443,11 +437,7 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
       }
     }
 
-    // stop the timer of the pressure
-    timer->stop_timer("ApplyBoundary::pressure");
   } else if (kernel_id == 1) {
-    // start the timer of the velocity
-    timer->start_timer("ApplyBoundary::velocity");
 
     // Apply cpml on particle velocities.
     int is_2d;
@@ -664,11 +654,7 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
         }
       }
     }
-    // stop the timer of the velocity
-    timer->stop_timer("ApplyBoundary::velocity");
   }
-  // stop the timer of the total apply boundary
-  timer->stop_timer("ApplyBoundary::Total");
 }
 
 void StaggeredCPMLBoundaryManager::AdjustModelForBackward() {
