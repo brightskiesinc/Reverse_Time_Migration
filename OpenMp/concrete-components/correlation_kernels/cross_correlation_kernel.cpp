@@ -57,11 +57,11 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 
           int izEnd = fmin(bz + block_z, nzEnd);
           int iyEnd = fmin(by + block_y, nyEnd);
-          int ixEnd = fmin(bx + block_x, nxEnd);
+          int ixEnd = fmin(block_x, nxEnd - bx);
 
           for (int iy = by; iy < iyEnd; ++iy) {
             for (int iz = bz; iz < izEnd; ++iz) {
-              uint b_offset = iy * wnx * wnz + iz * wnx;
+              uint b_offset = iy * wnx * wnz + iz * wnx + bx;
               curr_1 = frame_1 + b_offset;
               curr_2 = frame_2 + b_offset;
               curr_o = output + b_offset;
@@ -70,7 +70,7 @@ void Correlation(float *out, GridBox *in_1, GridBox *in_2,
 
 #pragma vector aligned
 #pragma ivdep
-              for (int ix = bx; ix < ixEnd; ++ix) {
+              for (int ix = 0; ix < ixEnd; ++ix) {
                 float value;
                 value = curr_1[ix] * curr_2[ix];
                 source_i[ix] += curr_1[ix] * curr_1[ix];
@@ -187,7 +187,7 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
   shot_correlation = (float *)mem_allocate(
       sizeof(float),
       grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
-      "shot_correlation");
+      "shot_correlation", parameters->half_length);
   total_correlation = (float *)mem_allocate(
       sizeof(float),
       grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
@@ -199,11 +199,11 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
   source_illumination = (float *)mem_allocate(
       sizeof(float),
       grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
-      "source_illumination");
+      "source_illumination", parameters->half_length);
   receiver_illumination = (float *)mem_allocate(\
       sizeof(float),
       grid_box->window_size.window_nx * grid_box->window_size.window_nz * grid_box->window_size.window_ny,
-      "source_illumination");
+      "receiver_illumination", parameters->half_length);
   total_source_illumination = (float *)mem_allocate(
       sizeof(float),
       grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
@@ -213,7 +213,7 @@ void CrossCorrelationKernel::SetGridBox(GridBox *grid_box) {
   total_receiver_illumination = (float *)mem_allocate(
       sizeof(float),
       grid_box->grid_size.nx * grid_box->grid_size.nz * grid_box->grid_size.ny,
-      "stacked_reciever_illumination");
+      "stacked_receiver_illumination");
   memset(total_receiver_illumination, 0, num_bytes);
 }
 
