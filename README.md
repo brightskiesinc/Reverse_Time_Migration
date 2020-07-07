@@ -190,7 +190,7 @@ This guide assumes:
 ### OpenMP docker
 1. Change directory to the OpenMP docker file directory
     ```
-    cd Docker_containers//OpenMp_docker/
+    cd Docker_containers/OpenMp_docker/
     ```
 2. Build image from Docker file included in the current directory and give a tag for the image.
     ```
