@@ -164,18 +164,13 @@
 ---
 ## Installation
 1. Clone the basic project
-    * Using ssh
     ```
-    git clone git@gitlab.brightskiesinc.com:parallel-programming/reversetimemigration.git
-    ```
-    * Or using https
-    ```
-    git clone https://gitlab.brightskiesinc.com/parallel-programming/reversetimemigration.git
+    git clone https://github.com/brightskiesinc/Reverse_Time_Migration.git
     ```
 
 2. Change directory to the project base directory
     ```
-    cd reversetimemigration/
+    cd Reverse_Time_Migration/
     ```
 3. Download the seismic data (2004 BP Model, refer [here](https://wiki.seg.org/wiki/2004_BP_velocity_estimation_benchmark_model) for more information):
     * Download the full 2004 bp data : this will download around 8 GB of data.
@@ -195,7 +190,7 @@ This guide assumes:
 ### OpenMP docker
 1. Change directory to the OpenMP docker file directory
     ```
-    cd Docker_containers/Oneapi_docker/
+    cd Docker_containers//OpenMp_docker/
     ```
 2. Build image from Docker file included in the current directory and give a tag for the image.
     ```
