@@ -253,6 +253,7 @@ void BinaryTraceManager::ApplyTraces(uint time_step) {
 
     float *current = grid->pressure_current;
     float *d_traces = ptr_traces;
+    float *w_vel = grid->window_velocity;
     cgh.parallel_for<class trace_manager>(global_nd_range, [=](nd_item<3> it) {
       int iz = it.get_global_id(0);
       int iy = it.get_global_id(1);
@@ -260,7 +261,7 @@ void BinaryTraceManager::ApplyTraces(uint time_step) {
       int offset = ((iy * y_inc) + r_start_y) * wnz_wnx +
                    ((iz * z_inc) + r_start_z) * wnx +
                    ((ix * x_inc) + r_start_x);
-      current[offset] += d_traces[(trace_step)*trace_size + iy * trace_nx + ix] * dt * dt;
+      current[offset] += d_traces[(trace_step)*trace_size + iy * trace_nx + ix] * w_vel[offset];
     });
   });
 

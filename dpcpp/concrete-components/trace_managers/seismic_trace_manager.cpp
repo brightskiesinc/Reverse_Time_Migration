@@ -151,12 +151,13 @@ void SeismicTraceManager::ApplyTraces(uint time_step) {
 
         float *current = grid->pressure_current;
         float *d_traces = ptr_traces;
+        float *w_vel = grid->window_velocity;
         uint *x_pos = x_positions;
         uint *y_pos = y_positions;
         cgh.parallel_for<class trace_manager>(global_nd_range, [=](nd_item<1> it) {
             int i = it.get_global_id(0);
             int offset = y_pos[i] * wnz_wnx + std_offset + x_pos[i];
-            current[offset] += d_traces[(trace_step)*trace_size + i] * dt * dt;
+            current[offset] += d_traces[(trace_step)*trace_size + i] * w_vel[offset];
         });
     });
     AcousticDpcComputationParameters::device_queue->wait();

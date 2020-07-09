@@ -115,7 +115,7 @@ void SeismicTraceManager::ApplyTraces(uint time_step) {
   for (int i = 0; i < trace_size; i++) {
       int offset = y_positions[i] * wnz_wnx + std_offset + x_positions[i];
       grid->pressure_current[offset] +=
-              traces->traces[(trace_step)*trace_size + i] * dt * dt;
+              traces->traces[(trace_step)*trace_size + i] * grid->window_velocity[offset];
 
   }
 }

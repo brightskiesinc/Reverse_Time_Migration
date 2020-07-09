@@ -22,12 +22,13 @@ void RickerSourceInjector::ApplySource(uint time_step) {
                    (((time_step - 1) * dt) - 1 / freq) *
                    (((time_step - 1) * dt) - 1 / freq);
       float ricker = (2 * temp - 1) * exp(-temp);
-      ricker = ricker * dt * dt;
+      ricker = ricker;
       int location = y * nx * nz + z * nx + x;
       AcousticDpcComputationParameters::device_queue->submit([&](handler &cgh) {
         auto pressure = grid->pressure_current;
+        auto win_vel = grid->window_velocity;
         cgh.single_task<class source_injector>(
-            [=]() { pressure[location] += ricker; });
+            [=]() { pressure[location] += (ricker * win_vel[location]); });
       });
       AcousticDpcComputationParameters::device_queue->wait();
     }

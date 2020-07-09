@@ -244,7 +244,7 @@ void BinaryTraceManager::ApplyTraces(uint time_step) {
       for (int ix = r_start.x; ix < r_end.x; ix += x_inc) {
         int offset = iy * wnz_wnx + iz * wnx + ix;
         grid->pressure_current[offset] +=
-            traces->traces[(trace_step)*trace_size + index] * dt * dt;
+            traces->traces[(trace_step)*trace_size + index] * grid->window_velocity[offset];
         index++;
       }
     }
