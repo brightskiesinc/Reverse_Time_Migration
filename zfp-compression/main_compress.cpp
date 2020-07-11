@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
   size_t result_size;
   float tolerance = 0.01;
   int wrong_counter = 0;
-  zfp::compression(pressure, nx, ny, nz, 1, tolerance, 2, "bp", false);
-  zfp::decompression(pressure_2, nx, ny, nz, 1, tolerance, 2, "bp", false);
+  do_compression_save(pressure, nx, ny, nz, 1, tolerance, 2, "bp", false);
+  do_decompression_load(pressure_2, nx, ny, nz, 1, tolerance, 2, "bp", false);
   for (int i = 0; i < ny; i++) {
     for (int j = nz / 2; j < nz; j++) {
       for (int k = 0; k < nx; k++) {

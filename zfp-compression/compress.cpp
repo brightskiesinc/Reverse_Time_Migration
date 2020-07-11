@@ -1,8 +1,10 @@
 #include "compress.h"
-#include <fstream>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <zfp.h>
 #include <skeleton/helpers/timer/timer.hpp>
-
-namespace zfp {
 
 size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
                             double tolerance, FILE *file,
@@ -244,7 +246,6 @@ size_t applyZFPOperation(float *array, int nx, int ny, int nz, double tolerance,
     field = zfp_field_2d(array, type, nx, nz);
   else // handle 1d
     field = zfp_field_1d(array, type, nz);
-
   /* allocate meta data for a compressed stream */
   zfp = zfp_stream_open(NULL);
 
@@ -264,6 +265,7 @@ size_t applyZFPOperation(float *array, int nx, int ny, int nz, double tolerance,
   bufsize = zfp_stream_maximum_size(zfp, field);
   buffer = malloc(bufsize);
 
+  
   /* associate bit stream with allocated buffer */
   stream = stream_open(buffer, bufsize);
   zfp_stream_set_bit_stream(zfp, stream);
@@ -321,7 +323,7 @@ void no_compression_load(FILE *file, float *data, const size_t size) {
 
 // This is the main-entry point for all compression algorithms
 // Currently using a naive switch based differentiation of algo used
-void compression(float *array, int nx, int ny, int nz, int nt, double tolerance,
+void do_compression_save(float *array, int nx, int ny, int nz, int nt, double tolerance,
                  unsigned int codecType, const char *filename,
                  bool zfp_is_relative) {
   FILE *compressed_file = fopen(filename, "wb");
@@ -332,12 +334,12 @@ void compression(float *array, int nx, int ny, int nz, int nt, double tolerance,
   int pressure_size = nx * ny * nz;
   float *off_arr;
   for (int i = 0; i < nt; i++) {
-#ifdef ZFP_COMPRESSION
       off_arr = &array[i * pressure_size];
+#ifdef ZFP_COMPRESSION 
       switch (codecType) {
           case 1:
               applyZFPOperation(off_arr, nx, ny, nz, tolerance, compressed_file, 0, zfp_is_relative);
-              break;
+	      break;
           case 2:
               compressZFP_Parallel(off_arr, nx, ny, nz, tolerance, compressed_file, zfp_is_relative);
               break;
@@ -355,7 +357,7 @@ void compression(float *array, int nx, int ny, int nz, int nt, double tolerance,
 
 // This is the main-entry point for all decompression algorithms
 // Currently using a naive switch based differentiation of algo used
-void decompression(float *array, int nx, int ny, int nz, int nt, double tolerance,
+void do_decompression_load(float *array, int nx, int ny, int nz, int nt, double tolerance,
                    unsigned int codecType, const char *filename,
                    bool zfp_is_relative) {
   FILE *compressed_file = fopen(filename, "rb");
@@ -366,8 +368,8 @@ void decompression(float *array, int nx, int ny, int nz, int nt, double toleranc
   int pressure_size = nx * ny * nz;
   float *off_arr;
   for (int i = 0; i < nt; i++) {
-#ifdef ZFP_COMPRESSION
       off_arr = &array[i * pressure_size];
+#ifdef ZFP_COMPRESSION 
       switch (codecType) {
           case 1:
               applyZFPOperation(off_arr, nx, ny, nz, tolerance, compressed_file, 1, zfp_is_relative);
@@ -385,4 +387,3 @@ void decompression(float *array, int nx, int ny, int nz, int nt, double toleranc
   }
   fclose(compressed_file);
 }
-} // namespace zfp

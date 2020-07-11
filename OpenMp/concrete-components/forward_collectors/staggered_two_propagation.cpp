@@ -39,7 +39,7 @@ void StaggeredTwoPropagation::SaveForward() {
         Timer *timer = Timer::getInstance();
         timer->start_timer("ForwardCollector::Compression");
         string s = this->write_path + "/temp_" + to_string(time_counter / max_nt);
-        zfp::compression(forward_pressure, main_grid->window_size.window_nx,
+        do_compression_save(forward_pressure, main_grid->window_size.window_nx,
                          main_grid->window_size.window_ny,
                          main_grid->window_size.window_nz,
                          max_nt, (double)this->zfp_tolerance, this->zfp_parallel,
@@ -71,7 +71,7 @@ void StaggeredTwoPropagation::FetchForward(void) {
         Timer *timer = Timer::getInstance();
         timer->start_timer("ForwardCollector::Decompression");
         string s = this->write_path + "/temp_" + to_string(time_counter / max_nt);
-        zfp::decompression(forward_pressure, main_grid->window_size.window_nx,
+        do_decompression_load(forward_pressure, main_grid->window_size.window_nx,
                 main_grid->window_size.window_ny,
                 main_grid->window_size.window_nz,
                 max_nt, (double)this->zfp_tolerance, this->zfp_parallel,
