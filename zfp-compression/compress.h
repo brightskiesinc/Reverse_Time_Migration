@@ -14,7 +14,6 @@
 
 #define ZFP_MAX_PAR_BLOCKS 512
 #define MINBLOCKSIZE 4
-#define MINBLOCKSIZE1D (1024 * 1024)
 
 
 size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
@@ -24,11 +23,10 @@ size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
 size_t decompressZFP_Parallel(float *array, int nx, int ny, int nz,
                               double tolerance, FILE *file, int decompress,
                               bool zfp_is_relative);
-size_t applyZFPOperation(float *array, int nx, int ny, int nz, double tolerance,
-                         FILE *file, int decompress, bool zfp_is_relative);
-void no_compression_save(FILE *file, const float *data,
-                         const size_t size);
-void no_compression_load(FILE *file, float *data, const size_t size);
+void applyZFPOperation(float *array, int nx, int ny, int nz, int nt,
+                         FILE *file, int decompress, bool zfp_is_relative, double tolerance);
+void no_compression_save(FILE *file, const float *data, int nx, int ny, int nz, int nt);
+void no_compression_load(FILE *file, float *data, int nx, int ny, int nz, int nt);
 
 void do_compression_save(float *array, int nx, int ny, int nz, int nt, double tolerance,
                  unsigned int codecType, const char *filename,
