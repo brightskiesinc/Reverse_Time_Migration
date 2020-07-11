@@ -61,4 +61,4 @@ add_library(
 target_link_libraries(FILE-COMPRESSION ${COMPRESS_LIBS})
 
 add_executable(test_compress main_compress.cpp)
-target_link_libraries(test_compress FILE-COMPRESSION)
+target_link_libraries(test_compress FILE-COMPRESSION RTM-Helpers)
