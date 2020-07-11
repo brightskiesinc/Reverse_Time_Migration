@@ -331,8 +331,8 @@ void compression(float *array, int nx, int ny, int nz, int nt, double tolerance,
   }
   int pressure_size = nx * ny * nz;
   float *off_arr;
-#ifdef ZFP_COMPRESSION
   for (int i = 0; i < nt; i++) {
+#ifdef ZFP_COMPRESSION
       off_arr = &array[i * pressure_size];
       switch (codecType) {
           case 1:
@@ -346,10 +346,10 @@ void compression(float *array, int nx, int ny, int nz, int nt, double tolerance,
               applyZFPOperation(off_arr, nx, ny, nz, tolerance, compressed_file, 0, zfp_is_relative);
               break;
       }
-  }
 #else
-  no_compression_save(compressed_file, array, nx * nz * ny * nt);
+      no_compression_save(compressed_file, off_arr, pressure_size);
 #endif
+  }
   fclose(compressed_file);
 }
 
@@ -365,8 +365,8 @@ void decompression(float *array, int nx, int ny, int nz, int nt, double toleranc
   }
   int pressure_size = nx * ny * nz;
   float *off_arr;
-#ifdef ZFP_COMPRESSION
   for (int i = 0; i < nt; i++) {
+#ifdef ZFP_COMPRESSION
       off_arr = &array[i * pressure_size];
       switch (codecType) {
           case 1:
@@ -379,10 +379,10 @@ void decompression(float *array, int nx, int ny, int nz, int nt, double toleranc
               applyZFPOperation(off_arr, nx, ny, nz, tolerance, compressed_file, 1, zfp_is_relative);
               break;
       }
-  }
 #else
-  no_compression_load(compressed_file, array, nx * ny * nz * nt);
+      no_compression_load(compressed_file, off_arr, pressure_size);
 #endif
+  }
   fclose(compressed_file);
 }
 } // namespace zfp
