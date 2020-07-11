@@ -16,13 +16,11 @@
 #define MINBLOCKSIZE 4
 
 
-size_t compressZFP_Parallel(float *array, int nx, int ny, int nz,
-                            double tolerance, FILE *file, int decompress,
-                            bool zfp_is_relative);
+void compressZFP_Parallel(float *array, int nx, int ny, int nz, int nt,
+                            double tolerance, FILE *file, bool zfp_is_relative);
 
-size_t decompressZFP_Parallel(float *array, int nx, int ny, int nz,
-                              double tolerance, FILE *file, int decompress,
-                              bool zfp_is_relative);
+void decompressZFP_Parallel(float *array, int nx, int ny, int nz, int nt,
+                              double tolerance, FILE *file, bool zfp_is_relative);
 void applyZFPOperation(float *array, int nx, int ny, int nz, int nt,
                          FILE *file, int decompress, bool zfp_is_relative, double tolerance);
 void no_compression_save(FILE *file, const float *data, int nx, int ny, int nz, int nt);
