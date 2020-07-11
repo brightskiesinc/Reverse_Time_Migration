@@ -40,7 +40,7 @@ void Computation(AcousticSecondGrid *grid,
   int nzEnd = wnz - half_length;
   int wnxnz = wnx * wnz;
   int nxnz = nx * nz;
-  int size = (nx - 2 * half_length) * (nz - 2 * half_length);
+  int size = (wnx - 2 * half_length) * (wnz - 2 * half_length);
 
   // General note: floating point operations for forward is the same as backward
   // (calculated below are for forward). number of floating point operations for
@@ -48,10 +48,8 @@ void Computation(AcousticSecondGrid *grid,
   // half_length 5 floating point operations outside the half_length loop Total
   // = 6*K+5 =6*K+5
   int flops_per_second = 6 * half_length + 5;
-  // Move velocity to match the window we are operating on.
-  vel_base = vel_base + (grid->window_size.window_start.y * nxnz) +
-             (grid->window_size.window_start.z * nx) +
-             grid->window_size.window_start.x;
+  //operate on the window velocity(numa consistency ensured).
+  vel_base = grid->window_velocity;
   int y_start = 0;
   if (!is_2D) {
     dy = grid->cell_dimensions.dy;
@@ -115,7 +113,7 @@ void Computation(AcousticSecondGrid *grid,
               // start point of the processing.
               int offset = iy * wnxnz + iz * wnx + bx;
               // Velocity moves with the full nx and nz not the windows ones.
-              vel = vel_base + iy * nxnz + iz * nx + bx;
+              vel = vel_base + offset;
               prev = prev_base + offset;
               curr = curr_base + offset;
               next = next_base + offset;
@@ -248,8 +246,6 @@ Computation<true, O_16>(AcousticSecondGrid *grid,
                         AcousticOmpComputationParameters *parameters);
 
 void SecondOrderComputationKernel::Step() {
-  Timer *timer = Timer::getInstance();
-  timer->start_timer("ComputationKernel::Step");
   // Take a step in time.
   if ((grid->grid_size.ny) == 1) {
     switch (parameters->half_length) {
@@ -303,7 +299,7 @@ void SecondOrderComputationKernel::Step() {
     grid->pressure_previous = grid->pressure_current;
     grid->pressure_current = temp;
   }
-  timer->stop_timer("ComputationKernel::Step");
+  Timer *timer = Timer::getInstance();
   timer->start_timer("BoundaryManager::ApplyBoundary");
   if (this->boundary_manager != nullptr) {
     this->boundary_manager->ApplyBoundary();

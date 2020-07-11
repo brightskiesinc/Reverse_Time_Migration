@@ -176,9 +176,83 @@ void histogram_equalize(float* input, float* output, uint nz, uint nx)
 
 }
 
+// AGC inspired by the work done on the old RTM code by Karim/Essam/Bassiony.
+void apply_agc(float *original, float *agc_trace, int nx, int ny, int nz, int window) {
+    // do signal gain using a window to the left of each sample, and to the right of each sample.
+    // (left,right) here refer to each trace.
+    window = std::min(window, nz - 1);
+    // For each trace.
+    for (unsigned  int iy = 0; iy < ny; iy++) {
+        for (unsigned int ix = 0; ix < nx; ix++) {
+            int trace_offset = iy * nx * nz + ix;
+            // Actual window size.
+            int window_size = (window + 1);
+            float sum = 0.0f;
+            // Initial start.
+            for (int iz = 0; iz <= window; iz++) {
+                float value = original[trace_offset + iz * nx];
+                sum += (value * value);
+            }
+            float rms = sum / (window_size);
+            if (rms > 0.0f) {
+                agc_trace[trace_offset] = original[trace_offset] / sqrtf(rms);
+            } else {
+                agc_trace[trace_offset] = 0.0f;
+            }
+            // Window not full at left side.
+            for (int iz = 1; iz <= window; iz++) {
+                if (iz + window < nz) {
+                    int new_trace_offset = trace_offset + ((iz + window) * nx);
+                    float value = original[new_trace_offset];
+                    window_size++;
+                    sum += (value * value);
+                    rms = sum / (window_size);
+                }
+                if (rms > 0.0f) {
+                    agc_trace[trace_offset + iz * nx] = original[trace_offset + iz * nx] / sqrtf(rms);
+                } else {
+                    agc_trace[trace_offset + iz * nx] = 0.0f;
+                }
+            }
+            // Window on both sides.
+            for (int iz = window + 1; iz <= nz - window; iz++) {
+                float value = original[trace_offset + (iz + window) * nx];
+                sum += (value * value);
+                value = original[trace_offset + (iz - window - 1 ) * nx];
+                sum -= (value * value);
+                rms = sum/window_size;
+                if (rms > 0.0f) {
+                    agc_trace[trace_offset + iz * nx] = original[trace_offset + iz * nx] / sqrtf(rms);
+                } else {
+                    agc_trace[trace_offset + iz * nx] = 0.0f;
+                }
+            }
+            if (nz > window + 1) {
+                // Window not full at right side.
+                for (int iz = nz - window + 1; iz < nz; iz++) {
+                    int before_iz = iz - window - 1;
+                    if (before_iz < 0) {
+                        float value = original[trace_offset + (iz - window - 1) * nx];
+                        sum -= (value * value);
+                        window_size--;
+                        rms = sum / window_size;
+                    }
+                    if (rms > 0.0f) {
+                        agc_trace[trace_offset + iz * nx] = original[trace_offset + iz * nx] / sqrtf(rms);
+                    } else {
+                        agc_trace[trace_offset + iz * nx] = 0.0f;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void filter_stacked_correlation(float *input_frame, float *output_frame,
         unsigned int nx, unsigned int nz, unsigned int ny,
         float dx, float dz, float dy) {
-
-	convolution(input_frame, output_frame, laplace_9x9, 9, nz, nx);
+    float *temp = new float[nx * nz * ny];
+	convolution(input_frame, temp, laplace_9x9, 9, nz, nx);
+	apply_agc(temp, output_frame, nx, ny, nz, 500);
+	delete[] temp;
 }

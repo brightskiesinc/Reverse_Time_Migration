@@ -263,7 +263,6 @@ void iso_2dfd_iteration_global_16(
 
 /******************************************************************************************************************/
 
-int SecondOrderComputationKernel::instance = 0;
 
 SecondOrderComputationKernel::~SecondOrderComputationKernel() {
   cl::sycl::free((void *)d_coeff_x, in_queue->get_context());
@@ -278,9 +277,6 @@ SecondOrderComputationKernel::SecondOrderComputationKernel() {
   this->boundary_manager = nullptr;
   this->grid = nullptr;
   this->parameters = nullptr;
-  // this->time_out = new std::ofstream ("time_result_" + to_string(instance) +
-  // ".txt");
-  instance++;
 }
 
 template <bool is_2D, HALF_LENGTH half_length>
@@ -288,8 +284,8 @@ void SecondOrderComputationKernel::Computation_syclDevice(
     AcousticSecondGrid *grid, AcousticDpcComputationParameters *parameters) {
   // Read parameters into local variables to be shared.
 
-  size_t nx = grid->grid_size.nx;
-  size_t nz = grid->grid_size.nz;
+  size_t nx = grid->window_size.window_nx;
+  size_t nz = grid->window_size.window_nz;
 
   // Pre-compute the coefficients for each direction.
   int hl = half_length;
@@ -331,7 +327,7 @@ void SecondOrderComputationKernel::Computation_syclDevice(
         (vector_float *)(grid->pressure_current + hl - 8 + hl * nx);
     auto prev = (vector_float *)(grid->pressure_previous + hl + hl * nx);
     auto next = (vector_float *)(grid->pressure_next + hl + hl * nx);
-    auto vel = (vector_float *)(grid->velocity + hl + hl * nx);
+    auto vel = (vector_float *)(grid->window_velocity + hl + hl * nx);
     int v_nx = nx / VECTOR_LENGTH;
     float *c_x = d_coeff_x;
     float *c_z = d_coeff_z;
@@ -415,7 +411,7 @@ void SecondOrderComputationKernel::Computation_syclDevice(
       const float *current = grid->pressure_current;
       const float *prev = grid->pressure_previous;
       float *next = grid->pressure_next;
-      const float *vel = grid->velocity;
+      const float *vel = grid->window_velocity;
       const float *c_x = d_coeff_x;
       const float *c_z = d_coeff_z;
       const float c_xyz = coeff_xyz;
@@ -492,7 +488,7 @@ void SecondOrderComputationKernel::Computation_syclDevice(
       const float *current = grid->pressure_current;
       const float *prev = grid->pressure_previous;
       float *next = grid->pressure_next;
-      const float *vel = grid->velocity;
+      const float *vel = grid->window_velocity;
       const float *c_x = d_coeff_x;
       const float *c_z = d_coeff_z;
       const float c_xyz = coeff_xyz;
@@ -571,7 +567,7 @@ void SecondOrderComputationKernel::Computation_syclDevice(
       const float *current = grid->pressure_current;
       const float *prev = grid->pressure_previous;
       float *next = grid->pressure_next;
-      const float *vel = grid->velocity;
+      const float *vel = grid->window_velocity;
       const float *c_x = d_coeff_x;
       const float *c_z = d_coeff_z;
       const float c_xyz = coeff_xyz;
@@ -663,12 +659,7 @@ void SecondOrderComputationKernel::Step() {
 
   // Take a step in time.
   Timer *timer = Timer::getInstance();
-  /*timeval start_time;
-  gettimeofday(&start_time, NULL);
-
-  double start = start_time.tv_usec + start_time.tv_sec * 1000000;
-  start /= 1000000;*/
-  timer->_start_timer_for_kernel("SecondOrderComputationKernel::Step", size, 4,
+  timer->_start_timer_for_kernel("ComputationKernel::kernel", size, 4,
                                  true, flops_per_second);
   if ((grid->grid_size.ny) == 1) {
     switch (parameters->half_length) {
@@ -725,17 +716,12 @@ void SecondOrderComputationKernel::Step() {
     grid->pressure_previous = grid->pressure_current;
     grid->pressure_current = temp;
   }
-  timer->stop_timer("SecondOrderComputationKernel::Step");
-  /*timeval end_time;
-  gettimeofday(&end_time, NULL);
-
-  double end = end_time.tv_usec + end_time.tv_sec * 1000000;
-  end /= 1000000;
-  double duration = end - start;
-  *time_out << duration << std::endl;*/
+  timer->stop_timer("ComputationKernel::kernel");
+  timer->start_timer("BoundaryManager::ApplyBoundary");
   if (this->boundary_manager != nullptr) {
     this->boundary_manager->ApplyBoundary(0);
   }
+  timer->stop_timer("BoundaryManager::ApplyBoundary");
 }
 
 void SecondOrderComputationKernel::FirstTouch(float *ptr, uint nx, uint nz,

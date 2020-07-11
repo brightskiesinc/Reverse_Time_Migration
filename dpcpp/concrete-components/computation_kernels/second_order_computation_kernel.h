@@ -16,7 +16,6 @@ using namespace std;
 class SecondOrderComputationKernel : public ComputationKernel {
 private:
   AcousticSecondGrid *grid;
-  static int instance;
   AcousticDpcComputationParameters *parameters;
   float *d_coeff_x;
   float *d_coeff_y;
@@ -25,7 +24,6 @@ private:
   int *d_vertical;
   float coeff_xyz;
   sycl::queue *in_queue;
-  std::ofstream *time_out;
 
 public:
   SecondOrderComputationKernel();

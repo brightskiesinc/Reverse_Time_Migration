@@ -48,6 +48,10 @@ public:
    * The computation kernel to be used for first touch.
    */
   virtual void PreprocessModel(ComputationKernel *kernel) = 0;
+  /*!
+   * Setup the window properties if needed by copying the needed window from the full model.
+   */
+  virtual void SetupWindow() = 0;
 };
 
 #endif // RTM_FRAMEWORK_MODEL_HANDLER_H

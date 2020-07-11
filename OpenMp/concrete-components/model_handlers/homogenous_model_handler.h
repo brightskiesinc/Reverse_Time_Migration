@@ -34,6 +34,8 @@ public:
 
   HomogenousModelHandler(bool is_staggered);
 
+  void SetupWindow() override;
+
 private:
   ComputationParameters *parameters;
   GridBox *grid_box;

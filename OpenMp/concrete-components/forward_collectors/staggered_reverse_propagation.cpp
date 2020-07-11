@@ -84,6 +84,8 @@ void StaggeredReversePropagation::ResetGrid(bool forward_run) {
            sizeof(main_grid->cell_dimensions));
     internal_grid->velocity = main_grid->velocity;
     internal_grid->density = main_grid->density;
+    internal_grid->window_velocity = main_grid->window_velocity;
+    internal_grid->window_density = main_grid->window_density;
     // Swap previous and current to reverse time.
     temp = internal_grid->pressure_current;
     internal_grid->pressure_next = internal_grid->pressure_current;

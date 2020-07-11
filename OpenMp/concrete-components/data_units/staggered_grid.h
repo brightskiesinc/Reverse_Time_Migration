@@ -14,5 +14,6 @@ public:
   float *particle_velocity_z_current;
   float *pressure_next;
   float *density;
+  float *window_density;
 };
 #endif // ACOUSTIC2ND_RTM_STAGGERED_GRID_H

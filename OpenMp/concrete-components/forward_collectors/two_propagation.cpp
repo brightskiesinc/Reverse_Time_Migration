@@ -2,6 +2,8 @@
 #include <compress.h>
 #include <iostream>
 #include <sys/stat.h>
+#include <skeleton/helpers/timer/timer.hpp>
+
 
 TwoPropagation::TwoPropagation(bool compression, string write_path,
                                float zfp_tolerance, int zfp_parallel,
@@ -15,7 +17,6 @@ TwoPropagation::TwoPropagation(bool compression, string write_path,
   mkdir(write_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   this->write_path = write_path + "/two_prop";
   mkdir(this->write_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  zfp::setPath(this->write_path);
   this->compression = compression;
   this->zfp_tolerance = zfp_tolerance;
   this->zfp_parallel = zfp_parallel + 1;
@@ -28,21 +29,22 @@ void TwoPropagation::FetchForward(void) {
   } else {
     if ((time_counter + 1) % max_nt == 0) {
       if (this->compression) {
-        for (int it = 0; it < max_nt; it++) {
-          size_t resultSize;
-          zfp::decompression(&forward_pressure[it * pressure_size],
-                             main_grid->window_size.window_nx,
-                             main_grid->window_size.window_ny,
-                             main_grid->window_size.window_nz,
-                             (double)this->zfp_tolerance, this->zfp_parallel,
-                             (unsigned int)(time_counter + 1 - max_nt + it),
-                             &resultSize, "forward_pressure",
-                             this->zfp_is_relative);
-        }
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("ForwardCollector::Decompression");
+        string s = this->write_path + "/temp_" + to_string(time_counter / max_nt);
+        do_decompression_load(forward_pressure, main_grid->window_size.window_nx,
+                main_grid->window_size.window_ny,
+                main_grid->window_size.window_nz,
+                max_nt, (double)this->zfp_tolerance, this->zfp_parallel,
+                s.c_str(), this->zfp_is_relative);
+        timer->stop_timer("ForwardCollector::Decompression");
       } else {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("IO::ReadForward");
         string s =
             this->write_path + "/temp_" + to_string(time_counter / max_nt);
         bin_file_load(s.c_str(), forward_pressure, max_nt * pressure_size);
+        timer->stop_timer("IO::ReadForward");
       }
     }
     internal_grid->pressure_current =
@@ -96,6 +98,7 @@ void TwoPropagation::ResetGrid(bool forward_run) {
     memcpy(&internal_grid->cell_dimensions, &main_grid->cell_dimensions,
            sizeof(main_grid->cell_dimensions));
     internal_grid->velocity = main_grid->velocity;
+    internal_grid->window_velocity = main_grid->window_velocity;
   } else {
     memset(temp_prev, 0.0f, pressure_size * sizeof(float));
     memset(temp_curr, 0.0f, pressure_size * sizeof(float));
@@ -119,21 +122,22 @@ void TwoPropagation::SaveForward() {
     time_counter++;
     if ((time_counter + 1) % max_nt == 0) {
       if (this->compression) {
-        for (int it = 0; it < max_nt; it++) {
-          size_t resultSize;
-          zfp::compression(forward_pressure + it * pressure_size,
-                           main_grid->window_size.window_nx,
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("ForwardCollector::Compression");
+        string s = this->write_path + "/temp_" + to_string(time_counter / max_nt);
+	do_compression_save(forward_pressure, main_grid->window_size.window_nx,
                            main_grid->window_size.window_ny,
                            main_grid->window_size.window_nz,
-                           (double)this->zfp_tolerance, this->zfp_parallel,
-                           (unsigned int)(time_counter + 1 - max_nt + it),
-                           &resultSize, "forward_pressure",
-                           this->zfp_is_relative);
-        }
+                           max_nt, (double)this->zfp_tolerance, this->zfp_parallel,
+                           s.c_str(), this->zfp_is_relative);
+        timer->stop_timer("ForwardCollector::Compression");
       } else {
+        Timer *timer = Timer::getInstance();
+        timer->start_timer("IO::WriteForward");
         string s =
             this->write_path + "/temp_" + to_string(time_counter / max_nt);
         bin_file_save(s.c_str(), forward_pressure, max_nt * pressure_size);
+        timer->stop_timer("IO::WriteForward");
       }
     }
     main_grid->pressure_previous =

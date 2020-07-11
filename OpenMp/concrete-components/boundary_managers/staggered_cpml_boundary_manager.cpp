@@ -59,14 +59,14 @@ void StaggeredCPMLBoundaryManager::SetComputationParameters(
 
 void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *grid_box) {
   this->extensions[0]->SetGridBox(grid_box);
-  this->extensions[0]->SetProperty(grid_box->velocity);
+  this->extensions[0]->SetProperty(grid_box->velocity, grid_box->window_velocity);
   StaggeredGrid *grid = (StaggeredGrid *)grid_box;
   this->extensions[1]->SetGridBox(grid);
-  this->extensions[1]->SetProperty(grid->density);
+  this->extensions[1]->SetProperty(grid->density, grid->window_density);
   this->grid = grid;
-  int nx = this->grid->grid_size.nx;
-  int nz = this->grid->grid_size.nz;
-  int ny = this->grid->grid_size.ny;
+  int nx = this->grid->window_size.window_nx;
+  int nz = this->grid->window_size.window_nz;
+  int ny = this->grid->window_size.window_ny;
   int b_l = parameters->boundary_length;
   HALF_LENGTH h_l = parameters->half_length;
 
@@ -162,21 +162,17 @@ void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *grid_box) {
 }
 
 void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
-  Timer *timer = Timer::getInstance();
-
-  // start the timer of the total apply boundary
-  timer->start_timer("ApplyBoundary::Total");
 
   // Read parameters into local variables to be shared.
   float *curr_base = grid->pressure_current;
-  float *vel_base = grid->velocity;
-  float *density_base = grid->density;
+  float *vel_base = grid->window_velocity;
+  float *density_base = grid->window_density;
   float dx = grid->cell_dimensions.dx;
   float dy;
   float dz = grid->cell_dimensions.dz;
-  int nx = grid->grid_size.nx;
-  int nz = grid->grid_size.nz;
-  int ny = grid->grid_size.ny;
+  int nx = grid->window_size.window_nx;
+  int nz = grid->window_size.window_nz;
+  int ny = grid->window_size.window_ny;
   float dt = grid->dt;
   float *coeff = parameters->first_derivative_staggered_fd_coeff;
   HALF_LENGTH half_length = parameters->half_length;
@@ -184,13 +180,6 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
   int b_l = parameters->boundary_length;
   ofstream outfile;
 
-  // Move velocity to match the window we are operating on.
-  vel_base = vel_base + (grid->window_size.window_start.y * nxnz) +
-             (grid->window_size.window_start.z * nx) +
-             grid->window_size.window_start.x;
-  density_base = density_base + (grid->window_size.window_start.y * nxnz) +
-                 (grid->window_size.window_start.z * nx) +
-                 grid->window_size.window_start.x;
   float k_x = 1 / dx;
   float k_z = 1 / dz;
   float k_y = 1;
@@ -212,8 +201,6 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
   }
 
   if (kernel_id == 0) {
-    // start the timer of the pressure
-    timer->start_timer("ApplyBoundary::pressure");
 
     // Apply cpml on pressure.
     int is_2d;
@@ -450,11 +437,7 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
       }
     }
 
-    // stop the timer of the pressure
-    timer->stop_timer("ApplyBoundary::pressure");
   } else if (kernel_id == 1) {
-    // start the timer of the velocity
-    timer->start_timer("ApplyBoundary::velocity");
 
     // Apply cpml on particle velocities.
     int is_2d;
@@ -671,11 +654,7 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
         }
       }
     }
-    // stop the timer of the velocity
-    timer->stop_timer("ApplyBoundary::velocity");
   }
-  // stop the timer of the total apply boundary
-  timer->stop_timer("ApplyBoundary::Total");
 }
 
 void StaggeredCPMLBoundaryManager::AdjustModelForBackward() {
@@ -706,9 +685,9 @@ void StaggeredCPMLBoundaryManager::fillCpmlCoeff(
 }
 // this function used to reset the auxiliary variables to zero
 void StaggeredCPMLBoundaryManager::zero_auxiliary_variables() {
-  int nx = grid->grid_size.nx;
-  int nz = grid->grid_size.nz;
-  int ny = grid->grid_size.ny;
+  int nx = grid->window_size.window_nx;
+  int nz = grid->window_size.window_nz;
+  int ny = grid->window_size.window_ny;
   HALF_LENGTH half_length = parameters->half_length;
   int b_l = parameters->boundary_length;
   int index_2d = 0;

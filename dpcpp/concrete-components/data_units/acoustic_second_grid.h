@@ -12,6 +12,7 @@ public:
   float *pressure_previous;
   float *pressure_next;
   GridSize original_dimensions;
+  GridSize full_original_dimensions;
   uint compute_nx;
 };
 

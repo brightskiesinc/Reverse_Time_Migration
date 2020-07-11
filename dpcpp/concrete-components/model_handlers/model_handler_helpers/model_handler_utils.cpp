@@ -12,12 +12,15 @@ void add_helper_padding(GridBox *box, ComputationParameters *param) {
   auto parameters = (AcousticDpcComputationParameters *)param;
   uint block_x = parameters->block_x;
   uint block_z = parameters->block_z;
-  uint nx = grid->grid_size.nx;
-  uint nz = grid->grid_size.nz;
+  uint nx = grid->window_size.window_nx;
+  uint nz = grid->window_size.window_nz;
   uint inx = nx - 2 * parameters->half_length;
   uint inz = nz - 2 * parameters->half_length;
-  // Store old values of nx,nz,ny to use in boundaries.
-  memcpy(&grid->original_dimensions, &grid->grid_size, sizeof(grid->grid_size));
+  // Store old values of nx,nz,ny to use in boundaries/etc....
+  memcpy(&grid->full_original_dimensions, &grid->grid_size, sizeof(grid->grid_size));
+  grid->original_dimensions.nx = grid->window_size.window_nx;
+  grid->original_dimensions.nz = grid->window_size.window_nz;
+  grid->original_dimensions.ny = grid->window_size.window_ny;
   if (block_x > inx) {
     block_x = inx;
     std::cout << "Block Factor x > domain size... Reduced to domain size"
@@ -71,19 +74,31 @@ void add_helper_padding(GridBox *box, ComputationParameters *param) {
     nx = make_divisible(nx, 16);
   }
   // Set grid with the padded values.
-  grid->grid_size.nx = nx;
-  grid->grid_size.nz = nz;
+  grid->window_size.window_nx = nx;
+  grid->window_size.window_nz = nz;
   parameters->block_x = block_x;
   parameters->block_z = block_z;
   std::cout << "Size after padding : " << std::endl;
   std::cout << "\tBlock in x : " << parameters->block_x << std::endl;
   std::cout << "\tBlock in z : " << parameters->block_z << std::endl;
   std::cout << "\tCorrelation block : " << parameters->cor_block << std::endl;
-  std::cout << "\tOriginal nx : " << grid->original_dimensions.nx << std::endl;
-  std::cout << "\tOriginal nz : " << grid->original_dimensions.nz << std::endl;
-  std::cout << "\tPadded nx : " << grid->grid_size.nx << std::endl;
-  std::cout << "\tPadded nz : " << grid->grid_size.nz << std::endl;
-  std::cout << "\tComputation nx : " << grid->compute_nx << std::endl;
-  std::cout << "\tComputation nz : "
-            << grid->grid_size.nz - 2 * parameters->half_length << std::endl;
+  if (parameters->use_window) {
+      std::cout << "\tOriginal window nx : " << grid->original_dimensions.nx << std::endl;
+      std::cout << "\tOriginal window nz : " << grid->original_dimensions.nz << std::endl;
+      std::cout << "\tPadded window nx : " << grid->window_size.window_nx << std::endl;
+      std::cout << "\tPadded window nz : " << grid->window_size.window_nz << std::endl;
+      std::cout << "\tComputation window nx : " << grid->compute_nx << std::endl;
+      std::cout << "\tComputation window nz : "
+                << grid->window_size.window_nz - 2 * parameters->half_length << std::endl;
+  } else {
+      grid->grid_size.nx = grid->window_size.window_nx;
+      grid->grid_size.nz = grid->window_size.window_nz;
+      std::cout << "\tOriginal nx : " << grid->full_original_dimensions.nx << std::endl;
+      std::cout << "\tOriginal nz : " << grid->full_original_dimensions.nz << std::endl;
+      std::cout << "\tPadded nx : " << grid->grid_size.nx << std::endl;
+      std::cout << "\tPadded nz : " << grid->grid_size.nz << std::endl;
+      std::cout << "\tComputation nx : " << grid->compute_nx << std::endl;
+      std::cout << "\tComputation nz : "
+                << grid->grid_size.nz - 2 * parameters->half_length << std::endl;
+  }
 }

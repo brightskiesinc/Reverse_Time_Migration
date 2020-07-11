@@ -48,11 +48,11 @@ void NoBoundaryManager::SetComputationParameters(
 
 void NoBoundaryManager::SetGridBox(GridBox *grid_box) {
   this->extensions[0]->SetGridBox(grid_box);
-  this->extensions[0]->SetProperty(grid_box->velocity);
+  this->extensions[0]->SetProperty(grid_box->velocity, grid_box->window_velocity);
   if (this->is_staggered) {
     StaggeredGrid *grid = (StaggeredGrid *)grid_box;
     this->extensions[1]->SetGridBox(grid);
-    this->extensions[1]->SetProperty(grid->density);
+    this->extensions[1]->SetProperty(grid->density, grid->window_density);
   }
 }
 

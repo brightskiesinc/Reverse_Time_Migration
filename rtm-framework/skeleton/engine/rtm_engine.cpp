@@ -56,6 +56,8 @@ MigrationData *RTMEngine::Migrate(vector<uint> shot_ids) {
   cout << "Gridbox->dt : " << grid_box->dt << endl;
   cout << "Gridbox->nx : " << grid_box->grid_size.nx << endl;
   cout << "Gridbox->nz : " << grid_box->grid_size.nz << endl;
+  cout << "Gridbox->wnx : " << grid_box->window_size.window_nx << endl;
+  cout << "Gridbox->wnz : " << grid_box->window_size.window_nz << endl;
   uint shot_num = 0;
   for (uint shot_id : shot_ids) {
     shot_num++;
@@ -63,30 +65,43 @@ MigrationData *RTMEngine::Migrate(vector<uint> shot_ids) {
 			  shot_num,
 			  shot_ids.size());
 	  this->configuration->correlation_kernel->ResetShotCorrelation();
+      this->timer->start_timer("TraceManager::ReadShot");
 	  this->configuration->trace_manager->ReadShot(
         this->configuration->trace_files, shot_id, this->configuration->sort_key);
+      this->timer->stop_timer("TraceManager::ReadShot");
 #ifndef NDEBUG
     this->callbacks->BeforeShotPreprocessing(
         this->configuration->trace_manager->GetTraces());
 #endif
+    this->timer->start_timer("TraceManager::PreprocessShot");
     this->configuration->trace_manager->PreprocessShot(
         this->configuration->source_injector->GetCutOffTimestep());
-// grid_box->nt=5000;
+    this->timer->stop_timer("TraceManager::PreprocessShot");
 #ifndef NDEBUG
     this->callbacks->AfterShotPreprocessing(
         this->configuration->trace_manager->GetTraces());
 #endif
     this->configuration->source_injector->SetSourcePoint(
         this->configuration->trace_manager->GetSourcePoint());
+    this->timer->start_timer("ModelHandler::SetupWindow");
+    this->configuration->model_handler->SetupWindow();
+    this->timer->stop_timer("ModelHandler::SetupWindow");
+    this->timer->start_timer("BoundaryManager::ReExtendModel");
     this->configuration->boundary_manager->ReExtendModel();
+    this->timer->stop_timer("BoundaryManager::ReExtendModel");
+    this->timer->start_timer("ForwardCollector::ResetGrid(Forward)");
     this->configuration->forward_collector->ResetGrid(true);
-
+    this->timer->stop_timer("ForwardCollector::ResetGrid(Forward)");
 #ifndef NDEBUG
     this->callbacks->BeforeForwardPropagation(grid_box);
 #endif
     this->Forward(grid_box);
+    this->timer->start_timer("ForwardCollector::ResetGrid(Backward)");
     this->configuration->forward_collector->ResetGrid(false);
+    this->timer->stop_timer("ForwardCollector::ResetGrid(Backward)");
+    this->timer->start_timer("BoundaryManager::AdjustModelForBackward");
     this->configuration->boundary_manager->AdjustModelForBackward();
+    this->timer->stop_timer("BoundaryManager::AdjustModelForBackward");
 #ifndef NDEBUG
     this->callbacks->BeforeBackwardPropagation(grid_box);
 #endif
@@ -96,8 +111,9 @@ MigrationData *RTMEngine::Migrate(vector<uint> shot_ids) {
         this->configuration->correlation_kernel->GetShotCorrelation(),
         grid_box);
 #endif
+    this->timer->start_timer("CorrelationKernel::Stack");
     this->configuration->correlation_kernel->Stack();
-
+    this->timer->stop_timer("CorrelationKernel::Stack");
 #ifndef NDEBUG
     this->callbacks->AfterShotStacking(
         this->configuration->correlation_kernel->GetStackedShotCorrelation(),
@@ -110,13 +126,13 @@ MigrationData *RTMEngine::Migrate(vector<uint> shot_ids) {
       grid_box);
 #endif
 
-  this->timer->stop_timer("Engine::Migration");
 
+  this->timer->start_timer("CorrelationKernel::GetMigrationData");
   MigrationData *migration =
       this->configuration->correlation_kernel->GetMigrationData();
-
+  this->timer->stop_timer("CorrelationKernel::GetMigrationData");
   mem_free((void *)grid_box);
-
+  this->timer->stop_timer("Engine::Migration");
   return migration;
 }
 
@@ -129,9 +145,11 @@ GridBox *RTMEngine::Initialize() {
   this->configuration->forward_collector->SetComputationParameters(parameters);
   this->configuration->model_handler->SetComputationParameters(parameters);
   this->configuration->source_injector->SetComputationParameters(parameters);
+  this->timer->start_timer("ModelHandler::ReadModel");
   GridBox *grid = this->configuration->model_handler->ReadModel(
       this->configuration->model_files,
       this->configuration->computation_kernel);
+  this->timer->stop_timer("ModelHandler::ReadModel");
   this->configuration->trace_manager->SetGridBox(grid);
   this->configuration->boundary_manager->SetGridBox(grid);
   this->configuration->computation_kernel->SetGridBox(grid);
@@ -139,9 +157,13 @@ GridBox *RTMEngine::Initialize() {
   this->configuration->forward_collector->SetGridBox(grid);
   this->configuration->model_handler->SetGridBox(grid);
   this->configuration->source_injector->SetGridBox(grid);
+  this->timer->start_timer("ModelHandler::PreprocessModel");
   this->configuration->model_handler->PreprocessModel(
       this->configuration->computation_kernel);
+  this->timer->stop_timer("ModelHandler::PreprocessModel");
+  this->timer->start_timer("BoundaryManager::ExtendModel");
   this->configuration->boundary_manager->ExtendModel();
+  this->timer->stop_timer("BoundaryManager::ExtendModel");
   this->timer->stop_timer("Engine::Initialization");
 
   return grid;
@@ -151,9 +173,15 @@ void RTMEngine::Forward(GridBox *grid_box) {
   this->timer->start_timer("Engine::Forward");
   int onePercent = grid_box->nt / 100 + 1;
   for (uint t = 1; t < grid_box->nt; t++) {
+    this->timer->start_timer("ForwardCollector::SaveForward");
     this->configuration->forward_collector->SaveForward();
+    this->timer->stop_timer("ForwardCollector::SaveForward");
+    this->timer->start_timer("SourceInjector::ApplySource");
     this->configuration->source_injector->ApplySource(t);
+    this->timer->stop_timer("SourceInjector::ApplySource");
+    this->timer->start_timer("Forward::ComputationKernel::Step");
     this->configuration->computation_kernel->Step();
+    this->timer->stop_timer("Forward::ComputationKernel::Step");
 #ifndef NDEBUG
     this->callbacks->AfterForwardStep(grid_box, t);
 #endif
@@ -171,16 +199,24 @@ void RTMEngine::Backward(GridBox *grid_box) {
   this->timer->start_timer("Engine::Backward");
   int onePercent = grid_box->nt / 100 + 1;
   for (uint t = grid_box->nt - 1; t > 0; t--) {
+    this->timer->start_timer("TraceManager::ApplyTraces");
     this->configuration->trace_manager->ApplyTraces(t);
+    this->timer->stop_timer("TraceManager::ApplyTraces");
+    this->timer->start_timer("Backward::ComputationKernel::Step");
     this->configuration->computation_kernel->Step();
+    this->timer->stop_timer("Backward::ComputationKernel::Step");
+    this->timer->start_timer("ForwardCollector::FetchForward");
     this->configuration->forward_collector->FetchForward();
+    this->timer->stop_timer("ForwardCollector::FetchForward");
 #ifndef NDEBUG
     this->callbacks->AfterFetchStep(
         this->configuration->forward_collector->GetForwardGrid(), t);
     this->callbacks->AfterBackwardStep(grid_box, t);
 #endif
+    this->timer->start_timer("CorrelationKernel::Correlate");
     this->configuration->correlation_kernel->Correlate(
     		this->configuration->forward_collector->GetForwardGrid());
+    this->timer->stop_timer("CorrelationKernel::Correlate");
     if((t % onePercent) == 0)
     {
     	printProgress(((float)(grid_box->nt - t)) / grid_box->nt, "Backward Propagation");

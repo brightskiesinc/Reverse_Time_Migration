@@ -22,6 +22,7 @@ void RickerSourceInjector::ApplySource(uint time_step) {
     float ricker = (2 * temp - 1) * exp(-temp);
     int location = y * nx * nz + z * nx + x;
     float *pressure = grid->pressure_current;
+    ricker = ricker * grid->window_velocity[location];
     pressure[location] += ricker;
   }
 }

@@ -61,12 +61,18 @@ WriterCallback::WriterCallback(uint show_each, bool write_velocity, bool write_f
   }
 }
 
-float *obtain_unpadded(float *ptr, GridBox *box) {
+float *obtain_unpadded(float *ptr, GridBox *box, bool window) {
   uint nz = box->grid_size.nz;
   uint nx = box->grid_size.nx;
   auto grid = (AcousticSecondGrid *)box;
-  uint org_nx = grid->original_dimensions.nx;
-  uint org_nz = grid->original_dimensions.nz;
+  uint org_nx = grid->full_original_dimensions.nx;
+  uint org_nz = grid->full_original_dimensions.nz;
+  if (window) {
+      nz = box->window_size.window_nz;
+      nx = box->window_size.window_nx;
+      org_nx = grid->original_dimensions.nx;
+      org_nz = grid->original_dimensions.nz;
+  }
   auto unpadded_temp = new float[org_nx * org_nz];
   for (int i = 0; i < org_nz; i++) {
     for (int j = 0; j < org_nx; j++) {
@@ -76,11 +82,16 @@ float *obtain_unpadded(float *ptr, GridBox *box) {
   return unpadded_temp;
 }
 
-float *obtain_unpadded_host_accessor(float *ptr, GridBox *box) {
+float *obtain_unpadded_host_accessor(float *ptr, GridBox *box, bool window) {
   uint nz = box->grid_size.nz;
   uint nx = box->grid_size.nx;
-  uint nx_nz = nx * nz;
   uint ny = box->grid_size.ny;
+  if (window) {
+      nz = box->window_size.window_nz;
+      nx = box->window_size.window_nx;
+      ny = box->window_size.window_ny;
+  }
+  uint nx_nz = nx * nz;
   auto temp = new float[nx_nz * ny];
   auto grid = (AcousticSecondGrid *)box;
   AcousticDpcComputationParameters::device_queue->wait();
@@ -89,7 +100,7 @@ float *obtain_unpadded_host_accessor(float *ptr, GridBox *box) {
         cgh.memcpy(temp, ptr, nx_nz * ny * sizeof(float));
       });
   AcousticDpcComputationParameters::device_queue->wait();
-  auto unpadded_temp = obtain_unpadded(temp, box);
+  auto unpadded_temp = obtain_unpadded(temp, box, window);
   delete[] temp;
   return unpadded_temp;
 }
@@ -100,17 +111,16 @@ void WriterCallback::AfterInitialization(GridBox *box) {
   if (write_velocity) {
 
     auto grid = (AcousticSecondGrid *)box;
-    float *temp = obtain_unpadded_host_accessor(box->velocity, box);
+    float *temp = obtain_unpadded_host_accessor(box->velocity, box, false);
 
-    uint nz = grid->original_dimensions.nz;
-    uint nx = grid->original_dimensions.nx;
-    uint ny = grid->original_dimensions.ny;
+    uint nz = grid->full_original_dimensions.nz;
+    uint nx = grid->full_original_dimensions.nx;
+    uint ny = grid->full_original_dimensions.ny;
     uint nt = box->nt;
     float dx = box->cell_dimensions.dx;
     float dy = box->cell_dimensions.dy;
     float dz = box->cell_dimensions.dz;
     float dt = box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               CAT_STR_TO_CHR(write_path, "/velocity" + this->GetExtension()), false);
@@ -174,7 +184,7 @@ void WriterCallback::BeforeForwardPropagation(GridBox *box) {
   if (write_re_extended_velocity) {
 
     auto grid = (AcousticSecondGrid *)box;
-    float *temp = obtain_unpadded_host_accessor(box->velocity, box);
+    float *temp = obtain_unpadded_host_accessor(box->window_velocity, box, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -184,7 +194,6 @@ void WriterCallback::BeforeForwardPropagation(GridBox *box) {
     float dy = box->cell_dimensions.dy;
     float dz = box->cell_dimensions.dz;
     float dt = box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/velocities/velocity_" +
@@ -201,7 +210,7 @@ void WriterCallback::AfterForwardStep(GridBox *box, uint time_step) {
   if (write_forward && time_step % show_each == 0) {
 
     auto grid = (AcousticSecondGrid *)box;
-    float *temp = obtain_unpadded_host_accessor(box->pressure_current, box);
+    float *temp = obtain_unpadded_host_accessor(box->pressure_current, box, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -211,7 +220,6 @@ void WriterCallback::AfterForwardStep(GridBox *box, uint time_step) {
     float dy = box->cell_dimensions.dy;
     float dz = box->cell_dimensions.dz;
     float dt = box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/forward/forward_" +
@@ -228,7 +236,7 @@ void WriterCallback::BeforeBackwardPropagation(GridBox *box) {
   if (write_re_extended_velocity) {
 
     auto grid = (AcousticSecondGrid *)box;
-    float *temp = obtain_unpadded_host_accessor(box->velocity, box);
+    float *temp = obtain_unpadded_host_accessor(box->window_velocity, box, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -238,7 +246,6 @@ void WriterCallback::BeforeBackwardPropagation(GridBox *box) {
     float dy = box->cell_dimensions.dy;
     float dz = box->cell_dimensions.dz;
     float dt = box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/velocities/velocity_backward_" +
@@ -254,7 +261,7 @@ void WriterCallback::AfterBackwardStep(GridBox *box, uint time_step) {
   if (write_backward && time_step % show_each == 0) {
 
     auto grid = (AcousticSecondGrid *)box;
-    float *temp = obtain_unpadded_host_accessor(box->pressure_current, box);
+    float *temp = obtain_unpadded_host_accessor(box->pressure_current, box, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -264,7 +271,6 @@ void WriterCallback::AfterBackwardStep(GridBox *box, uint time_step) {
     float dy = box->cell_dimensions.dy;
     float dz = box->cell_dimensions.dz;
     float dt = box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/backward/backward_" +
@@ -283,7 +289,7 @@ void WriterCallback::AfterFetchStep(GridBox *forward_collector_box,
 
     auto grid = (AcousticSecondGrid *)forward_collector_box;
     float *temp = obtain_unpadded_host_accessor(
-        forward_collector_box->pressure_current, forward_collector_box);
+        forward_collector_box->pressure_current, forward_collector_box, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -293,7 +299,6 @@ void WriterCallback::AfterFetchStep(GridBox *forward_collector_box,
     float dy = forward_collector_box->cell_dimensions.dy;
     float dz = forward_collector_box->cell_dimensions.dz;
     float dt = forward_collector_box->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/reverse/reverse_" +
@@ -311,7 +316,7 @@ void WriterCallback::BeforeShotStacking(float *shot_correlation,
   if (write_single_shot_correlation) {
 
     auto grid = (AcousticSecondGrid *)meta_data;
-    auto temp = obtain_unpadded(shot_correlation, meta_data);
+    auto temp = obtain_unpadded(shot_correlation, meta_data, true);
 
     uint nz = grid->original_dimensions.nz;
     uint nx = grid->original_dimensions.nx;
@@ -321,7 +326,6 @@ void WriterCallback::BeforeShotStacking(float *shot_correlation,
     float dy = meta_data->cell_dimensions.dy;
     float dz = meta_data->cell_dimensions.dz;
     float dt = meta_data->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path + "/shots/correlation_" +
@@ -339,17 +343,16 @@ void WriterCallback::AfterShotStacking(float *stacked_shot_correlation,
   if (write_each_stacked_shot) {
 
     auto grid = (AcousticSecondGrid *)meta_data;
-    auto temp = obtain_unpadded(stacked_shot_correlation, meta_data);
+    auto temp = obtain_unpadded(stacked_shot_correlation, meta_data, false);
 
-    uint nz = grid->original_dimensions.nz;
-    uint nx = grid->original_dimensions.nx;
-    uint ny = grid->original_dimensions.ny;
+    uint nz = grid->full_original_dimensions.nz;
+    uint nx = grid->full_original_dimensions.nx;
+    uint ny = grid->full_original_dimensions.ny;
     uint nt = grid->nt;
     float dx = meta_data->cell_dimensions.dx;
     float dy = meta_data->cell_dimensions.dy;
     float dz = meta_data->cell_dimensions.dz;
     float dt = meta_data->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               (char *)string(write_path +
@@ -370,17 +373,16 @@ void WriterCallback::AfterMigration(float *stacked_shot_correlation,
   if (write_migration) {
 
     auto grid = (AcousticSecondGrid *)meta_data;
-    auto temp = obtain_unpadded(stacked_shot_correlation, meta_data);
+    auto temp = obtain_unpadded(stacked_shot_correlation, meta_data, false);
 
-    uint nz = grid->original_dimensions.nz;
-    uint nx = grid->original_dimensions.nx;
-    uint ny = grid->original_dimensions.ny;
+    uint nz = grid->full_original_dimensions.nz;
+    uint nx = grid->full_original_dimensions.nx;
+    uint ny = grid->full_original_dimensions.ny;
     uint nt = grid->nt;
     float dx = meta_data->cell_dimensions.dx;
     float dy = meta_data->cell_dimensions.dy;
     float dz = meta_data->cell_dimensions.dz;
     float dt = meta_data->dt;
-    uint nx_nz = nx * nz;
 
     WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, temp,
               CAT_STR_TO_CHR(write_path, "/migration" + this->GetExtension()), false);

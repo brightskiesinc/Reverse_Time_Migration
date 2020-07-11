@@ -73,7 +73,6 @@ void WriterCallback::AfterInitialization(GridBox *box) {
         float dz = box->cell_dimensions.dz;
         float dt = box->dt;
 
-        uint nx_nz = nx * nz;
 
         WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, box->velocity,
                   CAT_STR_TO_CHR(write_path, "/velocity" + this->GetExtension()), false);
@@ -95,7 +94,6 @@ void WriterCallback::BeforeShotPreprocessing(Traces *traces) {
         float dy = 0.0;
         float dz = 0.0;
 
-        uint nx_nz = nx * nz;
 
         WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, traces->traces,
                   (char *)string(write_path + "/traces_raw/trace_" +
@@ -120,7 +118,6 @@ void WriterCallback::AfterShotPreprocessing(Traces *traces) {
         float dy = 0.0;
         float dz = 0.0;
 
-        uint nx_nz = nx * nz;
 
         WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, traces->traces,
                   (char *)string(write_path + "/traces/trace_" +
@@ -134,18 +131,17 @@ void WriterCallback::BeforeForwardPropagation(GridBox *box) {
 
     if (write_re_extended_velocity) {
 
-        uint nz = box->grid_size.nz;
-        uint nx = box->grid_size.nx;
-        uint ny = box->grid_size.ny;
+        uint nz = box->window_size.window_nz;
+        uint nx = box->window_size.window_nx;
+        uint ny = box->window_size.window_ny;
         uint nt = box->nt;
-        uint nx_nz = nx * nz;
 
         float dx = box->cell_dimensions.dx;
         float dy = box->cell_dimensions.dy;
         float dz = box->cell_dimensions.dz;
         float dt = box->dt;
 
-        WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, box->velocity,
+        WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, box->window_velocity,
                   (char *)string(write_path + "/velocities/velocity_" +
                                  to_string(shot_num) + this->GetExtension())
                           .c_str(),
@@ -159,7 +155,6 @@ void WriterCallback::AfterForwardStep(GridBox *box, uint time_step) {
 
         uint nz = box->window_size.window_nz;
         uint nx = box->window_size.window_nx;
-        uint nx_nz = nx * nz;
         uint ny = box->window_size.window_ny;
         uint nt = box->nt;
 
@@ -181,18 +176,16 @@ void WriterCallback::BeforeBackwardPropagation(GridBox *box) {
 
     if (write_re_extended_velocity) {
 
-        uint nz = box->grid_size.nz;
-        uint nx = box->grid_size.nx;
-        uint ny = box->grid_size.ny;
+        uint nz = box->window_size.window_nz;
+        uint nx = box->window_size.window_nx;
+        uint ny = box->window_size.window_ny;
         uint nt = box->nt;
-        uint nx_nz = nx * nz;
-
         float dx = box->cell_dimensions.dx;
         float dy = box->cell_dimensions.dy;
         float dz = box->cell_dimensions.dz;
         float dt = box->dt;
 
-        WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, box->velocity,
+        WriteResult(nx, nz, nt, ny, dx, dz, dt, dy, box->window_velocity,
                   (char *)string(write_path + "/velocities/velocity_backward_" +
                                  to_string(shot_num) + this->GetExtension())
                           .c_str(),
@@ -206,7 +199,6 @@ void WriterCallback::AfterBackwardStep(GridBox *box, uint time_step) {
 
         uint nz = box->window_size.window_nz;
         uint nx = box->window_size.window_nx;
-        uint nx_nz = nx * nz;
         uint ny = box->window_size.window_ny;
         uint nt = box->nt;
 
@@ -231,7 +223,6 @@ void WriterCallback::AfterFetchStep(GridBox *forward_collector_box,
 
         uint nz = forward_collector_box->window_size.window_nz;
         uint nx = forward_collector_box->window_size.window_nx;
-        uint nx_nz = nx * nz;
         uint ny = forward_collector_box->window_size.window_ny;
         uint nt = forward_collector_box->nt;
 
@@ -254,10 +245,9 @@ void WriterCallback::BeforeShotStacking(float *shot_correlation,
 
     if (write_single_shot_correlation) {
 
-        uint nz = meta_data->grid_size.nz;
-        uint nx = meta_data->grid_size.nx;
-        uint nx_nz = nx * nz;
-        uint ny = meta_data->grid_size.ny;
+        uint nz = meta_data->window_size.window_nz;
+        uint nx = meta_data->window_size.window_nx;
+        uint ny = meta_data->window_size.window_ny;
         uint nt = meta_data->nt;
         float dx = meta_data->cell_dimensions.dx;
         float dy = meta_data->cell_dimensions.dy;
@@ -280,7 +270,6 @@ void WriterCallback::AfterShotStacking(float *stacked_shot_correlation,
 
         uint nz = meta_data->grid_size.nz;
         uint nx = meta_data->grid_size.nx;
-        uint nx_nz = nx * nz;
         uint ny = meta_data->grid_size.ny;
         uint nt = meta_data->nt;
         float dx = meta_data->cell_dimensions.dx;
@@ -307,7 +296,6 @@ void WriterCallback::AfterMigration(float *stacked_shot_correlation,
 
         uint nz = meta_data->grid_size.nz;
         uint nx = meta_data->grid_size.nx;
-        uint nx_nz = nx * nz;
         uint ny = meta_data->grid_size.ny;
         uint nt = meta_data->nt;
         float dx = meta_data->cell_dimensions.dx;

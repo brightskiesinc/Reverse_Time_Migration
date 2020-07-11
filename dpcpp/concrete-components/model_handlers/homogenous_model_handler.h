@@ -35,6 +35,8 @@ public:
 
   void SetGridBox(GridBox *grid_box) override;
 
+  void SetupWindow() override;
+  
 private:
   ComputationParameters *parameters;
   AcousticSecondGrid *grid_box;

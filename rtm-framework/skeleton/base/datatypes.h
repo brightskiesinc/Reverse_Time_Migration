@@ -82,6 +82,7 @@ public:
   float dt;                       // time step size;
   uint nt;                        // number of time steps;
   float *velocity;                // Velocity;
+  float *window_velocity;         // Velocity actually used in propagation;
   float *pressure_current;        // Current pressure;
   Point3D reference_point; // Reference point of the model in real coordinates
                            // distance.
@@ -116,6 +117,18 @@ public:
   float *first_derivative_staggered_fd_coeff;
   // is the stability condition safety /relaxation factor
   float dt_relax;
+  // Use window for propagation.
+  bool use_window;
+  // Left-side window size.
+  int left_window;
+  // Right-side window size.
+  int right_window;
+  // Depth window size.
+  int depth_window;
+  // Front window size.
+  int front_window;
+  // Backward window size.
+  int back_window;
 
   // the constructor of the class, it takes as input the half_length
   explicit ComputationParameters(HALF_LENGTH hl) {
@@ -124,6 +137,7 @@ public:
     boundary_length = 20;
     half_length = hl;
     dt_relax = 0.4;
+    use_window = false;
     // array of floats of size hl+1 only contains the zero and positive (x>0 )
     // coefficients and not all coefficients
     second_derivative_fd_coeff = new float[hl + 1];

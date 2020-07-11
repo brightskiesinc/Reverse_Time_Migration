@@ -72,8 +72,11 @@ void ReversePropagation::ResetGrid(bool forward_run) {
            sizeof(main_grid->cell_dimensions));
     memcpy(&internal_grid->original_dimensions, &main_grid->original_dimensions,
            sizeof(main_grid->original_dimensions));
+    memcpy(&internal_grid->full_original_dimensions, &main_grid->full_original_dimensions,
+            sizeof(main_grid->full_original_dimensions));
     internal_grid->compute_nx = main_grid->compute_nx;
     internal_grid->velocity = main_grid->velocity;
+    internal_grid->window_velocity = main_grid->window_velocity;
     // Swap previous and current to reverse time.
     temp = internal_grid->pressure_previous;
     internal_grid->pressure_previous = internal_grid->pressure_current;
@@ -133,6 +136,8 @@ void ReversePropagation::SetGridBox(GridBox *grid_box) {
          sizeof(main_grid->cell_dimensions));
   memcpy(&internal_grid->original_dimensions, &main_grid->original_dimensions,
          sizeof(main_grid->original_dimensions));
+  memcpy(&internal_grid->full_original_dimensions, &main_grid->full_original_dimensions,
+          sizeof(main_grid->full_original_dimensions));
   internal_grid->compute_nx = main_grid->compute_nx;
   this->computation_kernel->SetGridBox(internal_grid);
 }

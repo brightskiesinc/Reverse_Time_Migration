@@ -16,17 +16,20 @@
 using namespace std;
 
 class SeismicTraceManager : public TraceManager {
-
-  ifstream *trace_file;
+private:
+  IOManager *IO;
+  SeIO *sio;
+  unordered_map<uint, string> shot_to_file_mapping;
   Traces *traces;
 
-  uint absolute_shot_num;
   float total_time;
   AcousticSecondGrid *grid;
   AcousticDpcComputationParameters *parameters;
   Point3D source_point;
 
   float *ptr_traces;
+  uint *x_positions;
+  uint *y_positions;
 
   Point3D SDeLocalizePoint(Point3D point, bool is_2D, uint half_length,
                            uint bound_length);
@@ -34,9 +37,6 @@ class SeismicTraceManager : public TraceManager {
                             uint bound_length);
 
 public:
-  IPoint3D r_start;
-  IPoint3D r_end;
-  IPoint3D r_inc;
 
   SeismicTraceManager();
   ~SeismicTraceManager() override;
@@ -48,13 +48,7 @@ public:
   void SetGridBox(GridBox *grid_box) override;
   Point3D *GetSourcePoint() override;
   vector<uint> GetWorkingShots(vector<string> filenames, uint min_shot, uint max_shot, string type) override;
-  // IPoint3D DeLocalizePointS(IPoint3D point, bool is_2D, uint half_length,
-  // uint bound_length);
 
-private:
-  IOManager *IO;
-  SeIO *sio;
-  unordered_map<uint, string> shot_to_file_mapping;
 };
 
 #endif // ACOUSTIC2ND_RTM_SEISMIC_TRACE_MANAGER_H

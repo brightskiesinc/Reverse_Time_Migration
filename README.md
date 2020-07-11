@@ -337,7 +337,14 @@ block-x=5500
 block-z=55
 block-y=1
 cor-block=256
-device=cpu
+algorithm=cpu
+device=none
+use-window=yes
+left-window=1300
+right-window=200
+depth-window=0
+front-window=0
+back-window=0
 ```
 * Stencil order signifies the order of the approximation of the finite difference for space derivatives. The supported values are 2, 4, 8, 12, 16.
 * Boundary length is a number that signifies the boundary layer thickness, can have any integer value >= 0.
@@ -345,8 +352,15 @@ device=cpu
 * dt-relax is the factor to be multiplied in the dt calculated by the stability criteria as an extra measure of safety, should be > 0 and < 1, normally 0.9.
 * block-x, block-z and block-y parameters control the cache blocking in OpenMP and the workgroup/elements per workitem in DPC++, they have different constraints according to the device or technology used(The constraint is told in the running part for each device).
 * cor-block is a DPC++ only parameter that controls the workgroup size for the correlation operation.
-* device is a DPC++ only parameter that can take the value of 'cpu', 'gpu', 'gpu-semi-shared' and 'gpu-shared'. 
+* algorithm is a DPC++ only parameter that can take the value of 'cpu', 'gpu', 'gpu-semi-shared' and 'gpu-shared'. 
 The different gpu options will select different kernel optimizations to run. Both 'gpu' and 'gpu-shared' give the best performance when the blocking is tuned correctly.
+* device is a DPC++ only parameter that can either be none, making device selection be using default selector according to type of the algorithm chosen. A pattern can also be provided to make a custom device selection and choose a certain device. Eg: device=Gen9 to specifically select Intel Gen9 Graphics card.
+* use-window is an option that enables windowing migration, this make the migration of each shot only happen in a sub-domain taken from the full domain according to window parameters, around the source of each shot. This contributes to large speedups, but might affect accuracy if not careful in selecting the window. Supported options are <yes> and <no>.
+* left-window : the window to take left of the source point in x-axis.
+* right-window : the window to take right of the source point in x-axis.
+* depth-window : the window to take below of the source point in z-axis.
+* back-window : the window to take behind of the source point in y-axis(Only effective in 3D, not yet supported).
+* front-window : the window to take in front of the source point in y-axis(Only effective in 3D, not yet supported).
 * A sample of this file is available in 'workloads/bp_model/computation_parameters.txt'.
 ### RTM Engine Configuration
 * The main rtm configuration file will define the properties to use in the different computations. A sample of this file is available in 'workloads/bp_model
@@ -377,7 +391,9 @@ boundary-manager.use-top-layer=yes
 #boundary-manager.relax-cp=0.9
 #### Correlation kernel possible values : cross-correlation
 correlation-kernel=cross-correlation
-#### Forward collector possible values : two | three | two-compression | optimal-checkpointing
+## compensation type for final correlation possible values : no | source | receiver | combined
+correlation-kernel.compensation=combined
+#### Forward collector possible values : two | three | two-compression
 forward-collector=three
 #### Uncomment the following to fine tune some parameters for the compression
 #forward-collector.zfp-tolerance=0.05

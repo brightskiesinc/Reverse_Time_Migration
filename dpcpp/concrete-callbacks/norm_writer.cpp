@@ -48,10 +48,10 @@ float NormWriter::GetNorm(float *mat, uint nx, uint nz, uint ny) {
 }
 
 float *obtain_host_accessor_norm(float *ptr, GridBox *box) {
-  uint nz = box->grid_size.nz;
-  uint nx = box->grid_size.nx;
+  uint nz = box->window_size.window_nz;
+  uint nx = box->window_size.window_nx;
   uint nx_nz = nx * nz;
-  uint ny = box->grid_size.ny;
+  uint ny = box->window_size.window_ny;
   auto temp = new float[nx_nz * ny];
   AcousticDpcComputationParameters::device_queue->wait();
   AcousticDpcComputationParameters::device_queue->submit(

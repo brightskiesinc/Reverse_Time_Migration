@@ -6,6 +6,8 @@
 #include <bits/stdc++.h>
 #include <concrete-components/data_units/staggered_grid.h>
 #include <seismic-io-framework/datatypes.h>
+#include <skeleton/helpers/timer/timer.hpp>
+
 
 SeismicModelHandler::SeismicModelHandler(bool is_staggered) {
   sio = new SeIO();
@@ -161,14 +163,17 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
                                ComputationKernel *computational_kernel) {
 
   string file_name = filenames[0];
-
+  Timer *timer = Timer::getInstance();
+  timer->start_timer("IO::ReadVelocityFromSegyFile");
   IO->ReadVelocityDataFromFile(file_name, "CSR", this->sio);
-
+  timer->stop_timer("IO::ReadVelocityFromSegyFile");
   GridBox *grid;
   if (is_staggered) {
     grid = (GridBox *)mem_allocate(sizeof(StaggeredGrid), 1, "StaggeredGrid");
     string d_file_name = filenames[1];
+    timer->start_timer("IO::ReadDensityFromSegyFile");
     IO->ReadDensityDataFromFile(d_file_name, "CSR", this->sio); // case density
+    timer->stop_timer("IO::ReadDensityFromSegyFile");
   } else {
     grid = (GridBox *)mem_allocate(sizeof(AcousticSecondGrid), 1, "GridBox");
   }
@@ -217,14 +222,36 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
        << endl;
   unsigned int model_size = nx * nz * ny;
 
-#ifndef WINDOW_MODEL
-  grid->window_size.window_start.x = 0;
-  grid->window_size.window_start.z = 0;
-  grid->window_size.window_start.y = 0;
-  grid->window_size.window_nx = nx;
-  grid->window_size.window_nz = nz;
-  grid->window_size.window_ny = ny;
-#endif
+    // if there is no window then window size equals full model size
+    if (parameters->use_window) {
+        grid->window_size.window_start.x = 0;
+        grid->window_size.window_start.z = 0;
+        grid->window_size.window_start.y = 0;
+        if (parameters->left_window == 0 && parameters->right_window == 0) {
+            grid->window_size.window_nx = nx;
+        } else {
+            grid->window_size.window_nx = std::min(
+                    parameters->left_window + parameters->right_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length,
+                    nx);
+        }
+        if (parameters->depth_window == 0) {
+            grid->window_size.window_nz = nz;
+        } else {
+            grid->window_size.window_nz = std::min(parameters->depth_window + 2 * parameters->boundary_length + 2 * parameters->half_length, nz);
+        }
+        if ((parameters->front_window == 0 && parameters->back_window == 0) || ny == 1) {
+            grid->window_size.window_ny = ny;
+        } else {
+            grid->window_size.window_ny = std::min(parameters->front_window + parameters->back_window + 1 + 2 * parameters->boundary_length + 2 * parameters->half_length, ny);
+        }
+    } else {
+        grid->window_size.window_start.x = 0;
+        grid->window_size.window_start.z = 0;
+        grid->window_size.window_start.y = 0;
+        grid->window_size.window_nx = nx;
+        grid->window_size.window_nz = nz;
+        grid->window_size.window_ny = ny;
+    }
 
   float *velocity = (float *)mem_allocate(sizeof(float), model_size, "velocity",
                                           parameters->half_length, 0);
@@ -265,9 +292,31 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
       }
     }
     s_grid->density = density;
+    if (parameters->use_window) {
+        s_grid->window_density = (float *)mem_allocate(sizeof(float),
+                grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny,
+                "window_density", parameters->half_length, 0);
+        computational_kernel->FirstTouch(s_grid->window_density, grid->window_size.window_nx,
+                grid->window_size.window_nz, grid->window_size.window_ny);
+        memset(s_grid->window_density, 0,
+                sizeof(float) * grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny);
+    } else {
+        s_grid->window_density = s_grid->density;
+    }
   }
 
   grid->velocity = velocity;
+  if (parameters->use_window) {
+      grid->window_velocity = (float *)mem_allocate(sizeof(float),
+              grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny,
+              "window_velocity", parameters->half_length, 0);
+      computational_kernel->FirstTouch(grid->window_velocity, grid->window_size.window_nx,
+              grid->window_size.window_nz, grid->window_size.window_ny);
+      memset(grid->window_velocity, 0,
+              sizeof(float) * grid->window_size.window_nx * grid->window_size.window_nz * grid->window_size.window_ny);
+  } else {
+      grid->window_velocity = grid->velocity;
+  }
 
   GetSuitableDt(ny, dx, dz, dy, &grid->dt,
                 parameters->second_derivative_fd_coeff, max,
@@ -278,3 +327,49 @@ SeismicModelHandler::ReadModel(vector<string> filenames,
 }
 
 SeismicModelHandler ::~SeismicModelHandler() = default;
+
+void SeismicModelHandler::SetupWindow() {
+    if (parameters->use_window) {
+        uint wnx = grid_box->window_size.window_nx;
+        uint wnz = grid_box->window_size.window_nz;
+        uint wny = grid_box->window_size.window_ny;
+        uint nx = grid_box->grid_size.nx;
+        uint nz = grid_box->grid_size.nz;
+        uint ny = grid_box->grid_size.ny;
+        uint sx = grid_box->window_size.window_start.x;
+        uint sz = grid_box->window_size.window_start.z;
+        uint sy = grid_box->window_size.window_start.y;
+        uint offset = parameters->half_length + parameters->boundary_length;
+        uint start_x = offset;
+        uint end_x = wnx - offset;
+        uint start_z = offset;
+        uint end_z = wnz - offset;
+        uint start_y = 0;
+        uint end_y = 1;
+        if (ny != 1) {
+            start_y = offset;
+            end_y = wny - offset;
+        }
+        for (uint iy = start_y; iy < end_y; iy++) {
+            for (uint iz = start_z; iz < end_z; iz++) {
+                for (uint ix = start_x; ix < end_x; ix++) {
+                    uint offset_window = iy * wnx * wnz + iz * wnx + ix;
+                    uint offset_full = (iy + sy) * nx * nz + (iz + sz) * nx + ix + sx;
+                    grid_box->window_velocity[offset_window] = grid_box->velocity[offset_full];
+                }
+            }
+        }
+        if (is_staggered) {
+            StaggeredGrid *s_grid = (StaggeredGrid *)grid_box;
+            for (uint iy = start_y; iy < end_y; iy++) {
+                for (uint iz = start_z; iz < end_z; iz++) {
+                    for (uint ix = start_x; ix < end_x; ix++) {
+                        uint offset_window = iy * wnx * wnz + iz * wnx + ix;
+                        uint offset_full = (iy + sy) * nx * nz + (iz + sz) * nx + ix + sx;
+                        s_grid->window_density[offset_window] = s_grid->density[offset_full];
+                    }
+                }
+            }
+        }
+    }
+}

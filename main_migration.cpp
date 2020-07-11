@@ -42,10 +42,18 @@ int main(int argc, char *argv[]) {
           mig->nx, mig->nz, mig->ny,
           mig->dx, mig->dz, mig->dy);
   timer->stop_timer("Engine::FilterMigration");
+
   WriteSegy(mig->nx, mig->nz, mig->nt, mig->ny, mig->dx, mig->dz, mig->dt,
             mig->dy, filtered_migration,
             write_path + "/filtered_migration.segy", false);
+
+  WriteSegy(mig->nx, mig->nz, mig->nt, mig->ny, mig->dx, mig->dz, mig->dt,
+              mig->dy, mig->stacked_correlation,
+              write_path + "/raw_migration.segy", false);
+
   WriteBinary(filtered_migration,mig->nx, mig->nz, (write_path + "/filtered_migration.bin").c_str());
+  WriteBinary(filtered_migration,mig->nx, mig->nz, (write_path + "/raw_migration.bin").c_str());
+
   delete[] filtered_migration;
   cout <<endl<<"Timings of the application are: "<<endl;
   cout <<"------------------------------"<<endl;
