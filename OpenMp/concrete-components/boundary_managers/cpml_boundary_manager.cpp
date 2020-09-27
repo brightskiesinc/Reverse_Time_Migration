@@ -238,6 +238,12 @@ void CPMLBoundaryManager::CalculateFirstAuxilary() {
   int nz = grid->grid_size.nz;
   int ny = grid->grid_size.ny;
   int bound_length = this->parameters->boundary_length;
+
+
+  int block_x = parameters->block_x;
+  int block_y = parameters->block_y;
+  int block_z = parameters->block_z;
+
   int nxEnd = wnx - half_length;
   int nyEnd = 1;
   int nzEnd = wnz - half_length;
@@ -311,13 +317,27 @@ void CPMLBoundaryManager::CalculateFirstAuxilary() {
     first_coeff_h[i] = this->parameters->first_derivative_fd_coeff[i] / dh;
     distance[i] = distance_unit * i;
   }
-
-  for (iy = y_start; iy < nyEnd; iy++) {
-    for (iz = z_start; iz < nzEnd; iz++) {
-      for (ix = x_start; ix < nxEnd; ix++) {
+#pragma omp parallel default(shared)
+    {
+#pragma omp for schedule(static, 1) collapse(2)
+        for (int by = y_start; by < nyEnd; by += block_y) {
+            for (int bz = z_start; bz < nzEnd; bz += block_z) {
+                for (int bx = x_start; bx < nxEnd; bx += block_x) {
+                    // Calculate the endings appropriately (Handle remainder of the cache
+                    // blocking loops).
+                    int ixEnd = fmin(bx+block_x  , nxEnd);
+                    int izEnd = fmin(bz + block_z, nzEnd);
+                    int iyEnd = fmin(by + block_y, nyEnd);
+  for (iy = by; iy < iyEnd; ++iy) {
+    for (iz = bz; iz < izEnd; ++iz) {
         int offset = iy * wnxnz + iz * wnx;
         float *curr = curr_base + offset;
-        float value = 0.0;
+#pragma vector aligned
+#pragma vector vecremainder
+#pragma omp simd
+#pragma ivdep
+        for (ix = bx; ix < ixEnd; ++ix) {
+            float value = 0.0;
 #if FMA_ARCH
         // Calculate Finite Difference in the z-direction.
         value = fma(curr[ix], first_coeff_h[0], value);
@@ -405,6 +425,10 @@ void CPMLBoundaryManager::CalculateFirstAuxilary() {
       }
     }
   }
+                    }
+                }
+            }
+  }
 }
 
 template <int direction, bool opposite, int half_length>
@@ -428,6 +452,10 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
   int nx = grid->grid_size.nx;
   int nz = grid->grid_size.nz;
   int ny = grid->grid_size.ny;
+
+  int block_x = parameters->block_x;
+  int block_y = parameters->block_y;
+  int block_z = parameters->block_z;
 
   float *vel_base = grid->window_velocity;
 
@@ -518,14 +546,29 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
     coeff_first_h[i] = this->parameters->first_derivative_fd_coeff[i] / dh;
     coeff_h[i] = this->parameters->second_derivative_fd_coeff[i] / dh2;
   }
-
-  for (iy = y_start; iy < nyEnd; iy++) {
-    for (iz = z_start; iz < nzEnd; iz++) {
-      for (ix = x_start; ix < nxEnd; ix++) {
+#pragma omp parallel default(shared)
+    {
+#pragma omp for schedule(static, 1) collapse(2)
+        for (int by = y_start; by < nyEnd; by += block_y) {
+            for (int bz = z_start; bz < nzEnd; bz += block_z) {
+                for (int bx = x_start; bx < nxEnd; bx += block_x) {
+                    // Calculate the endings appropriately (Handle remainder of the cache
+                    // blocking loops).
+                    int ixEnd = fmin(bx+block_x  , nxEnd);
+                    int izEnd = fmin(bz + block_z, nzEnd);
+                    int iyEnd = fmin(by + block_y, nyEnd);
+                    // Loop on the elements in the block.
+  for (iy = by; iy < iyEnd; ++iy) {
+    for (iz = bz; iz < izEnd; ++iz) {
         int offset = iy * wnxnz + iz * wnx;
         float *curr = curr_base + offset;
         float *vel = vel_base + offset;
         float *next = next_base + offset;
+#pragma vector aligned
+#pragma vector vecremainder
+#pragma omp simd
+#pragma ivdep
+        for (ix = bx;ix < ixEnd; ix++) {
         float pressure_value = 0.0;
         float d_first_value = 0.0;
         int index = 0;
@@ -719,11 +762,15 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
       }
     }
   }
+                    }
+                }
+            }
+    }
 }
 
 void CPMLBoundaryManager::SetComputationParameters(
     ComputationParameters *parameters) {
-  this->parameters = parameters;
+  this->parameters = (AcousticOmpComputationParameters*)parameters;
   this->extension->SetHalfLength(parameters->half_length);
   this->extension->SetBoundaryLength(parameters->boundary_length);
 }

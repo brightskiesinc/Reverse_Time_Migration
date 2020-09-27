@@ -1,5 +1,6 @@
 #include <concrete-components/boundary_managers/extensions/extension.h>
 #include <concrete-components/data_units/acoustic_second_grid.h>
+#include <concrete-components/data_units/acoustic_openmp_computation_parameters.h>
 #include <rtm-framework/skeleton/components/boundary_manager.h>
 #include <skeleton/helpers/memory_allocation/memory_allocator.h>
 
@@ -36,7 +37,7 @@ private:
   float shift_ratio;
   float reflect_coeff;
 
-  ComputationParameters *parameters;
+  AcousticOmpComputationParameters *parameters;
 
   AcousticSecondGrid *grid;
 
