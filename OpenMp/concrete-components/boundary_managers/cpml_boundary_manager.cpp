@@ -332,9 +332,6 @@ void CPMLBoundaryManager::CalculateFirstAuxilary() {
     for (iz = bz; iz < izEnd; ++iz) {
         int offset = iy * wnxnz + iz * wnx;
         float *curr = curr_base + offset;
-#pragma vector aligned
-#pragma vector vecremainder
-#pragma omp simd
 #pragma ivdep
         for (ix = bx; ix < ixEnd; ++ix) {
             float value = 0.0;
@@ -564,9 +561,6 @@ void CPMLBoundaryManager::CalculateCpmlValue() {
         float *curr = curr_base + offset;
         float *vel = vel_base + offset;
         float *next = next_base + offset;
-#pragma vector aligned
-#pragma vector vecremainder
-#pragma omp simd
 #pragma ivdep
         for (ix = bx;ix < ixEnd; ix++) {
         float pressure_value = 0.0;
