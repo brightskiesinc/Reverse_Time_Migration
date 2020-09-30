@@ -43,7 +43,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
   }
 #pragma omp parallel default(shared)
   {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
   for (int iy = y_start; iy < y_end; iy++) {
     for (int iz = half_length + bound_length - 1; iz >= half_length; iz--) {
 #pragma ivdep
@@ -58,7 +58,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
   }
 #pragma omp parallel default(shared)
     {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
   for (int iy = y_start; iy < y_end; iy++) {
     for (int iz = half_length + bound_length;iz <= nz - half_length - bound_length; iz++) {
 #pragma ivdep
@@ -75,7 +75,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
   if (ny > 1) {
 #pragma omp parallel default(shared)
       {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
     for (int iy = half_length + bound_length - 1; iy >= half_length; iy--) {
       for (int iz = half_length + bound_length;iz <= nz - half_length - bound_length; iz++) {
 #pragma ivdep
@@ -99,7 +99,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
 #pragma omp parallel default(shared)
     {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
   // Zero-Corners in the boundaries nx-nz boundary intersection--boundaries not
   // needed.
   for (int depth = start_y; depth < end_y; depth++) {
@@ -138,7 +138,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     // not needed.
 #pragma omp parallel default(shared)
       {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
     for (int depth = 0; depth < bound_length; depth++) {
       for (int row = 0; row < bound_length; row++) {
 #pragma ivdep
@@ -168,7 +168,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     }
 #pragma omp parallel default(shared)
       {
-#pragma omp for schedule(static, 1) collapse(3)
+#pragma omp for schedule(static, 1) collapse(2)
     // Zero-Corners in the boundaries nx-ny boundary intersection--boundaries
     // not needed.
     for (int depth = 0; depth < bound_length; depth++) {
