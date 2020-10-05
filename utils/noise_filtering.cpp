@@ -251,8 +251,8 @@ void apply_agc(float *original, float *agc_trace, int nx, int ny, int nz, int wi
 void filter_stacked_correlation(float *input_frame, float *output_frame,
         unsigned int nx, unsigned int nz, unsigned int ny,
         float dx, float dz, float dy) {
-    float *temp = new float[nx * nz * ny];
-	convolution(input_frame, temp, laplace_9x9, 9, nz, nx);
-	apply_agc(temp, output_frame, nx, ny, nz, 500);
-	delete[] temp;
+    //float *temp = new float[nx * nz * ny];
+	convolution(input_frame, output_frame, laplace_9x9, 9, nz, nx);
+	//apply_agc(temp, output_frame, nx, ny, nz, 500);
+	//delete[] temp;
 }
