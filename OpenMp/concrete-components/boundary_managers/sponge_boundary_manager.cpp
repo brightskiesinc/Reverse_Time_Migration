@@ -41,10 +41,13 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     y_start = 0;
     y_end = 1;
   }
+#pragma omp parallel default(shared)
+  {
+#pragma omp for schedule(static, 1) collapse(2)
   for (int iy = y_start; iy < y_end; iy++) {
     for (int iz = half_length + bound_length - 1; iz >= half_length; iz--) {
-      for (int ix = half_length + bound_length;
-           ix <= nx - half_length - bound_length; ix++) {
+#pragma ivdep
+      for (int ix = half_length + bound_length;ix <= nx - half_length - bound_length; ix++) {
         next[iy * nx * nz + iz * nx + ix] *=
             this->sponge_coeffs[iz - half_length];
         next[iy * nx * nz + (iz + nz - 2 * iz - 1) * nx + ix] *=
@@ -52,9 +55,13 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
       }
     }
   }
+  }
+#pragma omp parallel default(shared)
+    {
+#pragma omp for schedule(static, 1) collapse(2)
   for (int iy = y_start; iy < y_end; iy++) {
-    for (int iz = half_length + bound_length;
-         iz <= nz - half_length - bound_length; iz++) {
+    for (int iz = half_length + bound_length;iz <= nz - half_length - bound_length; iz++) {
+#pragma ivdep
       for (int ix = half_length + bound_length - 1; ix >= half_length; ix--) {
         next[iy * nx * nz + iz * nx + ix] *=
             this->sponge_coeffs[ix - half_length];
@@ -63,12 +70,16 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
       }
     }
   }
+  }
+
   if (ny > 1) {
+#pragma omp parallel default(shared)
+      {
+#pragma omp for schedule(static, 1) collapse(2)
     for (int iy = half_length + bound_length - 1; iy >= half_length; iy--) {
-      for (int iz = half_length + bound_length;
-           iz <= nz - half_length - bound_length; iz++) {
-        for (int ix = half_length + bound_length;
-             ix <= nx - half_length - bound_length; ix++) {
+      for (int iz = half_length + bound_length;iz <= nz - half_length - bound_length; iz++) {
+#pragma ivdep
+        for (int ix = half_length + bound_length;ix <= nx - half_length - bound_length; ix++) {
           next[iy * nx * nz + iz * nx + ix] *=
               this->sponge_coeffs[iy - half_length];
           next[(iy + ny - 2 * iy - 1) * nx * nz + iz * nx + ix] *=
@@ -77,6 +88,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
       }
     }
   }
+  }
   int start_y = y_start;
   int end_y = y_end;
   int start_x = half_length;
@@ -84,10 +96,15 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
   int start_z = half_length;
   int end_z = nz - half_length;
   int nz_nx = nz * nx;
+
+#pragma omp parallel default(shared)
+    {
+#pragma omp for schedule(static, 1) collapse(2)
   // Zero-Corners in the boundaries nx-nz boundary intersection--boundaries not
   // needed.
   for (int depth = start_y; depth < end_y; depth++) {
     for (int row = 0; row < bound_length; row++) {
+#pragma ivdep
       for (int column = 0; column < bound_length; column++) {
         /*!for values from z = half_length TO z = half_length +BOUND_LENGTH */
         /*! and for x = half_length to x = half_length + BOUND_LENGTH */
@@ -114,12 +131,17 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
       }
     }
   }
+  }
   // If 3-D, zero corners in the y-x and y-z plans.
   if (ny > 1) {
     // Zero-Corners in the boundaries ny-nz boundary intersection--boundaries
     // not needed.
+#pragma omp parallel default(shared)
+      {
+#pragma omp for schedule(static, 1) collapse(2)
     for (int depth = 0; depth < bound_length; depth++) {
       for (int row = 0; row < bound_length; row++) {
+#pragma ivdep
         for (int column = start_x; column < end_x; column++) {
           /*!for values from z = half_length TO z = half_length +BOUND_LENGTH */
           /*! and for y = half_length to y = half_length + BOUND_LENGTH */
@@ -143,10 +165,15 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
         }
       }
     }
+    }
+#pragma omp parallel default(shared)
+      {
+#pragma omp for schedule(static, 1) collapse(2)
     // Zero-Corners in the boundaries nx-ny boundary intersection--boundaries
     // not needed.
     for (int depth = 0; depth < bound_length; depth++) {
       for (int row = start_z; row < end_z; row++) {
+#pragma ivdep
         for (int column = 0; column < bound_length; column++) {
           /*!for values from y = half_length TO y = half_length +BOUND_LENGTH */
           /*! and for x = half_length to x = half_length + BOUND_LENGTH */
@@ -169,6 +196,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
               min(this->sponge_coeffs[column], this->sponge_coeffs[depth]);
         }
       }
+    }
     }
   }
 }
