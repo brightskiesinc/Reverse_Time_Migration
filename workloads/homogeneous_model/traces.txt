@@ -1,3 +1,0 @@
-none
-none
-data/shot_homogeneous.trace

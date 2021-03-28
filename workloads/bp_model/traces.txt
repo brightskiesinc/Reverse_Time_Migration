@@ -1,9 +1,0 @@
-601
-601
-data/shots0001_0200.segy
-data/shots0201_0400.segy
-data/shots0401_0600.segy
-data/shots0601_0800.segy
-data/shots0801_1000.segy
-data/shots1001_1200.segy
-data/shots1201_1348.segy

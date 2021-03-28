@@ -1,0 +1,3 @@
+add_subdirectory(callbacks)
+
+set(OPERATIONS-SOURCES ${OPERATIONS-SOURCES} PARENT_SCOPE)
