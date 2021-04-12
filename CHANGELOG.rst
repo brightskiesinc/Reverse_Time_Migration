@@ -2,6 +2,17 @@
 Seismic Toolbox Release Notes
 ==============================================
 
+v3.0.1
+=======
+
+**Fixed**:
+
+* CMake now doesn't specify a device for OneAPI
+* First touch is now specific to cpu.
+* Corrected the computational grid size.
+* Fix typo in OneAPI generator.
+
+
 v3.0.0
 =======
 
