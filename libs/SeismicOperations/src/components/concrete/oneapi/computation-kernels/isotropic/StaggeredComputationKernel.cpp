@@ -1,10 +1,11 @@
 //
 // Created by amr on 03/01/2021.
 //
-#include "operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp"
 
-#include "operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp"
-#include "operations/exceptions/NotImplementedException.h"
+#include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
+
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+#include <operations/exceptions/NotImplementedException.h>
 
 using namespace std;
 using namespace operations::components;
