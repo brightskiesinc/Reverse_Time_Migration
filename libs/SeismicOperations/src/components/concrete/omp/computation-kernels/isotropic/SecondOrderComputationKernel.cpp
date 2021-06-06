@@ -2,15 +2,13 @@
 // Created by amr-nasr on 11/21/19.
 //
 
-#include "operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp"
+#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
 
-#include "operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp"
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+
 #include <timer/Timer.h>
-#include <memory-manager/MemoryManager.h>
 
-#include <iostream>
 #include <cmath>
-#include <cstring>
 
 #define fma(a, b, c) (a) * (b) + (c)
 
@@ -73,7 +71,6 @@ void SecondOrderComputationKernel::Compute() {
     /// half_length 5 floating point operations outside the half_length loop Total
     /// = 6*K+5 =6*K+5
     int flops_per_second = 6 * HALF_LENGTH_ + 5;
-
 
     Timer *timer = Timer::GetInstance();
     timer->StartTimerKernel("ComputationKernel::kernel", size, 4, true,

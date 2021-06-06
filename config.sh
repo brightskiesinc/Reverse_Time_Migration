@@ -111,6 +111,10 @@ while getopts ":c:d:w:C:b:ghvimrtex" opt; do
     elif [ "$TECH" == "DPC" ] || [ "$TECH" == "dpc" ]; then
       echo -e "${GREEN}Using DPC++ technology for backend"
       TECH="dpc"
+    elif [ "$TECH" == "OMP_OFFLOAD" ] || [ "$TECH" == "omp_offload" ]; then
+      echo -e "${GREEN}Using omp offload technology"
+      TECH="omp_offload"
+
     else
       echo -e "${RED}Invalid technology argument for backend"
       exit 0
@@ -223,12 +227,15 @@ fi
 if [ "$TECH" == "omp" ]; then
   USE_DPC="OFF"
   USE_OpenMp="ON"
+  USE_OMP_Offload="OFF"
 elif [ "$TECH" == "dpc" ]; then
   USE_DPC="ON"
   USE_OpenMp="OFF"
-elif [ "$TECH" == "cuda" ]; then
+  USE_OMP_Offload="OFF"
+elif [ "$TECH" == "omp_offload" ]; then
   USE_DPC="OFF"
   USE_OpenMp="OFF"
+  USE_OMP_Offload="ON"
 fi
 
 if [ "$USE_OpenMp" == "ON" ]; then
@@ -280,6 +287,10 @@ elif [ "$USE_CUDA" == "ON" ]; then
       CXX_FLAGS="-ftree-vectorize -O3 -fopt-info-vec-optimized"
     fi
   fi
+elif [ "$USE_OMP_Offload" == "ON" ]; then
+  echo -e "${YELLOW}Overriding--Using Omp_offload compiler${NC}"
+  BUILD_TYPE="NOMODE"
+  CXX_FLAGS="-fiopenmp -std=c++17 -fopenmp-targets=spir64 -O3 -D__STRICT_ANSI__"
 else
   echo -e "${RED}No technology selected...${NC}"
 fi
@@ -296,6 +307,7 @@ cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DBUILD_TOOLS=$BUILD_TOOLS \
   -DUSE_OpenMp=$USE_OpenMp \
   -DUSE_DPC=$USE_DPC \
+  -DUSE_OMP_Offload=$USE_OMP_Offload \
   -DUSE_OpenCV=$USE_OpenCV \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=$VERBOSE \
   -DDATA_PATH=$DATA_PATH \

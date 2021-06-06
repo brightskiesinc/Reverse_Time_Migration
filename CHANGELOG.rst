@@ -2,6 +2,28 @@
 Seismic Toolbox Release Notes
 ==============================================
 
+v3.1.0
+=======
+
+**Fixed**:
+
+* Added OpenMP Offload support
+* Wave Approximations
+    * Isotropic Second Order
+* Migration Accommodators
+    * Cross Correlation
+* Boundary Conditions
+    * None (*All*)
+* Forward Collectors
+    * Reverse Propagation
+    * Two Propagation
+*  Model Handlers
+    * Seismic Model Handler
+    * Synthetic Model Handler
+* Source Injectors
+    * Ricker Source Injector
+
+
 v3.0.1
 =======
 

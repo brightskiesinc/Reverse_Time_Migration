@@ -8,6 +8,11 @@ elseif (USE_DPC)
             ${CMAKE_CURRENT_SOURCE_DIR}/concrete/computation-parameters/oneapi/computation_parameters_generator.cpp
             ${STBX-SOURCES}
             )
+elseif (USE_OMP_Offload)
+    set(STBX-SOURCES
+            ${CMAKE_CURRENT_SOURCE_DIR}/concrete/computation-parameters/omp-offload/computation_parameters_generator.cpp
+            ${STBX-SOURCES}
+            )
 endif ()
 
 

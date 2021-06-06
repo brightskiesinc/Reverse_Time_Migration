@@ -126,6 +126,8 @@
 #define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three | two-compression | optimal-checkpointing ]"
 #elif USING_DPCPP
 #define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three ]"
+#elif USING_OMP_OFFLOAD
+#define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three | two-compression | optimal-checkpointing ]"
 #endif
 
 #endif //SEISMIC_TOOLBOX_GENERATORS_KEYS_H
