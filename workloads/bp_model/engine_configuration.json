@@ -33,13 +33,13 @@
     "forward-collector": {
       "type": "three",
       "properties": {
-        "boundary-saving": true
+        "boundary-saving": false
       }
     },
     "trace-manager": {
       "type": "segy",
       "properties": {
-        "shot-stride": 2,
+        "shot-stride": 1,
         "interpolation": "none"
       }
     },
