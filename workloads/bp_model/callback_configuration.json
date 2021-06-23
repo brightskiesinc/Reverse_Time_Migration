@@ -10,7 +10,7 @@
       "show-each": 200
     },
     "image": {
-      "enable": true,
+      "enable": false,
       "show-each": 200,
       "percentile": 98.5
     },

@@ -1,6 +1,6 @@
 {
   "computation-parameters": {
-    "stencil-order": 16,
+    "stencil-order": 8,
     "boundary-length": 20,
     "source-frequency": 20,
     "isotropic-radius": 5,
@@ -9,7 +9,7 @@
     "device": "none",
     "cache-blocking": {
       "block-x": 256,
-      "block-z": 32,
+      "block-z": 16,
       "block-y": 1,
       "cor-block": 256
     },
