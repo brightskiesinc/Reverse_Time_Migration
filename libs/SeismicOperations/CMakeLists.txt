@@ -10,8 +10,15 @@ if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 endif ()
 
 # Set C++ standard to C++11 to allow for the advanced features used in code.
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+## In time of writing this, there are problems with std 17 for nvcc.
+if (USE_CUDA)
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+else()
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 
 # Adding the headers directories needed for all project.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/prerequisites)

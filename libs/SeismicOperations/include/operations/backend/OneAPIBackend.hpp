@@ -7,6 +7,7 @@
 
 #include <operations/common/Singleton.tpp>
 #include <CL/sycl.hpp>
+#include "dpc_common.hpp"
 
 namespace operations {
     namespace backend {
