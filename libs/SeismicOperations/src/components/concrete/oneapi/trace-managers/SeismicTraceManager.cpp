@@ -1,6 +1,21 @@
-//
-// Created by ingy-mounir on 1/28/20.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp"
 #include <operations/backend/OneAPIBackend.hpp>
@@ -12,10 +27,12 @@ using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::backend;
 
-void SeismicTraceManager::ApplyTraces(uint time_step) {
+void SeismicTraceManager::ApplyTraces(int time_step) {
     int trace_size = mpTracesHolder->TraceSizePerTimeStep;
-    int wnx = mpGridBox->GetActualWindowSize(X_AXIS);
-    int wnz_wnx = mpGridBox->GetActualWindowSize(Z_AXIS) * wnx;
+
+    int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wnz_wnx = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize() * wnx;
+
     int std_offset = (mpParameters->GetBoundaryLength() + mpParameters->GetHalfLength()) * wnx;
     float current_time = (time_step - 1) * mpGridBox->GetDT();
     float dt = mpGridBox->GetDT();

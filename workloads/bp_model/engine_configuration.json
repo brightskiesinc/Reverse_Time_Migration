@@ -37,17 +37,22 @@
       }
     },
     "trace-manager": {
-      "type": "segy",
       "properties": {
-        "shot-stride": 1,
+        "type": "segy",
+        "shot-stride": 2,
         "interpolation": "none"
       }
     },
     "source-injector": {
-      "type": "ricker"
+      "type": "ricker",
+      "properties": {
+        "max-freq-amplitude-percentage": 0.05
+      }
     },
     "model-handler": {
-      "type": "segy"
+      "properties": {
+        "type": "segy"
+      }
     }
   }
 }

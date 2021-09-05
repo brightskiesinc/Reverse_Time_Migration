@@ -1,6 +1,21 @@
-//
-// Created by amr-nasr on 18/11/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_CPML_BOUNDARY_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_CPML_BOUNDARY_MANAGER_HPP
@@ -9,7 +24,7 @@
 #include <operations/components/independents/primitive/BoundaryManager.hpp>
 #include <operations/components/dependency/concrete/HasNoDependents.hpp>
 
-#include <memory-manager/MemoryManager.h>
+#include <bs/base/memory/MemoryManager.hpp>
 
 #include <cmath>
 
@@ -20,7 +35,7 @@ namespace operations {
                                     public dependency::HasNoDependents {
         public:
             explicit CPMLBoundaryManager(
-                    operations::configuration::ConfigurationMap *apConfigurationMap);
+                    bs::base::configurations::ConfigurationMap *apConfigurationMap);
 
             ~CPMLBoundaryManager() override;
 
@@ -62,23 +77,38 @@ namespace operations {
 
             addons::Extension *mpExtension = nullptr;
 
-            dataunits::FrameBuffer<float> *coeff_a_x;
-            dataunits::FrameBuffer<float> *coeff_b_x;
-            dataunits::FrameBuffer<float> *coeff_a_z;
-            dataunits::FrameBuffer<float> *coeff_b_z;
+            dataunits::FrameBuffer<float> *mpCoeffax;
+            dataunits::FrameBuffer<float> *mpCoeffbx;
+            dataunits::FrameBuffer<float> *mpCoeffaz;
+            dataunits::FrameBuffer<float> *mpCoeffbz;
+            dataunits::FrameBuffer<float> *mpCoeffay;
+            dataunits::FrameBuffer<float> *mpCoeffby;
 
-            dataunits::FrameBuffer<float> *aux_1_x_up;
-            dataunits::FrameBuffer<float> *aux_1_x_down;
-            dataunits::FrameBuffer<float> *aux_1_z_up;
-            dataunits::FrameBuffer<float> *aux_1_z_down;
+            dataunits::FrameBuffer<float> *mpAux1xup;
+            dataunits::FrameBuffer<float> *mpAux1xdown;
+            dataunits::FrameBuffer<float> *mpAux1zup;
+            dataunits::FrameBuffer<float> *mpAux1zdown;
+            dataunits::FrameBuffer<float> *mpAux1yup;
+            dataunits::FrameBuffer<float> *mpAux1ydown;
 
-            dataunits::FrameBuffer<float> *aux_2_x_up;
-            dataunits::FrameBuffer<float> *aux_2_x_down;
-            dataunits::FrameBuffer<float> *aux_2_z_up;
-            dataunits::FrameBuffer<float> *aux_2_z_down;
+            dataunits::FrameBuffer<float> *mpAux2xup;
+            dataunits::FrameBuffer<float> *mpAux2xdown;
+            dataunits::FrameBuffer<float> *mpAux2zup;
+            dataunits::FrameBuffer<float> *mpAux2zdown;
+            dataunits::FrameBuffer<float> *mpAux2yup;
+            dataunits::FrameBuffer<float> *mpAux2ydown;
 
-            float max_vel;
+            dataunits::FrameBuffer<float> *mpFirstCoeffx;
+            dataunits::FrameBuffer<float> *mpFirstCoeffz;
+            dataunits::FrameBuffer<float> *mpFirstCoeffy;
+            dataunits::FrameBuffer<float> *mpSecondCoeffx;
+            dataunits::FrameBuffer<float> *mpSecondCoeffz;
+            dataunits::FrameBuffer<float> *mpSecondCoeffy;
+            dataunits::FrameBuffer<int> *mpDistanceDim1;
+            dataunits::FrameBuffer<int> *mpDistanceDim2;
+            dataunits::FrameBuffer<int> *mpDistanceDim3;
 
+            float mMaxVel;
             float mRelaxCoefficient;
             float mShiftRatio;
             float mReflectCoefficient;

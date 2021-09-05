@@ -1,10 +1,26 @@
-//
-// Created by zeyad-osama on 10/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/utils/compressor/Compressor.hpp>
 
-#include <timer/Timer.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
 
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +34,9 @@
 #define ZFP_MAX_PAR_BLOCKS 512
 #define MIN_BLOCK_SIZE 4
 
+using namespace bs::timer;
 using namespace operations::utils::compressors;
+using namespace bs::base::logger;
 
 void apply_zfp(float *array, int nx, int ny, int nz, int nt,
                FILE *file, int decompress, bool zfp_is_relative, double tolerance);
@@ -49,9 +67,10 @@ void decompress_normal(FILE *file, float *data, int nx, int ny, int nz, int nt);
 void Compressor::Compress(float *array, int nx, int ny, int nz, int nt, double tolerance,
                           unsigned int codecType, const char *filename,
                           bool zfp_is_relative) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     FILE *compressed_file = fopen(filename, "wb");
     if (compressed_file == nullptr) {
-        fprintf(stderr, "Opening compressed file<%s> to write to failed...\n", filename);
+        Logger->Error() << "Opening compressed file" << filename << "to write to failed..." << '\n';
         exit(EXIT_FAILURE);
     }
 #ifdef ZFP_COMPRESSION
@@ -63,7 +82,7 @@ void Compressor::Compress(float *array, int nx, int ny, int nz, int nt, double t
             compress_zfp(array, nx, ny, nz, nt, tolerance, compressed_file, zfp_is_relative);
             break;
         default:
-            fprintf(stderr, "***  Invalid codec Type, Terminating\n");
+            Logger->Error() << "***  Invalid codec Type, Terminating" << '\n';
             exit(EXIT_FAILURE);
     }
 #else
@@ -75,9 +94,10 @@ void Compressor::Compress(float *array, int nx, int ny, int nz, int nt, double t
 void Compressor::Decompress(float *array, int nx, int ny, int nz, int nt, double tolerance,
                             unsigned int codecType, const char *filename,
                             bool zfp_is_relative) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     FILE *compressed_file = fopen(filename, "rb");
     if (compressed_file == nullptr) {
-        fprintf(stderr, "Opening compressed file<%s> to read from failed...\n", filename);
+        Logger->Error() << "Opening compressed file " << filename << " to read from failed..." << '\n';
         exit(EXIT_FAILURE);
     }
 #ifdef ZFP_COMPRESSION
@@ -89,7 +109,7 @@ void Compressor::Decompress(float *array, int nx, int ny, int nz, int nt, double
             decompress_zfp(array, nx, ny, nz, nt, tolerance, compressed_file, zfp_is_relative);
             break;
         default:
-            fprintf(stderr, "***Invalid codec Type, Terminating\n");
+            Logger->Error() << "***Invalid codec Type, Terminating" << '\n';
             exit(EXIT_FAILURE);
     }
 #else
@@ -101,6 +121,7 @@ void Compressor::Decompress(float *array, int nx, int ny, int nz, int nt, double
 void apply_zfp(float *array, int nx, int ny, int nz, int nt,
                FILE *file, int decompress, bool zfp_is_relative, double tolerance) {
 #ifdef ZFP_COMPRESSION
+    auto logger = LoggerSystem::GetInstance();
     /// Compressed stream
     zfp_stream *zfp;
     /// Storage for compressed stream
@@ -165,9 +186,9 @@ void apply_zfp(float *array, int nx, int ny, int nz, int nt,
         zfp_field *field;
         // Byte size of compressed stream
         size_t zfp_size;
-        // Allocate meta data for the 3D array a[nz][ny][nx]
-        Timer *timer = Timer::GetInstance();
-        timer->StartTimer("Compressor::ZFP::SetupProperties");
+        // Allocate meta-data for the 3D array a[nz][ny][nx]
+        ElasticTimer compressor_timer("Compressor::ZFP::SetupProperties");
+        compressor_timer.Start();
         // To choose between 1d,2d or 3d representation
         if ((nx > 1) && (ny > 1) && (nz > 1)) {// handle 3d
             field = zfp_field_3d(off_arr, type, nx, ny, nz);
@@ -177,33 +198,37 @@ void apply_zfp(float *array, int nx, int ny, int nz, int nt,
             field = zfp_field_1d(off_arr, type, nz);
         }
         zfp_stream_rewind(zfp);
-        timer->StopTimer("Compressor::ZFP::SetupProperties");
-        /* compress or decompress entire array */
+        compressor_timer.Stop();
+        /* Compress or decompress entire array. */
         if (decompress) {
-            /* read compressed stream and decompress array */
-            timer->StartTimer("Compressor::ZFP::IO::Decompression");
-            fread(&zfp_size, 1, sizeof(zfp_size), file);
-            fread(buffer, 1, zfp_size, file);
-            timer->StopTimer("Compressor::ZFP::IO::Decompression");
-            timer->StartTimer("Compressor::ZFP::Decompress");
-            if (!zfp_decompress(zfp, field)) {
-                fprintf(stderr, "decompression failed\n");
-                exit(EXIT_FAILURE);
+            /* Read compressed stream and decompress array. */
+            {
+                ScopeTimer t("Compressor::ZFP::IO::Decompression");
+                fread(&zfp_size, 1, sizeof(zfp_size), file);
+                fread(buffer, 1, zfp_size, file);
             }
-            timer->StopTimer("Compressor::ZFP::Decompress");
+            {
+                ScopeTimer t("Compressor::ZFP::Decompress");
+                if (!zfp_decompress(zfp, field)) {
+                    logger->Error() << "decompression failed" << '\n';
+                    exit(EXIT_FAILURE);
+                }
+            }
         } else {
-            /* compress array and output compressed stream */
-            timer->StartTimer("Compressor::ZFP::Compress");
+            /* Compress array and output compressed stream. */
+            ElasticTimer compress_timer("Compressor::ZFP::Compress");
+            compressor_timer.Start();
             zfp_size = zfp_compress(zfp, field);
-            timer->StopTimer("Compressor::ZFP::Compress");
+            compressor_timer.Stop();
             if (!zfp_size) {
-                fprintf(stderr, "compression failed\n");
+                logger->Error() << "compression failed" << '\n';
                 exit(EXIT_FAILURE);
             } else {
-                timer->StartTimer("Compressor::ZFP::IO::Compression");
-                fwrite(&zfp_size, 1, sizeof(zfp_size), file);
-                fwrite(buffer, 1, zfp_size, file);
-                timer->StopTimer("Compressor::ZFP::IO::Compression");
+                {
+                    ScopeTimer t("Compressor::ZFP::IO::Compression");
+                    fwrite(&zfp_size, 1, sizeof(zfp_size), file);
+                    fwrite(buffer, 1, zfp_size, file);
+                }
             }
         }
         zfp_field_free(field);
@@ -223,6 +248,7 @@ void compress_zfp(float *array, int nx, int ny, int nz, int nt,
                   double tolerance, FILE *file,
                   bool zfp_is_relative) {
 #ifdef ZFP_COMPRESSION
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     unsigned int total_blocks = 0;
 
     // Calculating the number of blocks to be written, a block
@@ -291,8 +317,8 @@ void compress_zfp(float *array, int nx, int ny, int nz, int nt,
     float *off_arr;
     for (int i = 0; i < nt; i++) {
         off_arr = &array[i * pressure_size];
-        Timer *timer = Timer::GetInstance();
-        timer->StartTimer("Compressor::ZFP::Compress");
+        ElasticTimer compress_timer("Compressor::ZFP::Compress");
+        compress_timer.Start();
 
         /*
          * Loop on blocks, each is compressed and then written
@@ -308,15 +334,17 @@ void compress_zfp(float *array, int nx, int ny, int nz, int nt,
             }
             zfp_stream_rewind(zfp[block]);
 
-            // Compress entire array
+            // Compress entire arrayCompressor::ZFP::Compress
             zfp_size[block] = zfp_compress(zfp[block], field[block]);
             if (!zfp_size[block]) {
-                fprintf(stderr, "compression failed\n");
+                Logger->Error() << "compression failed" << '\n';
                 exit(EXIT_FAILURE);
             }
         }
-        timer->StopTimer("Compressor::ZFP::Compress");
-        timer->StartTimer("Compressor::ZFP::IO::Compression");
+        compress_timer.Stop();
+
+        ElasticTimer io_compressor_timer("Compressor::ZFP::IO::Compression");
+        io_compressor_timer.Start();
 
         /*
          * Write Block Sizes serially
@@ -326,7 +354,7 @@ void compress_zfp(float *array, int nx, int ny, int nz, int nt,
             fwrite(&zfp_size[block], sizeof(zfp_size[block]), 1, file); // write the size of the block after compression
             fwrite(buffer[block], 1, zfp_size[block], file); // write the actual compressed data
         }
-        timer->StopTimer("Compressor::ZFP::IO::Compression");
+        io_compressor_timer.Stop();
 
         /*
          * Clean up
@@ -355,6 +383,8 @@ void decompress_zfp(float *array, int nx, int ny, int nz, int nt,
                     double tolerance, FILE *file,
                     bool zfp_is_relative) {
 #ifdef ZFP_COMPRESSION
+
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     unsigned int totalBlocks = 0;
 
     // Calculating the number of blocks to be written, a block
@@ -425,9 +455,8 @@ void decompress_zfp(float *array, int nx, int ny, int nz, int nt,
     float *off_arr;
     for (int i = 0; i < nt; i++) {
         off_arr = &array[i * pressure_size];
-        Timer *timer = Timer::GetInstance();
-        timer->StartTimer("Compressor::ZFP::IO::Decompression");
-
+        ElasticTimer io_decompress_timer("Compressor::ZFP::IO::Decompression");
+        io_decompress_timer.Start();
         /*
          * Read Block Sizes in serial
          */
@@ -438,10 +467,10 @@ void decompress_zfp(float *array, int nx, int ny, int nz, int nt,
             // Write the actual compressed data
             fread(buffer[block], 1, zfp_size[block], file);
         }
-        timer->StopTimer("Compressor::ZFP::IO::Decompression");
+        io_decompress_timer.Stop();
 
-        timer->StartTimer("Compressor::ZFP::Decompress");
-
+        ElasticTimer decompress_timer("Compressor::ZFP::Decompress");
+        decompress_timer.Start();
 
         /*
          * Loop on blocks, each is compressed and then written
@@ -461,11 +490,11 @@ void decompress_zfp(float *array, int nx, int ny, int nz, int nt,
 
             // Decompress entire array
             if (!zfp_decompress(zfp[block], field[block])) {
-                fprintf(stderr, "Decompression failed\n");
+                Logger->Error() << "Decompression failed" << '\n';
                 exit(EXIT_FAILURE);
             }
         }
-        timer->StopTimer("Compressor::ZFP::Decompress");
+        decompress_timer.Stop();
 
         /*
          * Clean up
@@ -493,25 +522,23 @@ void decompress_zfp(float *array, int nx, int ny, int nz, int nt,
 void compress_normal(FILE *file, const float *data, int nx, int ny, int nz, int nt) {
     int size = nx * ny * nz;
     const float *offset_arr;
-
-    Timer *timer = Timer::GetInstance();
-    timer->StartTimer("Compressor::Normal::Compress");
-    for (int i = 0; i < nt; i++) {
-        offset_arr = &data[i * size];
-        fwrite(offset_arr, 1, size * sizeof(float), file);
+    {
+        ScopeTimer t("Compressor::Normal::Compress");
+        for (int i = 0; i < nt; i++) {
+            offset_arr = &data[i * size];
+            fwrite(offset_arr, 1, size * sizeof(float), file);
+        }
     }
-    timer->StopTimer("Compressor::Normal::Compress");
 }
 
 void decompress_normal(FILE *file, float *data, int nx, int ny, int nz, int nt) {
     int size = nx * ny * nz;
     float *offset_arr;
-
-    Timer *timer = Timer::GetInstance();
-    timer->StartTimer("Compressor::Normal::Decompress");
-    for (int i = 0; i < nt; i++) {
-        offset_arr = &data[i * size];
-        fread(offset_arr, 1, size * sizeof(float), file);
+    {
+        ScopeTimer t("Compressor::Normal::Decompress");
+        for (int i = 0; i < nt; i++) {
+            offset_arr = &data[i * size];
+            fread(offset_arr, 1, size * sizeof(float), file);
+        }
     }
-    timer->StopTimer("Compressor::Normal::Decompress");
 }

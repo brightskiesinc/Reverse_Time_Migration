@@ -1,14 +1,17 @@
 {
   "traces": {
     "min": 0,
-    "max": 0,
+    "max": 5000,
     "sort-type": "CSR",
     "paths": [
-      "data/shot.trace"
+      "data/synthetic_model_traces.segy"
     ]
   },
   "models": {
-    "velocity": "data/big_velocity.csv"
+    "velocity": "workloads/synthetic_model/synthetic_velocity.json",
+    "delta": "workloads/synthetic_model/synthetic_delta.json",
+    "epsilon": "workloads/synthetic_model/synthetic_epsilon.json",
+    "theta": "workloads/synthetic_model/synthetic_theta.json"
   },
   "wave": {
     "physics": "acoustic",
@@ -18,32 +21,41 @@
   },
   "components": {
     "boundary-manager": {
-      "type": "none",
+      "type": "cpml",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": true
       }
     },
     "migration-accommodator": {
       "type": "cross-correlation",
       "properties": {
-        "compensation": "no"
+        "compensation": "combined",
+        "dip-angle": 15
       }
     },
     "forward-collector": {
-      "type": "three"
+      "type": "three",
+      "properties": {
+        "boundary-saving": true
+      }
     },
     "trace-manager": {
-      "type": "binary",
-      "interpolation": "none"
+      "properties": {
+        "type": "segy",
+        "shot-stride": 1,
+        "interpolation": "none"
+      }
     },
     "source-injector": {
-      "type": "ricker"
+      "type": "ricker",
+      "properties": {
+        "max-freq-amplitude-percentage": 0.05
+      }
     },
     "model-handler": {
-      "type": "synthetic"
+      "properties": {
+        "type": "json"
+      }
     }
-  },
-  "interpolation": {
-    "type": "none"
   }
 }

@@ -1,15 +1,32 @@
-//
-// Created by zeyad-osama on 20/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_DATA_UNITS_MIGRATION_MIGRATION_DATA_HPP
 #define OPERATIONS_LIB_DATA_UNITS_MIGRATION_MIGRATION_DATA_HPP
 
-#include "operations/data-units/interface/DataUnit.hpp"
-#include "Result.hpp"
-#include "operations/common/DataTypes.h"
+#include <operations/data-units/interface/DataUnit.hpp>
+#include <operations/data-units/concrete/migration/Result.hpp>
+#include <operations/common/DataTypes.h>
 
-#include "operations/exceptions/Exceptions.h"
+#include <bs/io/data-units/concrete/Gather.hpp>
+
+#include <bs/base/exceptions/Exceptions.hpp>
 
 #include <utility>
 #include <vector>
@@ -32,26 +49,28 @@ namespace operations {
              * @param[in] dt
              * @param[in] avResults
              */
-            MigrationData(uint nx, uint ny, uint nz, uint nt,
-                          float dx, float dy, float dz, float dt,
+            MigrationData(uint nx, uint ny, uint nz,
+                          float dx, float dy, float dz,
+                          bs::io::dataunits::Gather *apMetadataGather,
                           std::vector<Result *> avResults) :
-                    MigrationData(nx, ny, nz, nt, 1, dx, dy, dz, dt, std::move(avResults)) {
+                    MigrationData(nx, ny, nz, 1, dx, dy, dz,
+                                  apMetadataGather, std::move(avResults)) {
             }
 
-            MigrationData(uint nx, uint ny, uint nz, uint nt,
+            MigrationData(uint nx, uint ny, uint nz,
                           uint gather_dimension,
-                          float dx, float dy, float dz, float dt,
+                          float dx, float dy, float dz,
+                          bs::io::dataunits::Gather *apMetadataGather,
                           std::vector<Result *> avResults) {
                 this->mNX = nx;
                 this->mNY = ny;
                 this->mNZ = nz;
-                this->mNT = nt;
 
                 this->mDX = dx;
                 this->mDY = dy;
                 this->mDZ = dz;
-                this->mDT = dt;
 
+                this->mpMetadataGather = apMetadataGather;
                 this->mvResults = std::move(avResults);
 
                 this->mGatherDimension = gather_dimension;
@@ -67,27 +86,13 @@ namespace operations {
             }
 
             /**
-             * @brief NT getter.
-             */
-            inline uint GetNT() const {
-                return this->mNT;
-            }
-
-            /**
-             * @brief DT getter.
-             */
-            inline float GetDT() const {
-                return this->mDT;
-            }
-
-            /**
              * @brief Grid size per axe getter.
              * @param[in] axis      Axe direction
              * @return[out] value   Value
              */
             uint GetGridSize(uint axis) const {
-                if (exceptions::is_out_of_range(axis)) {
-                    throw exceptions::AxisException();
+                if (bs::base::exceptions::is_out_of_range(axis)) {
+                    throw bs::base::exceptions::AXIS_EXCEPTION();
                 }
 
                 uint val;
@@ -107,8 +112,8 @@ namespace operations {
              * @return[out] value   Value
              */
             float GetCellDimensions(uint axis) const {
-                if (exceptions::is_out_of_range(axis)) {
-                    throw exceptions::AxisException();
+                if (bs::base::exceptions::is_out_of_range(axis)) {
+                    throw bs::base::exceptions::AXIS_EXCEPTION();
                 }
 
                 float val;
@@ -120,6 +125,42 @@ namespace operations {
                     val = this->mDX;
                 }
                 return val;
+            }
+
+            /**
+             * @brief Grid size per axe setter.
+             * @param[in] axis      Axe direction
+             * @param[in] value   Value
+             */
+            void SetGridSize(uint axis, uint value) {
+                if (bs::base::exceptions::is_out_of_range(axis)) {
+                    throw bs::base::exceptions::AXIS_EXCEPTION();
+                }
+                if (axis == Y_AXIS) {
+                    this->mNY = value;
+                } else if (axis == Z_AXIS) {
+                    this->mNZ = value;
+                } else if (axis == X_AXIS) {
+                    this->mNX = value;
+                }
+            }
+
+            /**
+             * @brief Cell dimensions per axe getter.
+             * @param[in] axis      Axe direction
+             * @param[in] value     Value
+             */
+            void SetCellDimensions(uint axis, float value) {
+                if (bs::base::exceptions::is_out_of_range(axis)) {
+                    throw bs::base::exceptions::AXIS_EXCEPTION();
+                }
+                if (axis == Y_AXIS) {
+                    this->mDY = value;
+                } else if (axis == Z_AXIS) {
+                    this->mDZ = value;
+                } else if (axis == X_AXIS) {
+                    this->mDX = value;
+                }
             }
 
             void SetResults(uint index, Result *apResult) {
@@ -138,16 +179,20 @@ namespace operations {
                 return this->mGatherDimension;
             }
 
+            bs::io::dataunits::Gather *GetMetadataGather() const {
+                return this->mpMetadataGather;
+            }
+
         private:
             uint mNX;
             uint mNY;
             uint mNZ;
-            uint mNT;
 
             float mDX;
             float mDY;
             float mDZ;
-            float mDT;
+
+            bs::io::dataunits::Gather *mpMetadataGather;
 
             std::vector<Result *> mvResults;
 

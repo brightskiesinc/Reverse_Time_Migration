@@ -203,14 +203,6 @@ _deps
 bin/
 obj/
 
-### CUDA ###
-*.i
-*.ii
-*.gpu
-*.ptx
-*.cubin
-*.fatbin
-
 ### Eclipse ###
 .metadata
 tmp/

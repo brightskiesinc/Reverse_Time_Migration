@@ -1,32 +1,48 @@
 {
   "callbacks": {
-    "su": {
-      "enable": false,
-      "show-each": 200,
-      "little-endian": false
-    },
-    "csv": {
+    "writer": {
+      "active-types": [
+        {
+          "su": {
+            "properties": {
+              "write-little-endian": false
+            }
+          }
+        },
+        {
+          "csv": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "image": {
+            "properties": {
+              "percentile": 98.5
+            }
+          }
+        },
+        {
+          "binary": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "segy": {
+            "properties": {
+            }
+          }
+        }
+      ],
       "enable": false,
       "show-each": 200
-    },
-    "image": {
-      "enable": false,
-      "show-each": 200,
-      "percentile": 98.5
     },
     "norm": {
       "enable": false,
       "show-each": 200
     },
-    "bin": {
-      "enable": false,
-      "show-each": 200
-    },
-    "segy": {
-      "enable": false,
-      "show-each": 200
-    },
-    "writers": {
+    "writers-configuration": {
       "migration": {
         "enable": true
       },

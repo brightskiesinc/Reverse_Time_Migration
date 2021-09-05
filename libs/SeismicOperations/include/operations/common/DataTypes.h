@@ -1,6 +1,21 @@
-//
-// Created by zeyad-osama on 19/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_BASE_DATA_TYPES_H
 #define OPERATIONS_LIB_BASE_DATA_TYPES_H
@@ -11,6 +26,11 @@
 #define Y_AXIS 0
 #define Z_AXIS 1
 #define X_AXIS 2
+
+#define OP_DIREC_FRONT      0   /* used to add boundary or padding at the axis front */
+#define OP_DIREC_REAR       1   /* used to add boundary or padding at the axis rear */
+#define OP_DIREC_BOTH       2   /* used to add boundary or padding at the axis front and rear */
+
 
 /// Unsigned integer type to be used for strictly positive numbers.
 typedef unsigned int uint;
@@ -186,23 +206,6 @@ public:
     uint wnx;
     uint wnz;
     uint wny;
-};
-
-/**
- * @brief Parameters needed for the modelling operation.
- */
-struct ModellingConfiguration {
-public:
-    /// Starting point for the receivers.
-    Point3D ReceiversStart;
-    /// The increment step of the receivers.
-    Point3D ReceiversIncrement;
-    /// The end point of the receivers exclusive.
-    Point3D ReceiversEnd;
-    /// The source point for the modelling.
-    Point3D SourcePoint;
-    /// The total time of the simulation in seconds.
-    float TotalTime;
 };
 
 #endif // OPERATIONS_LIB_BASE_DATA_TYPES_H

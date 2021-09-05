@@ -1,33 +1,48 @@
-#include "operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp"
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include <cmath>
-#include <omp.h>
-#include <iostream>
-#include <cstring>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 
-void WaveFieldsMemoryHandler::FirstTouch(float *ptr, GridBox *apGridBox, bool enable_window) {
+
+void
+WaveFieldsMemoryHandler::FirstTouch(float *ptr, GridBox *apGridBox, bool enable_window) {
     int nx, ny, nz;
-    int device_num = omp_get_default_device();
     if (enable_window) {
-        nx = apGridBox->GetActualWindowSize(X_AXIS);
-        ny = apGridBox->GetActualWindowSize(Y_AXIS);
-        nz = apGridBox->GetActualWindowSize(Z_AXIS);
+        nx = apGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
+        ny = apGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize();
+        nz = apGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
     } else {
-        nx = apGridBox->GetActualGridSize(X_AXIS);
-        ny = apGridBox->GetActualGridSize(Y_AXIS);
-        nz = apGridBox->GetActualGridSize(Z_AXIS);
+        nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetLogicalAxisSize();
+        ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
+        nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetLogicalAxisSize();
     }
 
-    /// Access elements in the same way used in
-    /// the computation kernel step.
-    Timer *timer = Timer::GetInstance();
-    timer->StartTimer("ComputationKernel::FirstTouch");
-
-    Device::MemSet(ptr, 0.0f, nx * ny * nz * sizeof(float));
-
-    timer->StopTimer("ComputationKernel::FirstTouch");
+    {
+        ScopeTimer t("ComputationKernel::FirstTouch");
+        /* Set the device arrays to zero. */
+        Device::MemSet(ptr, 0.0f, nx * ny * nz * sizeof(float));
+    }
 }

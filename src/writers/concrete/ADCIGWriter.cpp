@@ -1,6 +1,21 @@
-//
-// Created by zeyad-osama on 09/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <stbx/writers/concrete/ADCIGWriter.hpp>
 
@@ -32,7 +47,8 @@ ADCIGWriter::~ADCIGWriter() {
     delete[] this->mFilteredMigrationStacked;
 }
 
-void ADCIGWriter::Initialize() {
+void
+ADCIGWriter::Initialize() {
     uint stacked_size = this->mpMigrationData->GetGridSize(X_AXIS) *
                         this->mpMigrationData->GetGridSize(Y_AXIS) *
                         this->mpMigrationData->GetGridSize(Z_AXIS);
@@ -51,7 +67,8 @@ void ADCIGWriter::Initialize() {
     this->mRawMigration = this->mpMigrationData->GetResultAt(0)->GetData();
 }
 
-void ADCIGWriter::Filter() {
+void
+ADCIGWriter::Filter() {
     uint offset = this->mpMigrationData->GetGridSize(X_AXIS) *
                   this->mpMigrationData->GetGridSize(Y_AXIS) *
                   this->mpMigrationData->GetGridSize(Z_AXIS);
@@ -67,7 +84,8 @@ void ADCIGWriter::Filter() {
     }
 }
 
-void ADCIGWriter::PrepareResults() {
+void
+ADCIGWriter::PrepareResults() {
     uint nx = this->mpMigrationData->GetGridSize(X_AXIS);
     uint ny = this->mpMigrationData->GetGridSize(Y_AXIS);
     uint nz = this->mpMigrationData->GetGridSize(Z_AXIS);
@@ -93,7 +111,7 @@ void ADCIGWriter::PrepareResults() {
         }
     }
 
-    // creating interval images
+    /* Creating interval images. */
     int modified_nx = (nx / this->mIntervalLength) * n_angles;
 
     for (int iy = 0; iy < ny; iy++) {
@@ -121,57 +139,48 @@ void ADCIGWriter::PrepareResults() {
     }
 }
 
-void ADCIGWriter::WriteSegyIntervals(float *frame, const string &file_name) {
+void
+ADCIGWriter::WriteSegyIntervals(float *frame, const string &file_name) {
     string file_name_extension = file_name + ".segy";
-
-    uint modified_nx =
-            std::floor(this->mpMigrationData->GetGridSize(X_AXIS) /
-                       float(this->mIntervalLength)) *
-            this->mpMigrationData->GetGatherDimension();
-
-    write_segy(modified_nx,
-               this->mpMigrationData->GetGridSize(Y_AXIS),
-               this->mpMigrationData->GetGridSize(Z_AXIS),
-               this->mpMigrationData->GetNT(),
-               this->mpMigrationData->GetCellDimensions(X_AXIS),
-               this->mpMigrationData->GetCellDimensions(Y_AXIS),
-               this->mpMigrationData->GetCellDimensions(Z_AXIS),
-               this->mpMigrationData->GetDT(),
-               frame, file_name_extension, false);
+    /// @todo review intervals logic.
+    /// {
+    // uint modified_nx =
+    //         std::floor(this->mpMigrationData->GetGridSize(X_AXIS) /
+    //                    float(this->mIntervalLength)) *
+    //         this->mpMigrationData->GetGatherDimension();
+    // write_segy(modified_nx,
+    //            this->mpMigrationData->GetGridSize(Y_AXIS),
+    //            this->mpMigrationData->GetGridSize(Z_AXIS),
+    //            this->mpMigrationData->GetNT(),
+    //            this->mpMigrationData->GetCellDimensions(X_AXIS),
+    //            this->mpMigrationData->GetCellDimensions(Y_AXIS),
+    //            this->mpMigrationData->GetCellDimensions(Z_AXIS),
+    //            this->mpMigrationData->GetDT(),
+    //            frame, file_name_extension, false);
+    /// }
 }
 
-void ADCIGWriter::WriteCIG(float *frame, const string &file_name) {
+void
+ADCIGWriter::WriteCIG(float *frame, const string &file_name) {
     string file_name_extension = file_name + ".segy";
-
-    write_adcig_segy(this->mpMigrationData->GetGridSize(X_AXIS),
-                     this->mpMigrationData->GetGridSize(Y_AXIS),
-                     this->mpMigrationData->GetGridSize(Z_AXIS),
-                     this->mpMigrationData->GetNT(),
-                     this->mpMigrationData->GetGatherDimension(),
-                     this->mpMigrationData->GetCellDimensions(X_AXIS),
-                     this->mpMigrationData->GetCellDimensions(Y_AXIS),
-                     this->mpMigrationData->GetCellDimensions(Z_AXIS),
-                     this->mpMigrationData->GetDT(),
-                     frame, file_name_extension, false);
+    WriteFrame(frame, file_name, this->mpMigrationData->GetGatherDimension());
 }
 
-void ADCIGWriter::Write(const string &write_path, bool is_traces) {
+void
+ADCIGWriter::Write(const string &write_path, bool is_traces) {
     this->Initialize();
     this->SpecifyRawMigration();
     this->PostProcess();
     this->Filter();
     this->PrepareResults();
 
-    WriteSegy(this->mRawMigrationStacked, write_path + "/raw_migration_stacked");
-    WriteSegy(this->mFilteredMigrationStacked, write_path + "/filtered_migration_stacked");
+    WriteFrame(this->mRawMigrationStacked, write_path + "/raw_migration_stacked");
+    WriteFrame(this->mFilteredMigrationStacked, write_path + "/filtered_migration_stacked");
 
     WriteSegyIntervals(this->mRawMigrationIntervals, write_path + "/raw_migration_intervals");
     WriteSegyIntervals(this->mFilteredMigrationIntervals, write_path + "/filtered_migration_intervals");
 
-//    WriteCIG(this->mRawMigration, write_path + "/raw_migration");
-
-    WriteBinary(this->mRawMigrationStacked, write_path + "/raw_migration");
-    WriteBinary(this->mFilteredMigrationStacked, write_path + "/filtered_migration");
+    WriteCIG(this->mRawMigration, write_path + "/raw_migration");
 
     WriteTimeResults(write_path);
 }

@@ -1,6 +1,14 @@
 {
+  "traces": {
+    "min": 0,
+    "max": 100,
+    "sort-type": "CSR",
+    "paths": [
+      "workloads/synthetic_model/synthetic_traces.json"
+    ]
+  },
   "models": {
-    "velocity": "data/big_velocity.csv"
+    "velocity": "workloads/synthetic_model/synthetic_velocity.json"
   },
   "wave": {
     "physics": "acoustic",
@@ -10,25 +18,35 @@
   },
   "components": {
     "boundary-manager": {
-      "type": "none",
-      "use-top-layer": "yes",
-      "reflect-coeff": "0.05",
-      "shift-ratio": "0.2",
-      "relax-cp": "0.9"
+      "type": "cpml",
+      "properties": {
+        "use-top-layer": true
+      }
+    },
+    "trace-manager": {
+      "properties": {
+        "type": "json",
+        "shot-stride": 1,
+        "interpolation": "none",
+        "header-only": true
+      }
     },
     "trace-writer": {
-      "type": "binary"
+      "properties": {
+        "type": "segy",
+        "output-file": "data/synthetic_model_traces"
+      }
     },
     "source-injector": {
-      "type": "ricker"
+      "type": "ricker",
+      "properties": {
+        "max-freq-amplitude-percentage": 0.05
+      }
     },
     "model-handler": {
-      "type": "synthetic"
-    },
-    "modelling-configuration-parser": {
-      "type": "text"
+      "properties": {
+        "type": "json"
+      }
     }
-  },
-  "modelling-file": "workloads/synthetic_model/modelling.json",
-  "output-file": "data/shot.trace"
+  }
 }

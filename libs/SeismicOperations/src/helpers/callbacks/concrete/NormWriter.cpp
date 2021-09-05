@@ -1,6 +1,21 @@
-//
-// Created by amr-nasr on 18/01/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/helpers/callbacks/concrete/NormWriter.h>
 
@@ -17,14 +32,17 @@ using namespace operations::dataunits;
 using namespace operations::common;
 
 
-NormWriter::NormWriter(uint show_each, bool write_forward, bool write_backward,
-                       bool write_reverse, const string &write_path) {
-    this->show_each = show_each;
-    this->write_forward = write_forward;
-    this->write_backward = write_backward;
-    this->write_reverse = write_reverse;
-    this->write_path = write_path;
-    mkdir(write_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+NormWriter::NormWriter(uint aShowEach,
+                       bool aWriteForward,
+                       bool aWriteBackward,
+                       bool aWriteReverse,
+                       const string &aWritePath) {
+    this->show_each = aShowEach;
+    this->write_forward = aWriteForward;
+    this->write_backward = aWriteBackward;
+    this->write_reverse = aWriteReverse;
+    this->write_path = aWritePath;
+    mkdir(aWritePath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     this->write_path = this->write_path + "/norm";
     mkdir(this->write_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (this->write_forward) {
@@ -51,56 +69,75 @@ NormWriter::~NormWriter() {
     }
 }
 
-void NormWriter::BeforeInitialization(ComputationParameters *apParameters) {}
+void
+NormWriter::BeforeInitialization(ComputationParameters *apParameters) {}
 
-void NormWriter::AfterInitialization(GridBox *apGridBox) {}
+void
+NormWriter::AfterInitialization(GridBox *apGridBox) {}
 
-void NormWriter::BeforeShotPreprocessing(TracesHolder *apTraces) {}
+void
+NormWriter::BeforeShotPreprocessing(TracesHolder *apTraces) {}
 
-void NormWriter::AfterShotPreprocessing(TracesHolder *apTraces) {}
+void
+NormWriter::AfterShotPreprocessing(TracesHolder *apTraces) {}
 
-void NormWriter::BeforeForwardPropagation(GridBox *apGridBox) {}
+void
+NormWriter::BeforeForwardPropagation(GridBox *apGridBox) {}
 
-void NormWriter::AfterForwardStep(GridBox *apGridBox, uint aTimeStep) {
+void
+NormWriter::AfterForwardStep(GridBox *apGridBox, int aTimeStep) {
     if (write_forward && aTimeStep % show_each == 0) {
-        uint nx = apGridBox->GetActualWindowSize(X_AXIS);
-        uint ny = apGridBox->GetActualWindowSize(Y_AXIS);
-        uint nz = apGridBox->GetActualWindowSize(Z_AXIS);
+
+        uint nx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+        uint ny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+        uint nz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
+
         float norm = NormWriter::Solve(apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer(), nx, nz, ny);
         (*this->forward_norm_stream) << aTimeStep << "\t" << norm << endl;
     }
 }
 
-void NormWriter::BeforeBackwardPropagation(GridBox *apGridBox) {}
+void
+NormWriter::BeforeBackwardPropagation(GridBox *apGridBox) {}
 
-void NormWriter::AfterBackwardStep(GridBox *apGridBox, uint aTimeStep) {
+void
+NormWriter::AfterBackwardStep(GridBox *apGridBox, int aTimeStep) {
     if (write_backward && aTimeStep % show_each == 0) {
-        uint nx = apGridBox->GetActualWindowSize(X_AXIS);
-        uint ny = apGridBox->GetActualWindowSize(Y_AXIS);
-        uint nz = apGridBox->GetActualWindowSize(Z_AXIS);
+
+        uint nx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+        uint ny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+        uint nz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
         float norm = NormWriter::Solve(apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer(), nx, nz, ny);
         (*this->backward_norm_stream) << aTimeStep << "\t" << norm << endl;
     }
 }
 
-void NormWriter::AfterFetchStep(GridBox *apGridBox,
-                                uint aTimeStep) {
+void
+NormWriter::AfterFetchStep(GridBox *apGridBox,
+                           int aTimeStep) {
     if (write_reverse && aTimeStep % show_each == 0) {
-        uint nx = apGridBox->GetActualWindowSize(X_AXIS);
-        uint ny = apGridBox->GetActualWindowSize(Y_AXIS);
-        uint nz = apGridBox->GetActualWindowSize(Z_AXIS);
+
+        uint nx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+        uint ny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+        uint nz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
         float norm = NormWriter::Solve(apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer(), nx, nz, ny);
         (*this->reverse_norm_stream) << aTimeStep << "\t" << norm << endl;
     }
 }
 
-void NormWriter::BeforeShotStacking(
+void
+NormWriter::BeforeShotStacking(
         GridBox *apGridBox, FrameBuffer<float> *apShotCorrelation) {}
 
-void NormWriter::AfterShotStacking(
+void
+NormWriter::AfterShotStacking(
         GridBox *apGridBox, FrameBuffer<float> *apStackedShotCorrelation) {}
 
-void NormWriter::AfterMigration(
+void
+NormWriter::AfterMigration(
         GridBox *apGridBox, FrameBuffer<float> *apStackedShotCorrelation) {}
 
 

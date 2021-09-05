@@ -1,374 +1,423 @@
-//
-// Created by amr-nasr on 11/21/19.
-//
-
-#include "operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp"
-
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include "operations/components/independents/concrete/boundary-managers/StaggeredCPMLBoundaryManager.hpp"
-#include <timer/Timer.h>
-
-#include <iostream>
-#include <algorithm>
-#include <cmath>
-#include <cstring>
-
-#ifndef PWR2
-#define PWR2(EXP) ((EXP) * (EXP))
-#endif
-
-#define fma(a, b, c) (((a) * (b)) + (c)
+#include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
 using namespace std;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 
-void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
-    /* Read parameters into local variables to be shared. */
+FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary)
+
+FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue)
+
+FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary)
+
+FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue)
+
+
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary() {
+    // Setup needed meta-information.
+
+    ///Direction as a parameter ?!
+    float dh;
+    if (DIRECTION_ == X_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
+    else if (DIRECTION_ == Z_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
+    //float dh_old = this->mpGridBox->GetCellDimensions(DIRECTION_);
+    float inv_dh = 1.0f / dh;
+    int z_start = HALF_LENGTH_;
+    int z_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+    int x_start = HALF_LENGTH_;
+    int x_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+
+    int b_l = mpParameters->GetBoundaryLength();
+
+
+    int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
+    int lnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
+    int lnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
+
+
+    int wnzwnx = wnx * wnz;
+
+    // Set variables pointers.
+    float *aux_variable;
+    float *small_a;
+    float *small_b;
+    float *particle_velocity;
+    float *coeff = &mpParameters->GetFirstDerivativeStaggeredFDCoefficient()[1];
+    int aux_nx;
+    int aux_nz;
+    int jump;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l; //hl + bl
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_vel_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_vel_x_left->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
+            small_a = this->small_a_x->GetNativePointer();
+            small_b = this->small_b_x->GetNativePointer();
+            jump = 1;
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_vel_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_vel_z_up->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
+            small_a = this->small_a_z->GetNativePointer();
+            small_b = this->small_b_z->GetNativePointer();
+            jump = wnx;
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
+    }
+    int aux_nxnz = aux_nx * aux_nz;
+    // Compute.
+#pragma omp parallel for collapse(2)
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
+            int active_bound_index;
+            int real_x = i;
+            int real_z = j;
+            float value = 0.0f;
+            // Setup indices for access.
+            if constexpr(DIRECTION_ == X_AXIS) {
+                active_bound_index = i;
+                if constexpr(OPPOSITE_) {
+                    real_x = lnx - 1 - i;
+                }
+            } else if constexpr(DIRECTION_ == Z_AXIS) {
+                active_bound_index = j;
+                if constexpr(OPPOSITE_) {
+                    real_z = lnz - 1 - j;
+                }
+            }
+            // Compute wanted derivative.
+            int offset;
+            offset = real_x + wnx * real_z;
+            DERIVE_JUMP_AXIS(offset, jump, 0, 1, -, particle_velocity, coeff, value)
+            int offset3 = b_l + HALF_LENGTH_ - 1 - active_bound_index;
+            int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
+            aux_variable[aux_offset] =
+                    small_a[offset3] *
+                    aux_variable[aux_offset] +
+                    small_b[offset3] * inv_dh *
+                    value;
+        }
+    }
+}
+
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue() {
+// Setup needed meta-information.
+    float dh;
+    if (DIRECTION_ == X_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
+    else if (DIRECTION_ == Z_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
+    //float dh_old = this->mpGridBox->GetCellDimensions(DIRECTION_);
+    float inv_dh = 1.0f / dh;
+    int z_start = HALF_LENGTH_;
+    int z_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+    int x_start = HALF_LENGTH_;
+    int x_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+
+    int b_l = mpParameters->GetBoundaryLength();
+
+    int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
+    int lnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
+    int lnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
+
+
+    int wnzwnx = wnx * wnz;
+
+    // Set variables pointers.
+    float *aux_variable;
+    float *particle_velocity;
+    int aux_nx;
+    int aux_nz;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_ptr_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_ptr_x_left->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_ptr_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_ptr_z_up->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
+    }
+    int aux_nxnz = aux_nx * aux_nz;
+    float *parameter_base;
+    if (ADJOINT_) {
+        parameter_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
+    } else {
+        parameter_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
+    }
+    // Compute.
+#pragma omp parallel for collapse(2)
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
+            int active_bound_index;
+            int real_x = i;
+            int real_z = j;
+            float value = 0.0f;
+            // Setup indices for access.
+            if constexpr(DIRECTION_ == X_AXIS) {
+                active_bound_index = i;
+                if constexpr(OPPOSITE_) {
+                    real_x = lnx - 1 - i;
+                }
+            } else if constexpr(DIRECTION_ == Z_AXIS) {
+                active_bound_index = j;
+                if constexpr(OPPOSITE_) {
+                    real_z = lnz - 1 - j;
+                }
+            }
+            // Compute wanted derivative.
+            int offset = real_x + wnx * real_z;
+            int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
+            particle_velocity[offset] =
+                    particle_velocity[offset] -
+                    parameter_base[offset] * aux_variable[aux_offset];
+
+        }
+    }
+}
+
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary() {
+    // Setup needed meta-information.
+    float dh;
+    if (DIRECTION_ == X_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
+    else if (DIRECTION_ == Z_AXIS)
+        dh = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
+    // float dh_old = this->mpGridBox->GetCellDimensions(DIRECTION_);
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
+    float inv_dh = 1.0f / dh;
 
-    float *vel_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-    float *den_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
+    int z_start = HALF_LENGTH_;
+    int z_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+    int x_start = HALF_LENGTH_;
+    int x_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
 
-    float dx = this->mpGridBox->GetCellDimensions(X_AXIS);
-    float dz = this->mpGridBox->GetCellDimensions(Z_AXIS);
-
-    int nx = this->mpGridBox->GetActualWindowSize(X_AXIS);
-    int nz = this->mpGridBox->GetActualWindowSize(Z_AXIS);
-
-    float *coeff = mpParameters->GetFirstDerivativeStaggeredFDCoefficient();
-    HALF_LENGTH half_length = mpParameters->GetHalfLength();
     int b_l = mpParameters->GetBoundaryLength();
-    ofstream outfile;
 
-    // Pre-compute the coefficients for each direction.
-    float coeff_x[half_length];
-    float coeff_z[half_length];
-    for (int i = 0; i < half_length; i++) {
-        coeff_x[i] = coeff[i + 1];
-        coeff_z[i] = coeff[i + 1];
+    int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
+    int lnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
+    int lnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
+
+    int wnzwnx = wnx * wnz;
+
+    // Set variables pointers.
+    float *aux_variable;
+    float *small_a;
+    float *small_b;
+    float *coeff = &mpParameters->GetFirstDerivativeStaggeredFDCoefficient()[1];
+    int aux_nx;
+    int aux_nz;
+    int jump;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_ptr_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_ptr_x_left->GetNativePointer();
+            }
+            small_a = this->small_a_x->GetNativePointer();
+            small_b = this->small_b_x->GetNativePointer();
+            jump = 1;
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_ptr_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_ptr_z_up->GetNativePointer();
+            }
+            small_a = this->small_a_z->GetNativePointer();
+            small_b = this->small_b_z->GetNativePointer();
+            jump = wnx;
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
     }
-
-    if (kernel_id == 0) {
-        // Apply CPML on pressure.
-
-        float *particle_velocity_current_x =
-                this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
-
-        // putting the auxiliary_vel_x right and left
-        for (int j = half_length; j < this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - half_length; ++j) {
-            for (int i = half_length; i < half_length + b_l; ++i) {
-                // offset for the left part
-                int offset = i + nx * j;
-                // offset for the right part
-                int offset_2 = (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 1) - i + nx * j;
-
-                float value_x_left = 0;
-                float value_x_right = 0;
-                for (int index = 0; index < half_length; ++index) {
-                    value_x_left +=
-                            coeff_x[index] *
-                            (particle_velocity_current_x[offset + index] -
-                             particle_velocity_current_x[offset - (index + 1)]);
-                    value_x_right +=
-                            coeff_x[index] *
-                            (particle_velocity_current_x[offset_2 + index] -
-                             particle_velocity_current_x[offset_2 - (index + 1)]);
+    int aux_nxnz = aux_nx * aux_nz;
+    // Compute.
+#pragma omp parallel for collapse(2)
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
+            int active_bound_index;
+            int real_x = i;
+            int real_z = j;
+            float value = 0.0f;
+            // Setup indices for access.
+            if constexpr(DIRECTION_ == X_AXIS) {
+                active_bound_index = i;
+                if constexpr(OPPOSITE_) {
+                    real_x = lnx - 1 - i;
                 }
-                // offset for the auxiliary array in x
-                int offset_x = (i - half_length) + (j - half_length) * b_l;
-                // offset for the coefficient array in x
-                int offset3 = b_l + half_length - 1 - i;
-
-                // left boundary
-                auxiliary_vel_x_left->GetNativePointer()[offset_x] =
-                        small_a_x->GetNativePointer()[offset3] *
-                        auxiliary_vel_x_left->GetNativePointer()[offset_x] +
-                        (small_b_x->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(X_AXIS))) *
-                        value_x_left;
-
-                // right boundary reversed (index 0 is the outer point
-                // (x=nx-1-half_length))
-                auxiliary_vel_x_right->GetNativePointer()[offset_x] =
-                        small_a_x->GetNativePointer()[offset3] *
-                        auxiliary_vel_x_right->GetNativePointer()[offset_x] +
-                        (small_b_x->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(X_AXIS))) *
-                        value_x_right;
-            }
-        }
-
-        float *particle_velocity_current_z =
-                this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
-
-        // putting the auxiliary_vel_z up and down
-        for (int j = half_length; j < half_length + b_l; ++j) {
-            for (int i = half_length; i < this->mpGridBox->GetLogicalWindowSize(X_AXIS) - half_length; ++i) {
-                // offset for the up part
-                int offset = i + nx * j;
-                // offset for the down part
-                int offset_2 = i + (nx * (this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - 1 - j));
-                float value_z_up = 0;
-                float value_z_down = 0;
-                for (int index = 0; index < half_length; ++index) {
-                    value_z_up +=
-                            coeff_z[index] *
-                            (particle_velocity_current_z[offset + index * nx] -
-                             particle_velocity_current_z[offset - (index + 1) * nx]);
-                    value_z_down +=
-                            coeff_z[index] *
-                            (particle_velocity_current_z[offset_2 + index * nx] -
-                             particle_velocity_current_z[offset_2 - (index + 1) * nx]);
+            } else if constexpr(DIRECTION_ == Z_AXIS) {
+                active_bound_index = j;
+                if constexpr(OPPOSITE_) {
+                    real_z = lnz - 1 - j;
                 }
-                // offset for the auxiliary array in z
-                int offset_z = (i - half_length) +
-                               (j - half_length);
-                // offset for the coefficient  array in z
-                int offset3 = b_l + half_length - j - 1;
-
-                // up boundary
-                auxiliary_vel_z_up->GetNativePointer()[offset_z] =
-                        small_a_z->GetNativePointer()[offset3] *
-                        auxiliary_vel_z_up->GetNativePointer()[offset_z] +
-                        (small_b_z->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(Z_AXIS))) *
-                        value_z_up;
-
-                // down boundary (index 0 is the outer point (z=nz-1-half_length))
-                auxiliary_vel_z_down->GetNativePointer()[offset_z] =
-                        small_a_z->GetNativePointer()[offset3] *
-                        auxiliary_vel_z_down->GetNativePointer()[offset_z] +
-                        (small_b_z->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(Z_AXIS))) *
-                        value_z_down;
             }
-        }
-
-        // change the pressure in the left and right boundaries of x
-        for (int j = half_length; j < this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - half_length; ++j) {
-            for (int i = half_length; i < half_length + b_l; ++i) {
-                // offset for the left part
-                int offset = i + nx * j;
-                // offset for the right part
-                int offset_2 = (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 1 - i) + nx * j;
-
-                // offset for the outer part for auxiliary whether it is the outer in
-                // left or outer in right
-                int offset_x = (i - half_length) + (b_l) * (j - half_length);
-
-                // left boundary
-                curr_base[offset] =
-                        curr_base[offset] -
-                        vel_base[offset] * (auxiliary_vel_x_left->GetNativePointer()[offset_x]);
-
-                // right boundary(starting from the outer point (x=nx-1-half_length))
-                curr_base[offset_2] =
-                        curr_base[offset_2] -
-                        vel_base[offset_2] * (auxiliary_vel_x_right->GetNativePointer()[offset_x]);
-            }
-        }
-
-        // change the pressure in the up and down boundaries of z
-        for (int j = half_length; j < half_length + b_l; ++j) {
-            for (int i = half_length; i < this->mpGridBox->GetLogicalWindowSize(X_AXIS) - half_length; ++i) {
-                // offset for the up boundary
-                int offset = i + nx * j;
-                // offset of the down boundary
-                int offset_2 = i + nx * (this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - 1 - j);
-                // size of auxiliary_vel_z_up is x=nx-2*h_l , z=b_l
-                // offset for the outer part for auxiliary whether it is the outer in
-                // up or outer in down
-                int offset_z = (i - half_length) +
-                               (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 2 * half_length) *
-                               (j - half_length);
-
-                // up boundary
-                curr_base[offset] = curr_base[offset] -
-                                    vel_base[offset] * (auxiliary_vel_z_up->GetNativePointer()[offset_z]);
-
-                // down boundary(starting from the outer point (z=nz-1-half_length))
-                curr_base[offset_2] =
-                        curr_base[offset_2] -
-                        vel_base[offset_2] * (auxiliary_vel_z_down->GetNativePointer()[offset_z]);
-            }
-        }
-    } else if (kernel_id == 1) {
-        // putting the auxiliary_ptr_x right and left
-        for (int j = half_length; j < this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - half_length; ++j) {
-            for (int i = half_length; i < half_length + b_l; ++i) {
-                // offset for the left part
-                int offset = i + nx * j;
-                // offset for the right part
-                int offset_2 = (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 1) - i + nx * j;
-                float value_x_left = 0;
-                float value_x_right = 0;
-                for (int index = 0; index < half_length; ++index) {
-                    value_x_left += coeff_x[index] * (curr_base[offset + (index + 1)] -
-                                                      curr_base[offset - index]);
-                    value_x_right +=
-                            coeff_x[index] * (curr_base[offset_2 + (index + 1)] -
-                                              curr_base[offset_2 - index]);
-                }
-                // offset for the auxiliary array in x
-                int offset_x = (i - half_length) + (j - half_length) * b_l;
-                // offset for the coefficient array in x
-                int offset3 = b_l + half_length - 1 - i;
-
-                // left boundary
-                auxiliary_ptr_x_left->GetNativePointer()[offset_x] =
-                        small_a_x->GetNativePointer()[offset3] *
-                        auxiliary_ptr_x_left->GetNativePointer()[offset_x] +
-                        (small_b_x->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(X_AXIS))) *
-                        value_x_left;
-
-                // right boundary reversed (index 0 is the outer point
-                // (x=nx-1-half_length))
-                auxiliary_ptr_x_right->GetNativePointer()[offset_x] =
-                        small_a_x->GetNativePointer()[offset3] *
-                        auxiliary_ptr_x_right->GetNativePointer()[offset_x] +
-                        (small_b_x->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(X_AXIS))) *
-                        value_x_right;
-            }
-        }
-
-        // putting the auxiliary_ptr_z up and down
-        for (int j = half_length; j < half_length + b_l; ++j) {
-            for (int i = half_length; i < this->mpGridBox->GetLogicalWindowSize(X_AXIS) - half_length; ++i) {
-                // offset for the up part
-                int offset = i + nx * j;
-                // offset for the down part
-                int offset_2 = i + (nx * (this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - 1 - j));
-                float value_z_up = 0;
-                float value_z_down = 0;
-                for (int index = 0; index < half_length; ++index) {
-                    value_z_up +=
-                            coeff_z[index] * (curr_base[offset + (index + 1) * nx] -
-                                              curr_base[offset - (index * nx)]);
-                    value_z_down +=
-                            coeff_z[index] * (curr_base[offset_2 + (index + 1) * nx] -
-                                              curr_base[offset_2 - (index * nx)]);
-                }
-                // offset for the auxiliary array in z
-                int offset_z = (i - half_length) +
-                               (j - half_length) *
-                               (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 2 * half_length);
-                // offset for the coefficient  array in z
-                int offset3 = b_l + half_length - j - 1;
-
-                // up boundary
-                auxiliary_ptr_z_up->GetNativePointer()[offset_z] =
-                        small_a_z->GetNativePointer()[offset3] * auxiliary_ptr_z_up->GetNativePointer()[offset_z] +
-                        (small_b_z->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(Z_AXIS))) *
-                        value_z_up;
-
-                // down boundary (index 0 is the outer point (z=nz-1-half_length))
-                auxiliary_ptr_z_down->GetNativePointer()[offset_z] =
-                        small_a_z->GetNativePointer()[offset3] *
-                        auxiliary_ptr_z_down->GetNativePointer()[offset_z] +
-                        (small_b_z->GetNativePointer()[offset3] / (this->mpGridBox->GetCellDimensions(Z_AXIS))) *
-                        value_z_down;
-            }
-        }
-
-        float *particle_velocity_current_x =
-                this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
-
-        // update the particle_velocity_x in the left and right boundaries
-        for (int j = half_length; j < this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - half_length; ++j) {
-            for (int i = half_length; i < half_length + b_l; ++i) {
-                // offset for the left part
-                int offset = i + nx * j;
-                // offset for the right part
-                int offset_2 = (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 1 - i) + nx * j;
-                // offset for the outer part for auxiliary whether it is the outer in
-                // left or outer in right
-                int offset_x = (i - half_length) + (b_l) * (j - half_length);
-
-                // left boundary
-                particle_velocity_current_x[offset] =
-                        particle_velocity_current_x[offset] -
-                        den_base[offset] * auxiliary_ptr_x_left->GetNativePointer()[offset_x];
-
-                // right boundary(starting from the outer point (x=nx-1-half_length))
-                particle_velocity_current_x[offset_2] =
-                        particle_velocity_current_x[offset_2] -
-                        den_base[offset_2] * auxiliary_ptr_x_right->GetNativePointer()[offset_x];
-            }
-        }
-
-        float *particle_velocity_current_z =
-                this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
-
-        // update the particle_velocity_z up and down
-        for (int j = half_length; j < half_length + b_l; ++j) {
-            for (int i = half_length; i < this->mpGridBox->GetLogicalWindowSize(X_AXIS) - half_length; ++i) {
-                // offset for the up boundary
-                int offset = i + nx * j;
-                // offset of the down boundary
-                int offset_2 = i + nx * (this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - 1 - j);
-                // size of auxiliary_vel_z_up is x=nx-2*h_l , z=b_l
-                // offset for the outer part for auxiliary whether it is the outer in
-                // up or outer in down
-                int offset_z = (i - half_length) +
-                               (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 2 * half_length) *
-                               (j - half_length);
-
-                // up boundary
-                particle_velocity_current_z[offset] =
-                        particle_velocity_current_z[offset] -
-                        den_base[offset] * auxiliary_ptr_z_up->GetNativePointer()[offset_z];
-
-                // down boundary(starting from the outer point (z=nz-1-half_length))
-                particle_velocity_current_z[offset_2] =
-                        particle_velocity_current_z[offset_2] -
-                        den_base[offset_2] * auxiliary_ptr_z_down->GetNativePointer()[offset_z];
-            }
+            // Compute wanted derivative.
+            int offset;
+            offset = real_x + wnx * real_z;
+            DERIVE_JUMP_AXIS(offset, jump, 1, 0, -, curr_base, coeff, value)
+            int offset3 = b_l + HALF_LENGTH_ - 1 - active_bound_index;
+            int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
+            aux_variable[aux_offset] =
+                    small_a[offset3] *
+                    aux_variable[aux_offset] +
+                    small_b[offset3] * inv_dh *
+                    value;
         }
     }
 }
 
-void StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
-        float *coeff_a, float *coeff_b, int boundary_length, float dh, float dt,
-        float max_vel, float shift_ratio, float reflect_coeff, float relax_cp) {
-    float pml_reg_len = boundary_length;
-    if (pml_reg_len == 0) {
-        pml_reg_len = 1;
-    }
-    float d0 = 0;
-    // compute damping vector ...
-    d0 =
-            (-logf(reflect_coeff) * ((3 * max_vel) / (pml_reg_len * dh)) * relax_cp) /
-            pml_reg_len;
-    for (int i = boundary_length; i > 0; i--) {
-        float damping_ratio = i * i * d0;
-        coeff_a[i - 1] = expf(-dt * (damping_ratio + shift_ratio));
-        coeff_b[i - 1] =
-                (damping_ratio / (damping_ratio + shift_ratio)) * (coeff_a[i - 1] - 1);
-    }
-}
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue() {
+    // Setup needed meta-information.
+    int z_start = HALF_LENGTH_;
+    int z_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
+    int x_start = HALF_LENGTH_;
+    int x_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
 
-// this function used to reset the auxiliary variables to zero
-void StaggeredCPMLBoundaryManager::ZeroAuxiliaryVariables() {
-    HALF_LENGTH half_length = mpParameters->GetHalfLength();
     int b_l = mpParameters->GetBoundaryLength();
 
-    // for the auxiliaries in the x boundaries for all y and z
-    for (int j = 0; j < this->mpGridBox->GetLogicalWindowSize(Z_AXIS) - 2 * half_length; ++j) {
-        for (int i = 0; i < b_l; ++i) {
-            int offset = i + b_l * j;
-            this->auxiliary_vel_x_left->GetNativePointer()[offset] = 0;
-            this->auxiliary_vel_x_right->GetNativePointer()[offset] = 0;
-            this->auxiliary_ptr_x_left->GetNativePointer()[offset] = 0;
-            this->auxiliary_ptr_x_right->GetNativePointer()[offset] = 0;
-        }
-    }
+    int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
-    // for the auxiliaries in the z boundaries for all x and y
-    for (int j = 0; j < b_l; ++j) {
-        for (int i = 0; i < this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 2 * half_length; ++i) {
-            int offset =
-                    i + (this->mpGridBox->GetLogicalWindowSize(X_AXIS) - 2 * half_length) * j;
-            this->auxiliary_vel_z_up->GetNativePointer()[offset] = 0;
-            this->auxiliary_vel_z_down->GetNativePointer()[offset] = 0;
-            this->auxiliary_ptr_z_up->GetNativePointer()[offset] = 0;
-            this->auxiliary_ptr_z_down->GetNativePointer()[offset] = 0;
+    int lnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
+    int lnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
+
+    int wnzwnx = wnx * wnz;
+
+    // Set variables pointers.
+    float *aux_variable;
+    int aux_nx;
+    int aux_nz;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_vel_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_vel_x_left->GetNativePointer();
+            }
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->auxiliary_vel_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->auxiliary_vel_z_up->GetNativePointer();
+            }
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
+    }
+    int aux_nxnz = aux_nx * aux_nz;
+    float *parameter_base;
+    if (ADJOINT_) {
+        parameter_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
+    } else {
+        parameter_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
+    }
+    float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
+    // Compute.
+#pragma omp parallel for collapse(2)
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
+            int real_x = i;
+            int real_z = j;
+            // Setup indices for access.
+            if constexpr(DIRECTION_ == X_AXIS) {
+                if constexpr(OPPOSITE_) {
+                    real_x = lnx - 1 - i;
+                }
+            } else if constexpr(DIRECTION_ == Z_AXIS) {
+                if constexpr(OPPOSITE_) {
+                    real_z = lnz - 1 - j;
+                }
+            }
+            // Compute wanted derivative.
+            int offset = real_x + wnx * real_z;
+            int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
+            curr_base[offset] =
+                    curr_base[offset] -
+                    parameter_base[offset] * aux_variable[aux_offset];
         }
     }
 }

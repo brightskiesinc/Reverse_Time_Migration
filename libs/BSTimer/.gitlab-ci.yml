@@ -1,0 +1,94 @@
+---
+
+stages:
+  - compile
+  - check
+  - test
+
+
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+
+
+compile::cpp:
+  stage: compile
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --examples --tests
+    - ./clean_build.sh
+
+compile:openmp:
+  stage: compile
+  image: pp-openmp-bundle
+  artifacts:
+    when: on_success
+    expire_in: 1h
+    untracked: true
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp --examples --tests
+    - ./clean_build.sh
+
+compile:cuda:
+  stage: compile
+  image: pp-cuda-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b cuda -g --examples --tests
+    - ./clean_build.sh
+
+
+check::cpp:
+  stage: check
+  image: pp-openmp-bundle
+  allow_failure: true
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --examples
+    - ./clean_build.sh
+    - apt update && apt -y install cppcheck
+    - cppcheck --project=bin/compile_commands.json
+
+
+cpp::test:
+  stage: test
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --tests
+    - ./clean_build.sh
+    - cd ./bin && ctest
+
+
+
+python::check:
+  stage: check
+  image: pp-python-bundle
+  script:
+    - python --version
+    - pip install -r python/requirements.txt
+    - pylint python/bs/timer --fail-under=8.5
+  allow_failure: true
+  tags:
+    - pp-runner
+
+python::test:
+  stage: test
+  image: pp-python-bundle
+  tags:
+    - pp-runner
+  script:
+    - python --version
+    - pip install -r python/requirements.txt
+    - pytest python/tests
+  artifacts:
+    when: always
+    reports:
+      junit: reports/test_results.xml
+      cobertura: reports/coverage.xml

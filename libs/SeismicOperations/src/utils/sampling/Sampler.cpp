@@ -1,6 +1,21 @@
-//
-// Created by ahmed-ayyad on 17/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/utils/sampling/Sampler.hpp>
 
@@ -13,22 +28,21 @@ using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::utils::interpolation;
 
+void Sampler::Resize(float *input, float *output, Axis3D<unsigned int> *apInputGridBox,
+                     Axis3D<unsigned int> *apOutputGridBox, ComputationParameters *apParameters) {
 
-void Sampler::Resize(float *input, float *output,
-                     GridSize *apInputGridBox, GridSize *apOutputGridBox,
-                     ComputationParameters *apParameters) {
 
-    int pre_x, pre_y, pre_z;
-    int post_x, post_y, post_z;
     std::string name;
 
-    pre_x = apInputGridBox->nx;
-    pre_y = apInputGridBox->ny;
-    pre_z = apInputGridBox->nz;
+    int pre_x = apInputGridBox->GetXAxis().GetLogicalAxisSize();
+    int pre_y = apInputGridBox->GetYAxis().GetLogicalAxisSize();
+    int pre_z = apInputGridBox->GetZAxis().GetLogicalAxisSize();
 
-    post_x = apOutputGridBox->nx;
-    post_y = apOutputGridBox->ny;
-    post_z = apOutputGridBox->nz;
+    int post_x = apOutputGridBox->GetXAxis().GetLogicalAxisSize();
+    int post_y = apOutputGridBox->GetYAxis().GetLogicalAxisSize();
+    int post_z = apOutputGridBox->GetZAxis().GetLogicalAxisSize();
+
+
     if (pre_x != post_x || pre_z != post_z || pre_y != post_y) {
         Interpolator::InterpolateTrilinear(
                 input,
@@ -42,27 +56,22 @@ void Sampler::Resize(float *input, float *output,
     }
 }
 
-void Sampler::CalculateAdaptiveCellDimensions(GridBox *apGridBox,
-                                              ComputationParameters *apParameters,
-                                              int minimum_velocity) {
-    uint old_nx = apGridBox->GetInitialGridSize(X_AXIS);
-    uint old_nz = apGridBox->GetInitialGridSize(Z_AXIS);
-    uint old_ny = apGridBox->GetInitialGridSize(Y_AXIS);
+void Sampler::CalculateAdaptiveCellDimensions(GridBox *apGridBox, ComputationParameters *apParameters,
+                                              int aMinimumVelocity, float aMaxFrequency) {
 
-    float old_dx = apGridBox->GetInitialCellDimensions(X_AXIS);
-    float old_dz = apGridBox->GetInitialCellDimensions(Z_AXIS);
-    float old_dy = apGridBox->GetInitialCellDimensions(Y_AXIS);
+    float old_nx = apGridBox->GetInitialAxis()->GetXAxis().GetAxisSize();
+    float old_ny = apGridBox->GetInitialAxis()->GetYAxis().GetAxisSize();
+    float old_nz = apGridBox->GetInitialAxis()->GetZAxis().GetAxisSize();
 
-    float old_nx_m = old_nx * old_dx;
-    float old_nz_m = old_nz * old_dz;
-    float old_ny_m = old_ny * old_dy;
+    float old_dx = apGridBox->GetInitialAxis()->GetXAxis().GetCellDimension();
+    float old_dy = apGridBox->GetInitialAxis()->GetYAxis().GetCellDimension();
+    float old_dz = apGridBox->GetInitialAxis()->GetZAxis().GetCellDimension();
 
-    float maximum_frequency, minimum_wavelength;
-    maximum_frequency = apParameters->GetSourceFrequency();
-    minimum_wavelength = minimum_velocity / maximum_frequency;
+    float maximum_frequency = aMaxFrequency;
+    float minimum_wavelength = aMinimumVelocity / maximum_frequency;
     int stencil_order = apParameters->GetHalfLength();
 
-    float minimum_wavelength_points;
+    float minimum_wavelength_points = 4;
 
     switch (stencil_order) {
         case O_2:
@@ -93,49 +102,66 @@ void Sampler::CalculateAdaptiveCellDimensions(GridBox *apGridBox,
         new_dy = meters_per_cell;
     }
 
-    apGridBox->SetCellDimensions(X_AXIS, new_dx);
-    apGridBox->SetCellDimensions(Y_AXIS, new_dy);
-    apGridBox->SetCellDimensions(Z_AXIS, new_dz);
+    int new_domain_x = (old_nx * old_dx) / new_dx;
+    int new_domain_z = (old_nz * old_dz) / new_dz;
+    int new_domain_y = (old_ny * old_dy) / new_dy;
 
-    int bound_length = apParameters->GetBoundaryLength();
-    int half_length = apParameters->GetHalfLength();
 
-    int constant_offset = 2 * bound_length + 2 * half_length;
+    apGridBox->GetAfterSamplingAxis()->SetXAxis(new_domain_x);
+    apGridBox->GetAfterSamplingAxis()->SetZAxis(new_domain_z);
 
-    int old_domain_x = old_nx - constant_offset;
-    int old_domain_z = old_nz - constant_offset;
-    int old_domain_y = old_ny - constant_offset;
+    apGridBox->GetAfterSamplingAxis()->GetXAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
+    apGridBox->GetAfterSamplingAxis()->GetZAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
 
-    int new_domain_x = (old_domain_x * old_dx) / new_dx;
-    int new_domain_z = (old_domain_z * old_dz) / new_dz;
-    int new_domain_y = (old_domain_y * old_dy) / new_dy;
-
-    int new_nx = new_domain_x + constant_offset;
-    int new_nz = new_domain_z + constant_offset;
-    int new_ny = new_domain_y + constant_offset;
+    apGridBox->GetAfterSamplingAxis()->GetXAxis().AddHalfLengthPadding(OP_DIREC_BOTH, apParameters->GetHalfLength());
+    apGridBox->GetAfterSamplingAxis()->GetZAxis().AddHalfLengthPadding(OP_DIREC_BOTH, apParameters->GetHalfLength());
 
     if (old_ny == 1) {
-        new_ny = 1;
+
+        apGridBox->GetAfterSamplingAxis()->SetYAxis(1);
+        apGridBox->GetAfterSamplingAxis()->GetYAxis().AddBoundary(OP_DIREC_BOTH, 0);
+        apGridBox->GetAfterSamplingAxis()->GetYAxis().AddHalfLengthPadding(OP_DIREC_BOTH, 0);
+
+    } else {
+        apGridBox->GetAfterSamplingAxis()->SetYAxis(new_domain_y);
+        apGridBox->GetAfterSamplingAxis()->GetYAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
+        apGridBox->GetAfterSamplingAxis()->GetYAxis().AddHalfLengthPadding(OP_DIREC_BOTH,
+                                                                           apParameters->GetHalfLength());
+
     }
-    apGridBox->SetLogicalGridSize(X_AXIS, new_nx);
-    apGridBox->SetLogicalGridSize(Z_AXIS, new_nz);
-    apGridBox->SetLogicalGridSize(Y_AXIS, new_ny);
 
-    int old_window_nx = apGridBox->GetLogicalWindowSize(X_AXIS);
-    int old_window_nz = apGridBox->GetLogicalWindowSize(Z_AXIS);
-    int old_window_ny = apGridBox->GetLogicalWindowSize(Y_AXIS);
+    apGridBox->GetAfterSamplingAxis()->GetXAxis().SetCellDimension(new_dx);
+    apGridBox->GetAfterSamplingAxis()->GetYAxis().SetCellDimension(new_dy);
+    apGridBox->GetAfterSamplingAxis()->GetZAxis().SetCellDimension(new_dz);
 
-    int new_window_nx = ((old_window_nx - constant_offset) * old_dx) / new_dx + constant_offset;
-    int new_window_nz = ((old_window_nz - constant_offset) * old_dz) / new_dz + constant_offset;
+    unsigned int old_window_nx = apGridBox->GetWindowAxis()->GetXAxis().GetAxisSize();
+    unsigned int old_window_nz = apGridBox->GetWindowAxis()->GetZAxis().GetAxisSize();
+    unsigned int old_window_ny = apGridBox->GetWindowAxis()->GetYAxis().GetAxisSize();
+
+
+    int new_window_nx = ((old_window_nx) * old_dx) / new_dx;
+    int new_window_nz = ((old_window_nz) * old_dz) / new_dz;
     int new_window_ny = old_window_ny;
 
+
     if (old_window_ny > 1) {
-        new_window_ny = ((old_window_ny - constant_offset) * old_dy) / new_dy + constant_offset;
+        new_window_ny = ((old_window_ny) * old_dy) / new_dy;
     }
 
-    apGridBox->SetLogicalWindowSize(X_AXIS, new_window_nx);
-    apGridBox->SetLogicalWindowSize(Z_AXIS, new_window_nz);
-    apGridBox->SetLogicalWindowSize(Y_AXIS, new_window_ny);
+    apGridBox->SetWindowAxis(new Axis3D<unsigned int>(new_window_nx, new_window_ny, new_window_nz));
+
+    if (old_window_ny > 1) {
+        apGridBox->GetWindowAxis()->GetYAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
+        apGridBox->GetWindowAxis()->GetYAxis().AddHalfLengthPadding(OP_DIREC_BOTH, apParameters->GetHalfLength());
+    } else {
+        apGridBox->GetWindowAxis()->GetYAxis().AddBoundary(OP_DIREC_BOTH, 0);
+        apGridBox->GetWindowAxis()->GetYAxis().AddHalfLengthPadding(OP_DIREC_BOTH, 0);
+    }
+
+    apGridBox->GetWindowAxis()->GetXAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
+    apGridBox->GetWindowAxis()->GetZAxis().AddBoundary(OP_DIREC_BOTH, apParameters->GetBoundaryLength());
+    apGridBox->GetWindowAxis()->GetXAxis().AddHalfLengthPadding(OP_DIREC_BOTH, apParameters->GetHalfLength());
+    apGridBox->GetWindowAxis()->GetZAxis().AddHalfLengthPadding(OP_DIREC_BOTH, apParameters->GetHalfLength());
 
     int new_right_window = apParameters->GetRightWindow() * old_dx / new_dx;
     int new_left_window = apParameters->GetLeftWindow() * old_dx / new_dx;
@@ -150,4 +176,5 @@ void Sampler::CalculateAdaptiveCellDimensions(GridBox *apGridBox,
     apParameters->SetFrontWindow(new_front_window);
     apParameters->SetBackWindow(new_back_window);
     apParameters->SetDepthWindow(new_depth_window);
+
 }

@@ -1,7 +1,21 @@
-//
-// Created by marwan-elsafty on 07/12/2020.
-//
-
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef SEISMIC_TOOLBOX_GENERATORS_KEYS_H
 #define SEISMIC_TOOLBOX_GENERATORS_KEYS_H
 
@@ -77,7 +91,9 @@
 #define K_PERC                              "percentile"
 #define K_LITTLE_ENDIAN                     "little-endian"
 
-#define K_WRITERS                           "writers"
+#define K_WRITER                            "writer"
+#define K_ACTIVE_TYPES                      "active-types"
+#define K_WRITERS_CONFIGURATION             "writers-configuration"
 #define K_PARAMETERS                        "parameters"
 #define K_VELOCITY                          "velocity"
 #define K_FORWARD                           "forward"
@@ -108,26 +124,22 @@
 
 
 /*
- * PIPELINE
+ * SYSTEM
  */
 
-#define K_PIPELINE                          "pipeline"
+#define K_SYSTEM                            "system"
 #define K_AGENT                             "agent"
 #define K_WRITER                            "writer"
-
+#define K_ALGORITHM                         "algorithm"
+#define K_TIMER                             "timer"
+#define K_TIMER_PROPERTIES                  "properties"
+#define K_TIME_UNIT                         "precision"
 
 /*
  * SUPPORTED VALUES
  */
 
 #define K_SUPPORTED_VALUES_BOUNDARY_MANAGER "[ none | random | sponge | cpml ]"
-
-#ifdef USING_OMP
-#define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three | two-compression | optimal-checkpointing ]"
-#elif USING_DPCPP
 #define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three ]"
-#elif USING_OMP_OFFLOAD
-#define K_SUPPORTED_VALUES_FORWARD_COLLECTOR "[ two | three | two-compression | optimal-checkpointing ]"
-#endif
 
 #endif //SEISMIC_TOOLBOX_GENERATORS_KEYS_H

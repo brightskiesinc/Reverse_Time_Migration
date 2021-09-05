@@ -1,11 +1,25 @@
-//
-// Created by amr-nasr on 11/11/2019.
-//
-
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_WRITER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_WRITER_HPP
 
-#include "operations/common/DataTypes.h"
+#include "operations/data-units/concrete/holders/TracesHolder.hpp"
 #include "operations/components/independents/interface/Component.hpp"
 
 namespace operations {
@@ -24,25 +38,32 @@ namespace operations {
             virtual ~TraceWriter() {};
 
             /**
-             * @brief Initializes the trace writer with all needed data for it
-             * to be able to start recording traces according the the given configuration.
-             *
-             * @param[in] apModellingConfiguration
-             * The modelling configuration to be followed in recording the traces.
-             *
-             * @param[in] output_file_name
-             * The output file to write the traces into.
-             * it is a trace file contains all the traces for only one who
-             * defined by the source_point
+             * @brief
+             * Signals the start of a recording sequence
              */
-            virtual void InitializeWriter(ModellingConfiguration *apModellingConfiguration,
-                                          std::string output_file_name) = 0;
+            virtual void StartRecordingInstance(
+                    operations::dataunits::TracesHolder &aTracesHolder) = 0;
 
             /**
              * @brief Records the traces from the domain according to the
              * configuration given in the initialize function.
              */
-            virtual void RecordTrace() = 0;
+            virtual void RecordTrace(uint time_step) = 0;
+
+            /**
+             * @brief
+             * Signals the end of a recording sequence
+             *
+             * @param[in] shot_id
+             * The shot id this recording is assigned.
+             */
+            virtual void FinishRecordingInstance(uint shot_id) = 0;
+
+            /**
+             * @brief
+             * Finalize the trace writer.
+             */
+            virtual void Finalize() = 0;
         };
     }//namespace components
 }//namespace operations

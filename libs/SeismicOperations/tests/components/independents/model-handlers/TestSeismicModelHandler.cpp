@@ -1,6 +1,22 @@
-//
-// Created by marwan-elsafty on 03/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
 
@@ -14,94 +30,122 @@
 
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/components/dependency/concrete/HasDependents.hpp>
-
-#include <libraries/catch/catch.hpp>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <map>
 #include <string>
 
 using namespace std;
-using namespace operations;
+using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 using namespace operations::helpers;
+using namespace bs::base::logger;
 
 
 void TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(GridBox *apGridBox,
                                           ComputationParameters *apParameters) {
-    SECTION("LogicalGridSize") {
-        REQUIRE(apGridBox->GetLogicalGridSize(X_AXIS) == 23);
-        REQUIRE(apGridBox->GetLogicalGridSize(Y_AXIS) == 23);
-        REQUIRE(apGridBox->GetLogicalGridSize(Z_AXIS) == 23);
+    SECTION("LogicalGridSize")
+    {
+
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetLogicalAxisSize() == 23);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize() == 23);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetLogicalAxisSize() == 23);
+
     }
-    SECTION("CellDimensions") {
-        REQUIRE(apGridBox->GetCellDimensions(X_AXIS) == Approx(10));
-        REQUIRE(apGridBox->GetCellDimensions(Y_AXIS) == Approx(10));
-        REQUIRE(apGridBox->GetCellDimensions(Z_AXIS) == Approx(10));
+    SECTION("CellDimensions")
+    {
+
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension() == Approx(10));
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension() == Approx(10));
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension() == Approx(10));
     }
-    SECTION("ReferencePoint") {
-        REQUIRE(apGridBox->GetReferencePoint(X_AXIS) == 0);
-        REQUIRE(apGridBox->GetReferencePoint(Y_AXIS) == 0);
-        REQUIRE(apGridBox->GetReferencePoint(Z_AXIS) == 0);
+    SECTION("ReferencePoint")
+    {
+
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetReferencePoint() == 0);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetReferencePoint() == 0);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetReferencePoint() == 0);
     }
-    SECTION("WindowStart") {
+    SECTION("WindowStart")
+    {
         REQUIRE(apGridBox->GetWindowStart(X_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Y_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Z_AXIS) == 0);
     }
-    SECTION("LogicalWindowSize") {
-        REQUIRE(apGridBox->GetLogicalWindowSize(X_AXIS) == 23);
-        REQUIRE(apGridBox->GetLogicalWindowSize(Y_AXIS) == 23);
-        REQUIRE(apGridBox->GetLogicalWindowSize(Z_AXIS) == 23);
+    SECTION("LogicalWindowSize")
+    {
+
+        REQUIRE(apGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() == 23);
+        REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() == 23);
+        REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() == 23);
+
     }
-    SECTION("ActualGridSize") {
+    SECTION("ActualGridSize")
+    {
 #if defined(USING_DPCPP)
+
         if (apParameters->IsUsingWindow()) {
-            REQUIRE(apGridBox->GetActualGridSize(X_AXIS) == 23);
+            REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == 23);
         } else {
-            REQUIRE(apGridBox->GetActualGridSize(X_AXIS) == 32);
+            REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == 32);
         }
+
 #else
-        REQUIRE(apGridBox->GetActualGridSize(X_AXIS) == 23);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == 23);
+
 #endif
-        REQUIRE(apGridBox->GetActualGridSize(Y_AXIS) == 23);
-        REQUIRE(apGridBox->GetActualGridSize(Z_AXIS) == 23);
+
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == 23);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == 23);
+
     }
 
-    SECTION("ActualWindowSize") {
+    SECTION("ActualWindowSize")
+    {
 #if defined(USING_DPCPP)
-        REQUIRE(apGridBox->GetActualWindowSize(X_AXIS) == 32);
+        REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize() == 32);
+
 #else
-        REQUIRE(apGridBox->GetActualWindowSize(X_AXIS) == 23);
+        REQUIRE(apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize() == 23);
+
 #endif
-        REQUIRE(apGridBox->GetActualWindowSize(Y_AXIS) == 23);
-        REQUIRE(apGridBox->GetActualWindowSize(Z_AXIS) == 23);
+
+        REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() == 23);
+        REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize() == 23);
+
     }
-    SECTION("ComputationGridSize") {
-        REQUIRE(apGridBox->GetComputationGridSize(X_AXIS) == 15);
-        REQUIRE(apGridBox->GetComputationGridSize(Y_AXIS) == 15);
-        REQUIRE(apGridBox->GetComputationGridSize(Z_AXIS) == 15);
+    SECTION("ComputationGridSize")
+    {
+
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetComputationAxisSize() == 15);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetComputationAxisSize() == 15);
+        REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetComputationAxisSize() == 15);
+
     }
 }
 
 void TEST_CASE_SEISMIC_MODEL_HANDLER_APPROXIMATION(GridBox *apGridBox,
                                                    ComputationParameters *apParameters) {
-    SECTION("Wave Allocation") {
+    SECTION("Wave Allocation")
+    {
         REQUIRE(apGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer() != nullptr);
         REQUIRE(apGridBox->Get(WAVE | GB_PRSS | PREV)->GetNativePointer() != nullptr);
         REQUIRE(apGridBox->Get(WAVE | GB_PRSS | NEXT)->GetNativePointer() != nullptr);
     }
 
     if (apParameters->GetApproximation() == ISOTROPIC) {
-        SECTION("Parameters Allocation") {
+        SECTION("Parameters Allocation")
+        {
             REQUIRE(apGridBox->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
             REQUIRE(apGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer() != nullptr);
         }
     } else if (apParameters->GetApproximation() == VTI) {
-        SECTION("Parameters Allocation") {
+        SECTION("Parameters Allocation")
+        {
             REQUIRE(apGridBox->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
             REQUIRE(apGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer() != nullptr);
 
@@ -112,7 +156,8 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER_APPROXIMATION(GridBox *apGridBox,
             REQUIRE(apGridBox->Get(PARM | WIND | GB_DLT)->GetNativePointer() != nullptr);
         }
     } else if (apParameters->GetApproximation() == TTI) {
-        SECTION("Parameters Allocation") {
+        SECTION("Parameters Allocation")
+        {
             REQUIRE(apGridBox->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
             REQUIRE(apGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer() != nullptr);
 
@@ -145,7 +190,7 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER(GridBox *apGridBox,
     auto memory_handler = new WaveFieldsMemoryHandler(apConfigurationMap);
     memory_handler->SetComputationParameters(apParameters);
 
-    auto dependant_components_map = new helpers::ComponentsMap<components::DependentComponent>();
+    auto dependant_components_map = new ComponentsMap<DependentComponent>();
     dependant_components_map->Set(MEMORY_HANDLER, memory_handler);
     model_handler->SetDependentComponents(dependant_components_map);
 
@@ -161,8 +206,8 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER(GridBox *apGridBox,
 //    auto grid_box = model_handler->ReadModel(file_names);
 //
 //    remove(OPERATIONS_TEST_DATA_PATH "/dummy_model.segy");
-
-    printf("Deprecated. Model Handler is not tested\n");
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    Logger->Info() << "Deprecated. Model Handler is not tested" << '\n';
 //    TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(grid_box, apParameters);
 //    TEST_CASE_SEISMIC_MODEL_HANDLER_APPROXIMATION(grid_box, apParameters);
 
@@ -181,15 +226,105 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER(GridBox *apGridBox,
  */
 
 TEST_CASE("SeismicModelHandler - 2D - No Window - ISO", "[No Window],[2D],[ISO]") {
-    TEST_CASE_SEISMIC_MODEL_HANDLER(
-            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+        generate_average_case_configuration_map_wave()
+);
 }
 
 TEST_CASE("SeismicModelHandler - 2D - Window - ISO", "[Window],[2D],[ISO]") {
-    TEST_CASE_SEISMIC_MODEL_HANDLER(
-            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - No Window - ISO", "[No Window],[3D],[ISO]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - Window - ISO", "[Window],[3D],[ISO]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+/*
+ * VTI Test Cases
+ */
+
+TEST_CASE("SeismicModelHandler - 2D - No Window - VTI", "[No Window],[2D],[VTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, VTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 2D - Window - VTI", "[Window],[2D],[VTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, VTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - No Window - VTI", "[No Window],[3D],[VTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, VTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - Window - VTI", "[Window],[3D],[VTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, VTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+/*
+ * TTI Test Cases
+ */
+
+TEST_CASE("SeismicModelHandler - 2D - No Window - TTI", "[No Window],[2D],[TTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, TTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 2D - Window - TTI", "[Window],[2D],[TTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, TTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - No Window - TTI", "[No Window],[3D],[TTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+        generate_computation_parameters(OP_TU_NO_WIND, TTI),
+        generate_average_case_configuration_map_wave()
+);
+}
+
+TEST_CASE("SeismicModelHandler - 3D - Window - TTI", "[Window],[3D],[TTI]") {
+TEST_CASE_SEISMIC_MODEL_HANDLER(
+        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+        generate_computation_parameters(OP_TU_INC_WIND, TTI),
+        generate_average_case_configuration_map_wave()
+);
 }

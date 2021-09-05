@@ -1,11 +1,27 @@
-//
-// Created by zeyad-osama on 27/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_COMPONENTS_HAS_NO_DEPENDENTS_HPP
 #define OPERATIONS_LIB_COMPONENTS_HAS_NO_DEPENDENTS_HPP
 
 #include "operations/components/dependency/interface/Dependency.hpp"
+#include "operations/components/dependency/helpers/ComponentsMap.tpp"
 #include "operations/common/ComputationParameters.hpp"
 
 namespace operations {
@@ -35,7 +51,7 @@ namespace operations {
                  * @note Dummy implementation.
                  */
                 void SetDependentComponents(
-                        helpers::ComponentsMap <DependentComponent> *apDependentComponentsMap) override {};
+                        operations::helpers::ComponentsMap<DependentComponent> *apDependentComponentsMap) override {};
             };
         }//namespace dependency
     }//namespace components

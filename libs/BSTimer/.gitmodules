@@ -1,0 +1,3 @@
+[submodule "libs/BSBase"]
+	path = libs/BSBase
+	url = ../../parallel-programming/BSBase.git

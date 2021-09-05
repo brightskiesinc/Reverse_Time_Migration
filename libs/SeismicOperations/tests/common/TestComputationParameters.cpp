@@ -1,12 +1,27 @@
-//
-// Created by zeyad-osama on 14/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/common/ComputationParameters.hpp>
 
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <libraries/catch/catch.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
 using namespace operations::common;
@@ -295,13 +310,17 @@ void TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(HALF_LENGTH aHalfLength) {
 }
 
 TEST_CASE("Computation Parameters - Class",
-          "[ComputationParameters],[Class]") {
-    TEST_CASE_COMPUTATION_PARAMETERS();
+"[ComputationParameters],[Class]") {
+TEST_CASE_COMPUTATION_PARAMETERS();
+
 }
 
 TEST_CASE("Computation Parameters - FD Coefficients",
-          "[ComputationParameters],[FDCoefficients]") {
-    for (auto hl : {O_2, O_4, O_8, O_12, O_16}) {
-        TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(hl);
-    }
+"[ComputationParameters],[FDCoefficients]") {
+for (
+auto hl
+: {
+O_2, O_4, O_8, O_12, O_16}) {
+TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(hl);
+}
 }

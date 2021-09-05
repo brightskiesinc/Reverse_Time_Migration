@@ -1,6 +1,21 @@
-//
-// Created by marwan-elsafty on 17/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <stbx/generators/Generator.hpp>
 
@@ -9,18 +24,19 @@
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace stbx::agents;
 using namespace stbx::writers;
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
+using namespace bs::base::configurations;
+using namespace operations::configurations;
 using namespace operations::common;
 using namespace operations::helpers::callbacks;
-using namespace operations::configuration;
 using namespace operations::components;
-using namespace operations::exceptions;
+using namespace bs::base::exceptions;
 
 using namespace std;
 
@@ -29,33 +45,51 @@ void TEST_CASE_GENERATOR() {
     nlohmann::json ground_truth_map = R"(
            {
   "callbacks": {
-    "su": {
-      "enable": true,
-      "show-each": 200,
-      "little-endian": false
-    },
-    "csv": {
+    "writer": {
+      "active-types": [
+        {
+          "su": {
+            "properties": {
+              "write-little-endian": false
+            }
+          }
+        },
+        {
+          "csv": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "image": {
+            "properties": {
+              "percentile": 98.5
+            }
+          }
+        },
+        {
+          "binary": {
+            "properties": {
+
+            }
+          }
+        },
+        {
+          "segy": {
+            "properties": {
+
+            }
+          }
+        }
+      ],
       "enable": true,
       "show-each": 200
-    },
-    "image": {
-      "enable": true,
-      "show-each": 200,
-      "percentile": 98.5
     },
     "norm": {
       "enable": true,
       "show-each": 200
     },
-    "bin": {
-      "enable": true,
-      "show-each": 200
-    },
-    "segy": {
-      "enable": true,
-      "show-each": 200
-    },
-    "writers": {
+    "writers-configuration": {
       "migration": {
         "enable": true
       },
@@ -101,8 +135,7 @@ void TEST_CASE_GENERATOR() {
     "cache-blocking": {
       "block-x": 128,
       "block-z": 16,
-      "block-y": 1,
-      "cor-block": 256
+      "block-y": 1
     },
     "window": {
       "enable": true,
@@ -147,54 +180,59 @@ void TEST_CASE_GENERATOR() {
       "type": "three"
     },
     "trace-manager": {
-      "type": "segy",
       "properties": {
-        "shot-stride" : 2
+        "type": "segy",
+        "shot-stride": 2,
+        "interpolation": "none",
+        "header-only": false
       }
     },
     "source-injector": {
       "type": "ricker"
     },
     "model-handler": {
-      "type": "segy"
+      "properties": {
+        "type": "segy"
+      }
     },
     "trace-writer": {
-          "type": "binary"
-    },
-    "modelling-configuration-parser": {
-      "type": "text"
+      "properties": {
+        "type": "segy",
+        "output-file": "data/synthetic_model_traces"
+      }
     }
   },
   "interpolation": {
     "type": "none"
   },
 
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },
     "writer": {
       "type": "normal"
     }
-  },
-  "modelling-file": "workloads/synthetic_model/modelling.json",
-  "output-file": "data/shot.trace"
+  }
 
 }
     )"_json;
 
     auto *generator = new Generator(ground_truth_map);
 
-    SECTION("Instance not null") {
+    SECTION("Instance not null")
+    {
         REQUIRE(instanceof<Generator>(generator));
         REQUIRE(generator != nullptr);
     }
 
-    SECTION("GenerateCallbacks Function Testing") {
+    SECTION("GenerateCallbacks Function Testing")
+    {
         REQUIRE(instanceof<CallbackCollection>(generator->GenerateCallbacks(WRITE_PATH)));
     }
 
-    SECTION("GenerateModellingEngineConfiguration Function Testing") {
+    SECTION("GenerateModellingEngineConfiguration Function Testing")
+    {
         auto *configuration = generator->GenerateModellingEngineConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ModellingEngineConfigurations>(configuration));
@@ -202,11 +240,12 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(instanceof<ModelHandler>(configuration->GetModelHandler()));
         REQUIRE(instanceof<SourceInjector>(configuration->GetSourceInjector()));
         REQUIRE(instanceof<BoundaryManager>(configuration->GetBoundaryManager()));
-        REQUIRE(instanceof<ModellingConfigurationParser>(configuration->GetModellingConfigurationParser()));
+        REQUIRE(instanceof<TraceManager>(configuration->GetTraceManager()));
         REQUIRE(instanceof<TraceWriter>(configuration->GetTraceWriter()));
     }
 
-    SECTION("GenerateParameters Function Testing") {
+    SECTION("GenerateParameters Function Testing")
+    {
         auto *computationParameters = generator->GenerateParameters();
 
         REQUIRE(instanceof<ComputationParameters>(computationParameters));
@@ -227,7 +266,8 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(computationParameters->GetBlockZ() == 16);
 
     }
-    SECTION("GenerateRTMConfiguration Function Testing") {
+    SECTION("GenerateRTMConfiguration Function Testing")
+    {
         RTMEngineConfigurations *configuration = generator->GenerateRTMConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ComputationKernel>(configuration->GetComputationKernel()));
@@ -239,17 +279,20 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(instanceof<TraceManager>(configuration->GetTraceManager()));
     }
 
-    SECTION("GenerateAgent Function Testing") {
+    SECTION("GenerateAgent Function Testing")
+    {
         Agent *agent = generator->GenerateAgent();
         REQUIRE(instanceof<Agent>(agent));
     }
 
-    SECTION("GenerateWriter Function Testing") {
+    SECTION("GenerateWriter Function Testing")
+    {
         Writer *writer = generator->GenerateWriter();
         REQUIRE(instanceof<Writer>(writer));
     }
 }
 
 TEST_CASE("Generator Class Testing", "[Generators]") {
-    TEST_CASE_GENERATOR();
+TEST_CASE_GENERATOR();
+
 }

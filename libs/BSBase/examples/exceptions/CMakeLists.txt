@@ -1,0 +1,2 @@
+add_executable(Example_BSBase_Exception ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+target_link_libraries(Example_BSBase_Exception BS-BASE)

@@ -1,0 +1,7 @@
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/indexer)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/segy)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/segy-indexing)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/segy-to-image)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/segy-to-psg)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/psg-to-image)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/psg-to-su)
