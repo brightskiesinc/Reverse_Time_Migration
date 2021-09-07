@@ -64,7 +64,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     }
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        cgh.parallel_for<class l1>(range<3>(original_nx,
+        cgh.parallel_for(range<3>(original_nx,
                                             y_end - y_start,
                                             (half_length + bound_length - 1) - (half_length) + 1),
                                    [=](id<3> i) {
@@ -79,7 +79,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     });
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        cgh.parallel_for<class l2>(range<3>((half_length + bound_length - 1) - (half_length) + 1,
+        cgh.parallel_for(range<3>((half_length + bound_length - 1) - (half_length) + 1,
                                             y_end - y_start,
                                             original_nz),
                                    [=](id<3> i) {
@@ -96,7 +96,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
     if (ny > 1) {
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.parallel_for<class l3>(
+            cgh.parallel_for(
                     range<3>(original_nx,
                              (half_length + bound_length - 1) - (half_length) + 1,
                              original_nz), [=](id<3> i) {
@@ -122,7 +122,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
     // Zero-Corners in the boundaries nx-nz boundary intersection--boundaries not needed.
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        cgh.parallel_for<class zeroCornersNxNz>(range<3>(end_y - start_y,
+        cgh.parallel_for(range<3>(end_y - start_y,
                                                          bound_length,
                                                          bound_length), [=](id<3> i) {
             int depth = i[0] + start_y;
@@ -145,7 +145,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     if (ny > 1) {
         // Zero-Corners in the boundaries ny-nz boundary intersection--boundaries not needed.
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.parallel_for<class zeroCornersNyNz>(range<3>(bound_length,
+            cgh.parallel_for(range<3>(bound_length,
                                                              bound_length,
                                                              end_x - start_x), [=](id<3> i) {
                 int depth = i[0];
@@ -165,7 +165,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
         });
 
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.parallel_for<class zeroCornersNxNy>(range<3>(bound_length,
+            cgh.parallel_for(range<3>(bound_length,
                                                              end_z - start_z,
                                                              bound_length), [=](id<3> i) {
                 int depth = i[0];

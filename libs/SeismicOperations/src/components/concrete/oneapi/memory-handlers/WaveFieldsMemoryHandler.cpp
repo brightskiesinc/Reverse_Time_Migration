@@ -64,7 +64,7 @@ void WaveFieldsMemoryHandler::FirstTouch(float *ptr, GridBox *apGridBox, bool en
                 const size_t wnx = nx;
                 const int hl = mpParameters->GetHalfLength();
                 float *curr_base = ptr;
-                cgh.parallel_for_work_group<class first_touch>(
+                cgh.parallel_for_work_group(
                         global_range, local_range, [=](group<1> grp) {
                             size_t z_id = grp.get_id(0) * z_stride + hl;
                             size_t end_z =

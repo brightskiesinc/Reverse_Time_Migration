@@ -57,7 +57,7 @@ void SeismicTraceWriter::RecordTrace(uint time_step) {
         auto local_range = range<1>(1);
         auto global_nd_range = nd_range<1>(global_range, local_range);
 
-        cgh.parallel_for<class trace_manager>(global_nd_range, [=](nd_item<1> it) {
+        cgh.parallel_for(global_nd_range, [=](nd_item<1> it) {
             int i = it.get_global_id(0);
             int offset = positions_y[i] * wnz_wnx + std_offset + positions_x[i];
             values[(trace_step) * trace_size + i] = pressure[offset];

@@ -83,7 +83,7 @@ void SecondOrderComputationKernel::Compute() {
             const float *c_z = mpCoeffZ->GetNativePointer();
             const int *v = mpVerticalIdx->GetNativePointer();
             const float c_xyz = mCoeffXYZ;
-            cgh.parallel_for_work_group<class secondOrderComputation_dpcpp>(
+            cgh.parallel_for_work_group(
                     global_range, local_range, [=](group<1> grp) {
                         size_t z_id = grp.get_id(0) * z_stride + HALF_LENGTH_;
                         size_t end_z =
@@ -127,7 +127,7 @@ void SecondOrderComputationKernel::Compute() {
             /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx =
@@ -207,7 +207,7 @@ void SecondOrderComputationKernel::Compute() {
             //  Create an accessor for SLM buffer
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx = it.get_global_id(1) + hl +
@@ -287,7 +287,7 @@ void SecondOrderComputationKernel::Compute() {
             /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp_gpu>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx = it.get_global_id(1) + hl +
@@ -373,7 +373,7 @@ void SecondOrderComputationKernel::PreprocessModel() {
                 auto global_nd_range = nd_range<3>(global_range, local_range);
                 float *vel_device = mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
 
-                cgh.parallel_for<class model_handler>(
+                cgh.parallel_for(
                         global_nd_range, [=](sycl::nd_item<3> it) {
                             int x = it.get_global_id(0);
                             int y = it.get_global_id(1);
