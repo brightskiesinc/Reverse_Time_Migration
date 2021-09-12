@@ -29,8 +29,8 @@
 #include <iostream>
 #include <sys/stat.h>
 
-#define mega  1024 * 1024
-#define giga  1024 * 1024 * 1024
+#define mega  (1024 * 1024)
+#define giga  (1024 * 1024 * 1024)
 
 using namespace std;
 using namespace bs::timer;

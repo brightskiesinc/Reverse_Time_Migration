@@ -53,7 +53,7 @@ void ZeroExtension::VelocityExtensionHelper(float *property_array,
             auto local_range = range<3>(1, 1, 1);
             auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Zero_velocity_extension_Y>(
+            cgh.parallel_for(
                     global_nd_range, [=](nd_item<3> it) {
                         int column = it.get_global_id(0) + start_x;
                         int depth = it.get_global_id(1);
@@ -76,7 +76,7 @@ void ZeroExtension::VelocityExtensionHelper(float *property_array,
         auto local_range = range<3>(1, 1, 1);
         auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Zero_velocity_extension_X>(
+        cgh.parallel_for(
                 global_nd_range, [=](nd_item<3> it) {
                     int column = it.get_global_id(0);
                     int depth = it.get_global_id(1) + start_y;
@@ -97,7 +97,7 @@ void ZeroExtension::VelocityExtensionHelper(float *property_array,
         auto local_range = range<3>(1, 1, 1);
         auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Zero_velocity_extension_Z>(
+        cgh.parallel_for(
                 global_nd_range, [=](nd_item<3> it) {
                     int column = it.get_global_id(0) + start_x;
                     int depth = it.get_global_id(1) + start_y;

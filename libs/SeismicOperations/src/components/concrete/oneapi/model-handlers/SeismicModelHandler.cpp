@@ -65,7 +65,7 @@ void SeismicModelHandler::SetupWindow() {
             auto global_nd_range = nd_range<3>(global_range, local_range);
             float *vel = mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
             float *w_vel = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-            cgh.parallel_for<class model_handler>(global_nd_range, [=](sycl::nd_item<3> it) {
+            cgh.parallel_for(global_nd_range, [=](sycl::nd_item<3> it) {
                 int x = it.get_global_id(0) + start_x;
                 int y = it.get_global_id(1) + start_y;
                 int z = it.get_global_id(2) + start_z;

@@ -50,7 +50,7 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
         float *w_vel = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
         uint *x_pos = mpDPositionsX.GetNativePointer();
         uint *y_pos = mpDPositionsY.GetNativePointer();
-        cgh.parallel_for<class trace_manager>(global_nd_range, [=](nd_item<1> it) {
+        cgh.parallel_for(global_nd_range, [=](nd_item<1> it) {
             int i = it.get_global_id(0);
             int offset = y_pos[i] * wnz_wnx + std_offset + x_pos[i];
             current[offset] += trace_values[(trace_step) * trace_size + i] * w_vel[offset];

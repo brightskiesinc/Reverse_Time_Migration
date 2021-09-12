@@ -117,7 +117,7 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
     distance_1 = &distance[1];
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        cgh.parallel_for<class cfa>(range<3>(nxEnd - x_start,
+        cgh.parallel_for(range<3>(nxEnd - x_start,
                                              nyEnd - y_start,
                                              nzEnd - z_start),
                                     [=](id<3> i) {
@@ -258,7 +258,7 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
 
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        cgh.parallel_for<class ccv>(range<3>(nxEnd - x_start,
+        cgh.parallel_for(range<3>(nxEnd - x_start,
                                              nyEnd - y_start,
                                              nzEnd - z_start),
                                     [=](id<3> i) {

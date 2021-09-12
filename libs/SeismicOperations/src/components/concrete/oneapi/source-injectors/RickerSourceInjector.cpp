@@ -52,7 +52,7 @@ void RickerSourceInjector::ApplySource(int time_step) {
             OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
                 auto pressure = mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
                 auto win_vel = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-                cgh.single_task<class source_injector>([=]() {
+                cgh.single_task([=]() {
                     pressure[location] += (ricker * win_vel[location]);
                 });
             });
