@@ -55,36 +55,31 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(GridBox *apGridBox,
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetLogicalAxisSize() == 23);
 
-    }
-    SECTION("CellDimensions")
+    }SECTION("CellDimensions")
     {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension() == Approx(10));
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension() == Approx(10));
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension() == Approx(10));
-    }
-    SECTION("ReferencePoint")
+    }SECTION("ReferencePoint")
     {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetReferencePoint() == 0);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetReferencePoint() == 0);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetReferencePoint() == 0);
-    }
-    SECTION("WindowStart")
+    }SECTION("WindowStart")
     {
         REQUIRE(apGridBox->GetWindowStart(X_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Y_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Z_AXIS) == 0);
-    }
-    SECTION("LogicalWindowSize")
+    }SECTION("LogicalWindowSize")
     {
 
         REQUIRE(apGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() == 23);
 
-    }
-    SECTION("ActualGridSize")
+    }SECTION("ActualGridSize")
     {
 #if defined(USING_DPCPP)
 
@@ -117,8 +112,7 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(GridBox *apGridBox,
         REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize() == 23);
 
-    }
-    SECTION("ComputationGridSize")
+    }SECTION("ComputationGridSize")
     {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetComputationAxisSize() == 15);
@@ -226,35 +220,35 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER(GridBox *apGridBox,
  */
 
 TEST_CASE("SeismicModelHandler - 2D - No Window - ISO", "[No Window],[2D],[ISO]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 2D - Window - ISO", "[Window],[2D],[ISO]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - No Window - ISO", "[No Window],[3D],[ISO]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - Window - ISO", "[Window],[3D],[ISO]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 /*
@@ -262,35 +256,35 @@ TEST_CASE_SEISMIC_MODEL_HANDLER(
  */
 
 TEST_CASE("SeismicModelHandler - 2D - No Window - VTI", "[No Window],[2D],[VTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 2D - Window - VTI", "[Window],[2D],[VTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - No Window - VTI", "[No Window],[3D],[VTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - Window - VTI", "[Window],[3D],[VTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 /*
@@ -298,33 +292,33 @@ TEST_CASE_SEISMIC_MODEL_HANDLER(
  */
 
 TEST_CASE("SeismicModelHandler - 2D - No Window - TTI", "[No Window],[2D],[TTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, TTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, TTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 2D - Window - TTI", "[Window],[2D],[TTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, TTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, TTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - No Window - TTI", "[No Window],[3D],[TTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, TTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, TTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicModelHandler - 3D - Window - TTI", "[Window],[3D],[TTI]") {
-TEST_CASE_SEISMIC_MODEL_HANDLER(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, TTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SEISMIC_MODEL_HANDLER(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, TTI),
+            generate_average_case_configuration_map_wave()
+    );
 }

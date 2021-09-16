@@ -254,35 +254,35 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR(GridBox *apGridBox,
  */
 
 TEST_CASE("RickerSourceInjector - 2D - No Window - ISO", "[No Window],[2D],[ISO]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 2D - Window - ISO", "[Window],[2D],[ISO]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 3D - No Window - ISO", "[No Window],[3D],[ISO]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 3D - Window - ISO", "[Window],[3D],[ISO]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 /*
@@ -290,33 +290,33 @@ TEST_CASE_RICKER_SOURCE_INJECTOR(
  */
 
 TEST_CASE("RickerSourceInjector - 2D - No Window - VTI", "[No Window],[2D],[VTI]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 2D - Window - TI", "[Window],[2D],[TI]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 3D - No Window - TI", "[No Window],[3D],[TI]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("RickerSourceInjector - 3D - Window - TI", "[Window],[3D],[TI]") {
-TEST_CASE_RICKER_SOURCE_INJECTOR(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, VTI),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_RICKER_SOURCE_INJECTOR(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, VTI),
+            generate_average_case_configuration_map_wave()
+    );
 }

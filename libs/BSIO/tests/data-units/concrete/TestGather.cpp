@@ -89,6 +89,6 @@ TEST_GATHER() {
  */
 
 TEST_CASE("GatherTest", "[Gather]") {
-TEST_GATHER();
+    TEST_GATHER();
 
 }

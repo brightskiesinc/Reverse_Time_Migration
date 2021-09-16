@@ -49,6 +49,6 @@ TEST_CASE_CHECKER() {
  */
 
 TEST_CASE("Checker") {
-TEST_CASE_CHECKER();
+    TEST_CASE_CHECKER();
 
 }

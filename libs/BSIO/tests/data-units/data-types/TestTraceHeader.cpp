@@ -81,6 +81,6 @@ TEST_TRACE_HDR() {
  */
 
 TEST_CASE("TraceHeaderKey") {
-TEST_TRACE_HDR();
+    TEST_TRACE_HDR();
 
 }

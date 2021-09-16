@@ -69,6 +69,6 @@ TEST_FLOAT_FORMAT() {
  */
 
 TEST_CASE("Floating Point Formatter") {
-TEST_FLOAT_FORMAT();
+    TEST_FLOAT_FORMAT();
 
 }

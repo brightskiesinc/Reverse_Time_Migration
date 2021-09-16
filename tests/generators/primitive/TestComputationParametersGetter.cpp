@@ -48,22 +48,18 @@ void TEST_CASE_BASE_COMPUTATION_PARAMETERS_GETTER() {
     SECTION("GetBoundaryLength Testing")
     {
         REQUIRE(computation_parameters_getter->GetBoundaryLength() == 20);
-    }
-    SECTION("GetSourceFrequency Testing")
+    }SECTION("GetSourceFrequency Testing")
     {
         REQUIRE(computation_parameters_getter->GetSourceFrequency() == 20.0);
-    }
-    SECTION("GetDTRelaxed Testing")
+    }SECTION("GetDTRelaxed Testing")
     {
         REQUIRE(computation_parameters_getter->GetDTRelaxed() == 0.9f);
-    }
-    SECTION("GetBlock Testing")
+    }SECTION("GetBlock Testing")
     {
         REQUIRE(computation_parameters_getter->GetBlock("x") == 5500);
         REQUIRE(computation_parameters_getter->GetBlock("y") == 1);
         REQUIRE(computation_parameters_getter->GetBlock("z") == 55);
-    }
-    SECTION("GetIsotropicCircle Testing")
+    }SECTION("GetIsotropicCircle Testing")
     {
         REQUIRE(computation_parameters_getter->GetIsotropicCircle() == 5);
     }
@@ -81,8 +77,7 @@ void TEST_CASE_STENCIL_ORDER_GETTER() {
         StencilOrder so = computation_parameters_getter->GetStencilOrder();
         REQUIRE(so.order == 2);
         REQUIRE(so.half_length == O_2);
-    }
-    SECTION("stencil-order = 4")
+    }SECTION("stencil-order = 4")
     {
         nlohmann::json map = R"(
         {"stencil-order": 4}
@@ -92,8 +87,7 @@ void TEST_CASE_STENCIL_ORDER_GETTER() {
         StencilOrder so = computation_parameters_getter->GetStencilOrder();
         REQUIRE(so.order == 4);
         REQUIRE(so.half_length == O_4);
-    }
-    SECTION("stencil-order = 8")
+    }SECTION("stencil-order = 8")
     {
         nlohmann::json map = R"(
         {"stencil-order": 8}
@@ -103,8 +97,7 @@ void TEST_CASE_STENCIL_ORDER_GETTER() {
         StencilOrder so = computation_parameters_getter->GetStencilOrder();
         REQUIRE(so.order == 8);
         REQUIRE(so.half_length == O_8);
-    }
-    SECTION("stencil-order = 12")
+    }SECTION("stencil-order = 12")
     {
         nlohmann::json map = R"(
         {"stencil-order": 12}
@@ -114,8 +107,7 @@ void TEST_CASE_STENCIL_ORDER_GETTER() {
         StencilOrder so = computation_parameters_getter->GetStencilOrder();
         REQUIRE(so.order == 12);
         REQUIRE(so.half_length == O_12);
-    }
-    SECTION("stencil-order = 16")
+    }SECTION("stencil-order = 16")
     {
         nlohmann::json map = R"(
         {"stencil-order": 16}
@@ -182,8 +174,7 @@ void TEST_CASE_WINDOW_GETTER() {
         REQUIRE(w.front_win == 0);
         REQUIRE(w.back_win == 0);
         delete computation_parameters_getter;
-    }
-    SECTION("Minimum Case")
+    }SECTION("Minimum Case")
     {
         auto computation_parameters_getter = new ComputationParametersGetter(min_map);
         auto w = computation_parameters_getter->GetWindow();
@@ -224,19 +215,19 @@ void TEST_CASE_WINDOW_GETTER() {
 }
 
 TEST_CASE("ComputationParametersGetter Class - Base",
-"[Generator],[ComputationParametersGetter]") {
-TEST_CASE_BASE_COMPUTATION_PARAMETERS_GETTER();
+          "[Generator],[ComputationParametersGetter]") {
+    TEST_CASE_BASE_COMPUTATION_PARAMETERS_GETTER();
 
 }
 
 TEST_CASE("ComputationParametersGetter Class - Stencil Order",
-"[Generator],[ComputationParametersGetter]") {
-TEST_CASE_STENCIL_ORDER_GETTER();
+          "[Generator],[ComputationParametersGetter]") {
+    TEST_CASE_STENCIL_ORDER_GETTER();
 
 }
 
 TEST_CASE("ComputationParametersGetter Class - Window Getter",
-"[Generator],[ComputationParametersGetter]") {
-TEST_CASE_WINDOW_GETTER();
+          "[Generator],[ComputationParametersGetter]") {
+    TEST_CASE_WINDOW_GETTER();
 
 }

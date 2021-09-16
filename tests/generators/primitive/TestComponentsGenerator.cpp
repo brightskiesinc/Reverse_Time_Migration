@@ -136,6 +136,6 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
 }
 
 TEST_CASE("ComponentsGenerator Class", "[Generator],[ComponentsGenerator]") {
-TEST_CASE_COMPONENTS_GENERATOR();
+    TEST_CASE_COMPONENTS_GENERATOR();
 
 }

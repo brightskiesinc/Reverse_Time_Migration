@@ -101,6 +101,6 @@ TEST_SU_FORMAT() {
  */
 
 TEST_CASE("SU Format Test") {
-TEST_SU_FORMAT();
+    TEST_SU_FORMAT();
 
 }

@@ -77,6 +77,6 @@ TEST_TRACE() {
  */
 
 TEST_CASE("TraceTest", "[Trace]") {
-TEST_TRACE();
+    TEST_TRACE();
 
 }

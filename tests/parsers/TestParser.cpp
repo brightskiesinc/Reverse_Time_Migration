@@ -200,7 +200,7 @@ void TEST_CASE_PARSER() {
             parser->RegisterFile(callback_file);
             parser->RegisterFile(pipeline);
 
-            vector <std::string> files = parser->GetFiles();
+            vector<std::string> files = parser->GetFiles();
 
             REQUIRE(std::find(files.begin(), files.end(), parameter_file) != files.end());
             REQUIRE(std::find(files.begin(), files.end(), configuration_file) != files.end());
@@ -393,7 +393,7 @@ void TEST_CASE_PARSER() {
         SECTION("RegisterFolder Function Test")
         {
             parser->RegisterFolder(workloads);
-            vector <std::string> files = parser->GetFiles();
+            vector<std::string> files = parser->GetFiles();
 
             REQUIRE(std::find(files.begin(), files.end(), parameter_file) != files.end());
             REQUIRE(std::find(files.begin(), files.end(), configuration_file) != files.end());
@@ -421,6 +421,6 @@ void TEST_CASE_PARSER() {
 }
 
 TEST_CASE("Parser Class Tess", "[Parser]") {
-TEST_CASE_PARSER();
+    TEST_CASE_PARSER();
 
 }

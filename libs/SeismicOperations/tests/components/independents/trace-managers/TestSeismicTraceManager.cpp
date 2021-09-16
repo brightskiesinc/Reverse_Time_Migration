@@ -205,33 +205,33 @@ void TEST_CASE_TRACE_MANAGER(GridBox *apGridBox,
 }
 
 TEST_CASE("SeismicTraceManager - 2D - No Window", "[No Window],[2D]") {
-TEST_CASE_TRACE_MANAGER(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_TRACE_MANAGER(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicTraceManager - 2D - Window", "[Window],[2D]") {
-TEST_CASE_TRACE_MANAGER(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_TRACE_MANAGER(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicTraceManager - 3D - No Window", "[No Window],[3D]") {
-TEST_CASE_TRACE_MANAGER(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_TRACE_MANAGER(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("SeismicTraceManager - 3D - Window", "[Window],[3D]") {
-TEST_CASE_TRACE_MANAGER(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_TRACE_MANAGER(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }

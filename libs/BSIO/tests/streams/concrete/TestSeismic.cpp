@@ -122,6 +122,6 @@ TEST_SEISMIC_FORMAT() {
  */
 
 TEST_CASE("Seismic Format Test") {
-TEST_SEISMIC_FORMAT();
+    TEST_SEISMIC_FORMAT();
 
 }

@@ -241,19 +241,19 @@ void TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(GridBox *apGridBox,
 }
 
 TEST_CASE("Isotropic Second Order - 2D - No Window", "[No Window],[2D]") {
-TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Isotropic Second Order - 2D - Window", "[Window],[2D]") {
-TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 /* Both DPC++ and OpenMP Offload does not support 3D yet,

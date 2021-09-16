@@ -212,33 +212,33 @@ void TEST_CASE_NONE(GridBox *apGridBox,
 }
 
 TEST_CASE("None Boundary Manager - 2D - No Window", "[No Window],[2D]") {
-TEST_CASE_NONE(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_NONE(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("None Boundary Manager - 2D - Window", "[Window],[2D]") {
-TEST_CASE_NONE(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_NONE(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("None Boundary Manager - 3D - No Window", "[No Window],[3D]") {
-TEST_CASE_NONE(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_NONE(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("None Boundary Manager - 3D - Window", "[Window],[3D]") {
-TEST_CASE_NONE(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_NONE(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }

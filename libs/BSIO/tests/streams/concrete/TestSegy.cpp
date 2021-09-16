@@ -123,6 +123,6 @@ TEST_SEGY_FORMAT() {
  */
 
 TEST_CASE("Segy Format Test") {
-TEST_SEGY_FORMAT();
+    TEST_SEGY_FORMAT();
 
 }

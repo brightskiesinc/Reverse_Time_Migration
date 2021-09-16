@@ -111,7 +111,7 @@ void TEST_CASE_CONFIGURATIONS_GENERATOR() {
 
         SECTION("GetTraceFiles Function Testing")
         {
-            vector <string> traces_files = configurations_generator->GetTraceFiles();
+            vector<string> traces_files = configurations_generator->GetTraceFiles();
 
             REQUIRE(configurations_generator->GetTracesMin() == 0);
             REQUIRE(configurations_generator->GetTracesMax() == 601);
@@ -122,6 +122,6 @@ void TEST_CASE_CONFIGURATIONS_GENERATOR() {
 }
 
 TEST_CASE("ConfigurationsGenerator", "[Generator],[ConfigurationsGenerator]") {
-TEST_CASE_CONFIGURATIONS_GENERATOR();
+    TEST_CASE_CONFIGURATIONS_GENERATOR();
 
 }

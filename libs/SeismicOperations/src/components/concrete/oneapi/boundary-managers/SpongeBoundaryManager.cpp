@@ -65,32 +65,32 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(original_nx,
-                                            y_end - y_start,
-                                            (half_length + bound_length - 1) - (half_length) + 1),
-                                   [=](id<3> i) {
-                                       int ix = i[0] + (half_length + bound_length);
-                                       int iy = i[1] + y_start;
-                                       int iz = (half_length + bound_length - 1) - 1 - i[2] + 1;
+                                  y_end - y_start,
+                                  (half_length + bound_length - 1) - (half_length) + 1),
+                         [=](id<3> i) {
+                             int ix = i[0] + (half_length + bound_length);
+                             int iy = i[1] + y_start;
+                             int iz = (half_length + bound_length - 1) - 1 - i[2] + 1;
 
-                                       next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iz - half_length];
-                                       next[iy * nx * nz + (iz + lnz - 2 * iz - 1) * nx +
-                                            ix] *= dev_sponge_coeffs[iz - half_length];
-                                   });
+                             next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iz - half_length];
+                             next[iy * nx * nz + (iz + lnz - 2 * iz - 1) * nx +
+                                  ix] *= dev_sponge_coeffs[iz - half_length];
+                         });
     });
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>((half_length + bound_length - 1) - (half_length) + 1,
-                                            y_end - y_start,
-                                            original_nz),
-                                   [=](id<3> i) {
-                                       int ix = (half_length + bound_length - 1) - 1 - i[0] + 1;
-                                       int iy = i[1] + y_start;
-                                       int iz = i[2] + (half_length + bound_length);
+                                  y_end - y_start,
+                                  original_nz),
+                         [=](id<3> i) {
+                             int ix = (half_length + bound_length - 1) - 1 - i[0] + 1;
+                             int iy = i[1] + y_start;
+                             int iz = i[2] + (half_length + bound_length);
 
-                                       next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[ix - half_length];
-                                       next[iy * nx * nz + iz * nx +
-                                            (ix + lnx - 2 * ix - 1)] *= dev_sponge_coeffs[ix - half_length];
-                                   });
+                             next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[ix - half_length];
+                             next[iy * nx * nz + iz * nx +
+                                  (ix + lnx - 2 * ix - 1)] *= dev_sponge_coeffs[ix - half_length];
+                         });
     });
 
 
@@ -123,8 +123,8 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     // Zero-Corners in the boundaries nx-nz boundary intersection--boundaries not needed.
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(end_y - start_y,
-                                                         bound_length,
-                                                         bound_length), [=](id<3> i) {
+                                  bound_length,
+                                  bound_length), [=](id<3> i) {
             int depth = i[0] + start_y;
             int row = i[1];
             int column = i[2];
@@ -146,8 +146,8 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
         // Zero-Corners in the boundaries ny-nz boundary intersection--boundaries not needed.
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             cgh.parallel_for(range<3>(bound_length,
-                                                             bound_length,
-                                                             end_x - start_x), [=](id<3> i) {
+                                      bound_length,
+                                      end_x - start_x), [=](id<3> i) {
                 int depth = i[0];
                 int row = i[1];
                 int column = i[2] + start_x;
@@ -166,8 +166,8 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             cgh.parallel_for(range<3>(bound_length,
-                                                             end_z - start_z,
-                                                             bound_length), [=](id<3> i) {
+                                      end_z - start_z,
+                                      bound_length), [=](id<3> i) {
                 int depth = i[0];
                 int row = i[1] + start_z;
                 int column = i[2];

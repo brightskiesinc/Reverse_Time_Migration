@@ -118,47 +118,47 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(nxEnd - x_start,
-                                             nyEnd - y_start,
-                                             nzEnd - z_start),
-                                    [=](id<3> i) {
-                                        int ix = i[0] + x_start;
-                                        int iy = i[1] + y_start;
-                                        int iz = i[2] + z_start;
+                                  nyEnd - y_start,
+                                  nzEnd - z_start),
+                         [=](id<3> i) {
+                             int ix = i[0] + x_start;
+                             int iy = i[1] + y_start;
+                             int iz = i[2] + z_start;
 
-                                        int offset = iy * wnxnz + iz * wnx;
-                                        float *curr = curr_base + offset;
-                                        float value = 0.0;
-                                        value = fma(curr[ix], first_coeff_h[0], value);
-                                        DERIVE_ARRAY_AXIS_EQ_OFF(ix, distance_1, -, curr, first_coeff_h_1, value)
-                                        int index = 0, coeff_ind = 0;
-                                        if (DIRECTION_ == X_AXIS) { // case x
-                                            if (OPPOSITE_) {
-                                                coeff_ind = ix - x_start;
-                                                index = iy * wnz * WIDTH + iz * WIDTH + (ix - x_start + HALF_LENGTH_);
-                                            } else {
-                                                coeff_ind = bound_length - ix + HALF_LENGTH_ - 1;
-                                                index = iy * wnz * WIDTH + iz * WIDTH + ix;
-                                            }
-                                        } else if (DIRECTION_ == Z_AXIS) { // case z
-                                            if (OPPOSITE_) {
-                                                coeff_ind = iz - z_start;
-                                                index = iy * wnx * WIDTH + (iz - z_start + HALF_LENGTH_) * wnx + ix;
-                                            } else {
-                                                coeff_ind = bound_length - iz + HALF_LENGTH_ - 1;
-                                                index = iy * wnx * WIDTH + iz * wnx + ix;
-                                            }
-                                        } else { // case y
-                                            if (OPPOSITE_) {
-                                                coeff_ind = iy - y_start;
-                                                index = (iy - y_start + HALF_LENGTH_) * wnx * wnz + (iz * wnx) + ix;
-                                            } else {
-                                                coeff_ind = bound_length - iy + HALF_LENGTH_ - 1;
-                                                index = iy * wnx * wnz + (iz * wnx) + ix;
-                                            }
-                                        } // case y
-                                        aux[index] =
-                                                coeff_a[coeff_ind] * aux[index] + coeff_b[coeff_ind] * value;
-                                    });
+                             int offset = iy * wnxnz + iz * wnx;
+                             float *curr = curr_base + offset;
+                             float value = 0.0;
+                             value = fma(curr[ix], first_coeff_h[0], value);
+                             DERIVE_ARRAY_AXIS_EQ_OFF(ix, distance_1, -, curr, first_coeff_h_1, value)
+                             int index = 0, coeff_ind = 0;
+                             if (DIRECTION_ == X_AXIS) { // case x
+                                 if (OPPOSITE_) {
+                                     coeff_ind = ix - x_start;
+                                     index = iy * wnz * WIDTH + iz * WIDTH + (ix - x_start + HALF_LENGTH_);
+                                 } else {
+                                     coeff_ind = bound_length - ix + HALF_LENGTH_ - 1;
+                                     index = iy * wnz * WIDTH + iz * WIDTH + ix;
+                                 }
+                             } else if (DIRECTION_ == Z_AXIS) { // case z
+                                 if (OPPOSITE_) {
+                                     coeff_ind = iz - z_start;
+                                     index = iy * wnx * WIDTH + (iz - z_start + HALF_LENGTH_) * wnx + ix;
+                                 } else {
+                                     coeff_ind = bound_length - iz + HALF_LENGTH_ - 1;
+                                     index = iy * wnx * WIDTH + iz * wnx + ix;
+                                 }
+                             } else { // case y
+                                 if (OPPOSITE_) {
+                                     coeff_ind = iy - y_start;
+                                     index = (iy - y_start + HALF_LENGTH_) * wnx * wnz + (iz * wnx) + ix;
+                                 } else {
+                                     coeff_ind = bound_length - iy + HALF_LENGTH_ - 1;
+                                     index = iy * wnx * wnz + (iz * wnx) + ix;
+                                 }
+                             } // case y
+                             aux[index] =
+                                     coeff_a[coeff_ind] * aux[index] + coeff_b[coeff_ind] * value;
+                         });
     });
     OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
 }
@@ -259,65 +259,65 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
 
     OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(nxEnd - x_start,
-                                             nyEnd - y_start,
-                                             nzEnd - z_start),
-                                    [=](id<3> i) {
-                                        int ix = i[0] + x_start;
-                                        int iy = i[1] + y_start;
-                                        int iz = i[2] + z_start;
+                                  nyEnd - y_start,
+                                  nzEnd - z_start),
+                         [=](id<3> i) {
+                             int ix = i[0] + x_start;
+                             int iy = i[1] + y_start;
+                             int iz = i[2] + z_start;
 
-                                        int offset = iy * wnxnz + iz * wnx;
-                                        float *curr = curr_base + offset;
-                                        float *vel = vel_base + offset;
-                                        float *next = next_base + offset;
-                                        float pressure_value = 0.0;
-                                        float d_first_value = 0.0;
-                                        int index = 0;
-                                        int coeff_ind = 0;
-                                        float sum_val = 0.0;
-                                        float cpml_val = 0.0;
+                             int offset = iy * wnxnz + iz * wnx;
+                             float *curr = curr_base + offset;
+                             float *vel = vel_base + offset;
+                             float *next = next_base + offset;
+                             float pressure_value = 0.0;
+                             float d_first_value = 0.0;
+                             int index = 0;
+                             int coeff_ind = 0;
+                             float sum_val = 0.0;
+                             float cpml_val = 0.0;
 
-                                        if (DIRECTION_ == X_AXIS) { // case x
-                                            if (OPPOSITE_) {
-                                                coeff_ind = ix - x_start;
-                                                index =
-                                                        iy * wnz * WIDTH + iz * WIDTH + (ix - x_start + half_length);
-                                            } else {
-                                                coeff_ind = bound_length - ix + half_length - 1;
-                                                index = iy * wnz * WIDTH + iz * WIDTH + ix;
-                                            }
-                                        } else if (DIRECTION_ == Z_AXIS) { // case z
-                                            if (OPPOSITE_) {
-                                                coeff_ind = iz - z_start;
-                                                index = iy * wnx * WIDTH + (iz - z_start + half_length) * wnx + ix;
-                                            } else {
-                                                coeff_ind = bound_length - iz + half_length - 1;
-                                                index = iy * wnx * WIDTH + iz * wnx + ix;
-                                            }
-                                        } else { // case y
-                                            if (OPPOSITE_) {
-                                                coeff_ind = iy - y_start;
-                                                index = (iy - y_start + half_length) * wnx * wnz + (iz * wnx) + ix;
-                                            } else {
-                                                coeff_ind = bound_length - iy + half_length - 1;
-                                                index = iy * wnx * wnz + (iz * wnx) + ix;
-                                            }
-                                        }// case y
-                                        pressure_value = fma(curr[ix], coeff_h[0], pressure_value);
-                                        DERIVE_ARRAY_AXIS_EQ_OFF(ix, distance_1, +, curr, coeff_h_1, pressure_value)
+                             if (DIRECTION_ == X_AXIS) { // case x
+                                 if (OPPOSITE_) {
+                                     coeff_ind = ix - x_start;
+                                     index =
+                                             iy * wnz * WIDTH + iz * WIDTH + (ix - x_start + half_length);
+                                 } else {
+                                     coeff_ind = bound_length - ix + half_length - 1;
+                                     index = iy * wnz * WIDTH + iz * WIDTH + ix;
+                                 }
+                             } else if (DIRECTION_ == Z_AXIS) { // case z
+                                 if (OPPOSITE_) {
+                                     coeff_ind = iz - z_start;
+                                     index = iy * wnx * WIDTH + (iz - z_start + half_length) * wnx + ix;
+                                 } else {
+                                     coeff_ind = bound_length - iz + half_length - 1;
+                                     index = iy * wnx * WIDTH + iz * wnx + ix;
+                                 }
+                             } else { // case y
+                                 if (OPPOSITE_) {
+                                     coeff_ind = iy - y_start;
+                                     index = (iy - y_start + half_length) * wnx * wnz + (iz * wnx) + ix;
+                                 } else {
+                                     coeff_ind = bound_length - iy + half_length - 1;
+                                     index = iy * wnx * wnz + (iz * wnx) + ix;
+                                 }
+                             }// case y
+                             pressure_value = fma(curr[ix], coeff_h[0], pressure_value);
+                             DERIVE_ARRAY_AXIS_EQ_OFF(ix, distance_1, +, curr, coeff_h_1, pressure_value)
 
-                                        //calculating the first dervative of the aux1
-                                        d_first_value = fma(aux_first[index], coeff_first_h[0], d_first_value);
-                                        DERIVE_ARRAY_AXIS_EQ_OFF(index, distance_1, -, aux_first, coeff_first_h_1,
-                                                                 d_first_value)
+                             //calculating the first dervative of the aux1
+                             d_first_value = fma(aux_first[index], coeff_first_h[0], d_first_value);
+                             DERIVE_ARRAY_AXIS_EQ_OFF(index, distance_1, -, aux_first, coeff_first_h_1,
+                                                      d_first_value)
 
-                                        sum_val = d_first_value + pressure_value;
-                                        aux_second[index] =
-                                                coeff_a[coeff_ind] * aux_second[index] + coeff_b[coeff_ind] * sum_val;
-                                        cpml_val = vel[ix] * (d_first_value + aux_second[index]);
-                                        next[ix] += cpml_val;
+                             sum_val = d_first_value + pressure_value;
+                             aux_second[index] =
+                                     coeff_a[coeff_ind] * aux_second[index] + coeff_b[coeff_ind] * sum_val;
+                             cpml_val = vel[ix] * (d_first_value + aux_second[index]);
+                             next[ix] += cpml_val;
 
-                                    });
+                         });
     });
     OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
 

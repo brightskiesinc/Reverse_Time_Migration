@@ -78,6 +78,6 @@ TEST_TRACE_HELPER() {
  */
 
 TEST_CASE("TraceHelper") {
-TEST_TRACE_HELPER();
+    TEST_TRACE_HELPER();
 
 }

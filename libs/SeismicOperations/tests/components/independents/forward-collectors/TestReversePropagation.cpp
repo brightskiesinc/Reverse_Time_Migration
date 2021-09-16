@@ -589,65 +589,65 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(GridBox *apGridBox,
 }
 
 TEST_CASE("Reverse Forward Collector - 2D - No Window", "[No Window],[2D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector - 2D - Window", "[Window],[2D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector - 3D - No Window", "[No Window],[3D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector - 3D - Window", "[Window],[3D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - No Window", "[No Window],[2D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-        generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - Window", "[Window],[2D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-        generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 3D - No Window", "[No Window],[3D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-        generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-        generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 3D - Window", "[Window],[3D]") {
-TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-        generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-        generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-        generate_average_case_configuration_map_wave()
-);
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }

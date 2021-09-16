@@ -59,6 +59,6 @@ TEST_KEY_CONV() {
  */
 
 TEST_CASE("Keys Convertor") {
-TEST_KEY_CONV();
+    TEST_KEY_CONV();
 
 }

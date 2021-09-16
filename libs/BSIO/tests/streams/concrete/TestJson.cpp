@@ -81,6 +81,6 @@ TEST_JSON() {
  */
 
 TEST_CASE("JsonReader") {
-TEST_JSON();
+    TEST_JSON();
 
 }

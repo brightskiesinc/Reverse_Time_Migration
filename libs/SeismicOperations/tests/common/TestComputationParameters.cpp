@@ -310,17 +310,17 @@ void TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(HALF_LENGTH aHalfLength) {
 }
 
 TEST_CASE("Computation Parameters - Class",
-"[ComputationParameters],[Class]") {
-TEST_CASE_COMPUTATION_PARAMETERS();
+          "[ComputationParameters],[Class]") {
+    TEST_CASE_COMPUTATION_PARAMETERS();
 
 }
 
 TEST_CASE("Computation Parameters - FD Coefficients",
-"[ComputationParameters],[FDCoefficients]") {
-for (
-auto hl
-: {
-O_2, O_4, O_8, O_12, O_16}) {
-TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(hl);
-}
+          "[ComputationParameters],[FDCoefficients]") {
+    for (
+        auto hl
+            : {
+            O_2, O_4, O_8, O_12, O_16}) {
+        TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(hl);
+    }
 }
