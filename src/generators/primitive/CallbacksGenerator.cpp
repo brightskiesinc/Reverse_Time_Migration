@@ -1,22 +1,35 @@
-// Created by marwan on 08/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <stbx/generators/primitive/CallbacksGenerator.hpp>
 
 #include <stbx/generators/common/Keys.hpp>
 #include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
-#include <operations/helpers/callbacks/concrete/CSVWriter.h>
-#include <operations/helpers/callbacks/concrete/ImageWriter.h>
+#include <operations/helpers/callbacks/concrete/WriterCallback.h>
 #include <operations/helpers/callbacks/concrete/NormWriter.h>
-#include <operations/helpers/callbacks/concrete/SegyWriter.h>
-#include <operations/helpers/callbacks/concrete/SUWriter.h>
-#include <operations/helpers/callbacks/concrete/BinaryWriter.h>
-
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <iostream>
 #include <string>
 
 using namespace stbx::generators;
 using namespace operations::helpers::callbacks;
+using namespace bs::base::logger;
 
 
 CallbacksGenerator::CallbacksGenerator(const std::string &aWritePath, nlohmann::json &aMap) {
@@ -28,19 +41,15 @@ CallbacksGenerator::CallbacksGenerator(const std::string &aWritePath, nlohmann::
 CallbacksGenerator::~CallbacksGenerator() = default;
 
 CallbackCollection *CallbacksGenerator::GenerateCallbacks() {
-    this->GetImageCallback();
     this->GetNormCallback();
-    this->GetCsvCallback();
-    this->GetSegyCallback();
-    this->GetSuCallback();
-    this->GetBinaryCallback();
+    this->GetWriterCallback();
 
     return this->mpCollection;
 }
 
-CallbacksGenerator::WritersBooleans CallbacksGenerator::GenerateWriters() {
+CallbacksGenerator::WritersBooleans CallbacksGenerator::GenerateWritersConfiguration() {
     struct CallbacksGenerator::WritersBooleans w;
-    nlohmann::json map = this->mMap[K_WRITERS];
+    nlohmann::json map = this->mMap[K_WRITERS_CONFIGURATION];
     if (map[K_PARAMETERS][K_ENABLE].get<bool>()) {
         w.WriteParams = true;
         if (!map[K_PARAMETERS][K_OUTPUT].is_null()) {
@@ -80,68 +89,8 @@ CallbacksGenerator::WritersBooleans CallbacksGenerator::GenerateWriters() {
     return w;
 }
 
-void CallbacksGenerator::GetImageCallback() {
-#ifdef USE_OpenCV
-    if (this->mMap[K_IMAGE][K_ENABLE].get<bool>()) {
-        int show_each = 200;
-        float percentile = 98.5;
-
-        if (!this->mMap[K_IMAGE][K_SHOW_EACH].is_null()) {
-            show_each = this->mMap[K_IMAGE][K_SHOW_EACH].get<int>();
-        }
-        if (!this->mMap[K_IMAGE][K_PERC].is_null()) {
-            percentile = this->mMap[K_IMAGE][K_PERC].get<float>();
-        }
-        CallbacksGenerator::WritersBooleans w = this->GenerateWriters();
-        this->mpCollection->RegisterCallback(new ImageWriter(show_each,
-                                                             w.WriteParams,
-                                                             w.WriteForward,
-                                                             w.WriteBackward,
-                                                             w.WriteReverse,
-                                                             w.WriteMigration,
-                                                             w.WriteReExtendedParams,
-                                                             w.WriteSingleShotCorrelation,
-                                                             w.WriteEachStackedShot,
-                                                             w.WriteTracesRaw,
-                                                             w.WriteTracesPreprocessed,
-                                                             w.VecParams,
-                                                             w.VecReExtendedParams,
-                                                             percentile,
-                                                             this->mWritePath));
-        std::cout << "Creating image callback with show_each = " << show_each
-                  << " and percentile = " << percentile << std::endl;
-    }
-#endif
-}
-
-void CallbacksGenerator::GetCsvCallback() {
-    if (this->mMap[K_CSV][K_ENABLE].get<bool>()) {
-        int show_each = 200;
-
-        if (!this->mMap[K_CSV][K_SHOW_EACH].is_null()) {
-            show_each = this->mMap[K_CSV][K_SHOW_EACH].get<int>();
-        }
-
-        CallbacksGenerator::WritersBooleans w = this->GenerateWriters();
-        this->mpCollection->RegisterCallback(new CsvWriter(show_each,
-                                                           w.WriteParams,
-                                                           w.WriteForward,
-                                                           w.WriteBackward,
-                                                           w.WriteReverse,
-                                                           w.WriteMigration,
-                                                           w.WriteReExtendedParams,
-                                                           w.WriteSingleShotCorrelation,
-                                                           w.WriteEachStackedShot,
-                                                           w.WriteTracesRaw,
-                                                           w.WriteTracesPreprocessed,
-                                                           w.VecParams,
-                                                           w.VecReExtendedParams,
-                                                           this->mWritePath));
-        std::cout << "Creating CSV callback with show_each = " << show_each << std::endl;
-    }
-}
-
 void CallbacksGenerator::GetNormCallback() {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mMap[K_NORM][K_ENABLE].get<bool>()) {
         int show_each = 200;
         if (!this->mMap[K_NORM][K_SHOW_EACH].is_null()) {
@@ -152,97 +101,44 @@ void CallbacksGenerator::GetNormCallback() {
                                                             true,
                                                             true,
                                                             this->mWritePath));
-        std::cout << "Creating norm callback with show_each = " << show_each << std::endl;
+        Logger->Info() << "Creating norm callback with show_each = " << show_each << '\n';
     }
 }
 
-void CallbacksGenerator::GetSegyCallback() {
-    if (this->mMap[K_SEGY][K_ENABLE].get<bool>()) {
+void CallbacksGenerator::GetWriterCallback() {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    if (this->mMap[K_WRITER][K_ENABLE].get<bool>()) {
         int show_each = 200;
 
-        if (!this->mMap[K_SEGY][K_SHOW_EACH].is_null()) {
-            show_each = this->mMap[K_SEGY][K_SHOW_EACH].get<int>();
+        if (!this->mMap[K_WRITER][K_SHOW_EACH].is_null()) {
+            show_each = this->mMap[K_WRITER][K_SHOW_EACH].get<int>();
         }
-        CallbacksGenerator::WritersBooleans w = this->GenerateWriters();
-        this->mpCollection->RegisterCallback(new SegyWriter(show_each,
-                                                            w.WriteParams,
-                                                            w.WriteForward,
-                                                            w.WriteBackward,
-                                                            w.WriteReverse,
-                                                            w.WriteMigration,
-                                                            w.WriteReExtendedParams,
-                                                            w.WriteSingleShotCorrelation,
-                                                            w.WriteEachStackedShot,
-                                                            w.WriteTracesRaw,
-                                                            w.WriteTracesPreprocessed,
-                                                            w.VecParams,
-                                                            w.VecReExtendedParams,
-                                                            this->mWritePath));
-        std::cout << "Creating SEG-Y callback with show_each = " << show_each << std::endl;
-    }
-}
-
-void CallbacksGenerator::GetSuCallback() {
-    if (this->mMap[K_SU][K_ENABLE].get<bool>()) {
-        int show_each = 200;
-        bool write_little_endian = false;
-
-        if (!this->mMap[K_SU][K_SHOW_EACH].is_null()) {
-            show_each = this->mMap[K_SU][K_SHOW_EACH].get<int>();
+        std::vector<std::string> types;
+        std::vector<std::string> underlying_configurations;
+        if (!this->mMap[K_WRITER][K_ACTIVE_TYPES].is_null()) {
+            auto types_map = this->mMap[K_WRITER][K_ACTIVE_TYPES];
+            for (auto it = types_map.begin(); it != types_map.end(); ++it) {
+                auto object = it.value();
+                types.push_back(object.begin().key());
+                underlying_configurations.push_back(object.begin().value().dump());
+            }
         }
-        if (this->mMap[K_SU][K_LITTLE_ENDIAN].get<bool>()) {
-            write_little_endian = true;
-        }
-        CallbacksGenerator::WritersBooleans w = this->GenerateWriters();
-        auto *su_writer =
-                new SuWriter(show_each,
-                             w.WriteParams,
-                             w.WriteForward,
-                             w.WriteBackward,
-                             w.WriteReverse,
-                             w.WriteMigration,
-                             w.WriteReExtendedParams,
-                             w.WriteSingleShotCorrelation,
-                             w.WriteEachStackedShot,
-                             w.WriteTracesRaw,
-                             w.WriteTracesPreprocessed,
-                             w.VecParams,
-                             w.VecReExtendedParams,
-                             this->mWritePath,
-                             write_little_endian);
-        this->mpCollection->RegisterCallback(su_writer);
-        if (write_little_endian) {
-            std::cout << "Creating SU callback in little endian format with show_each = " << show_each << std::endl;
-        } else {
-            std::cout << "Creating SU callback in big endian format with show_each = " << show_each << std::endl;
-        }
-    }
-}
-
-void CallbacksGenerator::GetBinaryCallback() {
-    if (this->mMap[K_BIN][K_ENABLE].get<bool>()) {
-        int show_each = 200;
-
-        if (!this->mMap[K_BIN][K_SHOW_EACH].is_null()) {
-            show_each = this->mMap[K_BIN][K_SHOW_EACH].get<int>();
-        }
-        CallbacksGenerator::WritersBooleans w = this->GenerateWriters();
-        auto *binary_writer =
-                new BinaryWriter(show_each,
-                                 w.WriteParams,
-                                 w.WriteForward,
-                                 w.WriteBackward,
-                                 w.WriteReverse,
-                                 w.WriteMigration,
-                                 w.WriteReExtendedParams,
-                                 w.WriteSingleShotCorrelation,
-                                 w.WriteEachStackedShot,
-                                 w.WriteTracesRaw,
-                                 w.WriteTracesPreprocessed,
-                                 w.VecParams,
-                                 w.VecReExtendedParams,
-                                 this->mWritePath);
-        this->mpCollection->RegisterCallback(binary_writer);
-        std::cout << "Creating binary callback with show_each = " << show_each << std::endl;
+        CallbacksGenerator::WritersBooleans w = this->GenerateWritersConfiguration();
+        Logger->Info() << "Creating writer callback with show_each = " << show_each << '\n';
+        this->mpCollection->RegisterCallback(new WriterCallback(show_each,
+                                                                w.WriteParams,
+                                                                w.WriteForward,
+                                                                w.WriteBackward,
+                                                                w.WriteReverse,
+                                                                w.WriteMigration,
+                                                                w.WriteReExtendedParams,
+                                                                w.WriteSingleShotCorrelation,
+                                                                w.WriteEachStackedShot,
+                                                                w.WriteTracesRaw,
+                                                                w.WriteTracesPreprocessed,
+                                                                w.VecParams,
+                                                                w.VecReExtendedParams,
+                                                                this->mWritePath,
+                                                                types, underlying_configurations));
     }
 }

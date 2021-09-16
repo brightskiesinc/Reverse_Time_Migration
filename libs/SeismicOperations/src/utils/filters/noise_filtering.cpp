@@ -1,12 +1,29 @@
-//
-// Created by amr on 24/06/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "operations/utils/filters/noise_filtering.h"
-
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <cmath>
 #include <iostream>
 #include <cmath>
+
+using namespace bs::base::logger;
 
 namespace operations {
     namespace utils {
@@ -97,6 +114,7 @@ namespace operations {
             }
 
             void z_normalize(float *input, float *output, uint nz, uint nx) {
+                LoggerSystem *Logger = LoggerSystem::GetInstance();
                 float sum = 0.0;
                 float mean;
                 float standardDeviation = 0.0;
@@ -107,7 +125,7 @@ namespace operations {
                 }
 
                 mean = sum / item_count;
-                printf("mean = %f\n", mean);
+                Logger->Info() << "mean = " << mean << '\n';
 
                 for (int i = 0; i < item_count; ++i) {
                     standardDeviation += std::pow(input[i] - mean, 2);
@@ -115,7 +133,7 @@ namespace operations {
 
                 standardDeviation = std::sqrt(standardDeviation / item_count);
 
-                printf("Standard Deviation\t: %f\n", standardDeviation);
+                Logger->Info() << "Standard Deviation\t: " << standardDeviation << '\n';
                 for (int i = 0; i < item_count; i++) {
                     output[i] = (input[i] - mean) / standardDeviation;
                 }

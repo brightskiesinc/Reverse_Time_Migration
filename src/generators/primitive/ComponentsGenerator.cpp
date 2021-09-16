@@ -1,17 +1,35 @@
-//
-// Created by marwan-elsafty on 18/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <stbx/generators/primitive/ComponentsGenerator.hpp>
 
 #include <stbx/generators/common/Keys.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
 using namespace std;
 using namespace stbx::generators;
+using namespace bs::base::configurations;
 using namespace operations::common;
-using namespace operations::configuration;
 using namespace operations::components;
-using namespace operations::exceptions;
+using namespace bs::base::exceptions;
+using namespace bs::base::logger;
 
 
 ComponentsGenerator::ComponentsGenerator(const nlohmann::json &aMap,
@@ -26,9 +44,7 @@ ComponentsGenerator::ComponentsGenerator(const nlohmann::json &aMap,
 
 ComputationKernel *
 ComponentsGenerator::GenerateComputationKernel() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     auto map = this->TruncateMap(K_COMPUTATION_KERNEL);
 
     if (this->mOrder == FIRST && this->mSampling == UNIFORM) {
@@ -41,47 +57,29 @@ ComponentsGenerator::GenerateComputationKernel() {
             case ISOTROPIC:
                 return new SecondOrderComputationKernel(map);
         }
-        std::cout << "No entry for wave->physics to identify Computation Kernel..." << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
+    Logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
+    Logger->Error() << "Terminating..." << '\n';
+    exit(EXIT_FAILURE);
 }
 
 ModelHandler *
 ComponentsGenerator::GenerateModelHandler() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
-    if (this->mMap[K_MODEL_HANDLER].empty()) {
-        std::cout << "No entry for model-handler key : supported values [ homogenous | segy ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    string type = this->mMap[K_MODEL_HANDLER][OP_K_TYPE].get<string>();
     JSONConfigurationMap *model_handler_map = this->TruncateMap(K_MODEL_HANDLER);
     ModelHandler *model_handler;
-
-    if (type == "synthetic") {
-        model_handler = new SyntheticModelHandler(model_handler_map);
-    } else if (type == "segy") {
-        model_handler = new SeismicModelHandler(model_handler_map);
-    } else {
-        std::cout << "Invalid value for model-handler key : supported values [ homogenous | segy ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    model_handler = new SeismicModelHandler(model_handler_map);
     return model_handler;
 }
 
 SourceInjector *
 ComponentsGenerator::GenerateSourceInjector() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mMap[K_SOURCE_INJECTOR].empty()) {
-        std::cout << "No entry for source-injector key : supported values [ ricker ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for source-injector key : supported values [ ricker ]" << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -92,8 +90,8 @@ ComponentsGenerator::GenerateSourceInjector() {
     if (type == "ricker") {
         source_injector = new RickerSourceInjector(map);
     } else {
-        std::cout << "Invalid value for source-injector key : supported values [ ricker ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "Invalid value for source-injector key : supported values [ ricker ]" << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return source_injector;
@@ -101,13 +99,11 @@ ComponentsGenerator::GenerateSourceInjector() {
 
 BoundaryManager *
 ComponentsGenerator::GenerateBoundaryManager() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mMap[K_BOUNDARY_MANAGER].empty()) {
-        std::cout << "No entry for boundary-manager key : supported values " << K_SUPPORTED_VALUES_BOUNDARY_MANAGER
-                  << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for boundary-manager key : supported values "
+                        << K_SUPPORTED_VALUES_BOUNDARY_MANAGER << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -117,24 +113,29 @@ ComponentsGenerator::GenerateBoundaryManager() {
 
     if (type == "none") {
         boundary_manager = new NoBoundaryManager(map);
-    }
-#if defined(USING_OMP)
-        else if (type == "random") {
-            boundary_manager = new RandomBoundaryManager(map);
-        } else if (type == "sponge") {
-            boundary_manager = new SpongeBoundaryManager(map);
-        } else if (type == "cpml") {
-            if (this->mOrder == FIRST) {
-                boundary_manager = new StaggeredCPMLBoundaryManager(map);
-            } else if (this->mOrder == SECOND) {
+    } else if (type == "random") {
+        boundary_manager = new RandomBoundaryManager(map);
+    } else if (type == "sponge") {
+        boundary_manager = new SpongeBoundaryManager(map);
+    } else if (type == "cpml") {
+        if (this->mApproximation == ISOTROPIC) {
+            if (this->mOrder == SECOND) {
                 boundary_manager = new CPMLBoundaryManager(map);
+            } else if (this->mOrder == FIRST) {
+                boundary_manager = new StaggeredCPMLBoundaryManager(map);
             }
         }
-#endif
-    else {
-        std::cout << "Invalid value for boundary-manager key : supported values " << K_SUPPORTED_VALUES_BOUNDARY_MANAGER
-                  << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        if (boundary_manager == nullptr) {
+            Logger->Error() << "Invalid value for boundary-manager key : "
+                            << "Unsupported for this approximation/order pair" << '\n';
+            Logger->Error() << "Terminating..." << '\n';
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (boundary_manager == nullptr) {
+        Logger->Error() << "Invalid value for boundary-manager key : supported values "
+                        << K_SUPPORTED_VALUES_BOUNDARY_MANAGER << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return boundary_manager;
@@ -142,13 +143,11 @@ ComponentsGenerator::GenerateBoundaryManager() {
 
 ForwardCollector *
 ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mMap[K_FORWARD_COLLECTOR].empty()) {
-        std::cout << "No entry for forward-collector key : supported values " << K_SUPPORTED_VALUES_FORWARD_COLLECTOR
-                  << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for forward-collector key : supported values "
+                        << K_SUPPORTED_VALUES_FORWARD_COLLECTOR << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -158,29 +157,15 @@ ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
     map->WriteValue(OP_K_PROPRIETIES, OP_K_WRITE_PATH, write_path);
     ForwardCollector *forward_collector = nullptr;
 
-    if (this->mOrder == FIRST && this->mSampling == UNIFORM) {
-        if (type == "two") {
-            forward_collector = new TwoPropagation(map);
-        } else if (type == "three") {
-            forward_collector = new ReversePropagation(map);
-        } else {
-            std::cout << "Invalid value for forward-collector key : supported values "
-                      << K_SUPPORTED_VALUES_FORWARD_COLLECTOR
-                      << std::endl;
-            std::cout << "Terminating..." << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    } else if (this->mOrder == SECOND && this->mSampling == UNIFORM) {
-        if (type == "three") {
-            forward_collector = new ReversePropagation(map);
-        } else if (type == "two") {
-            forward_collector = new TwoPropagation(map);
-        } else {
-            std::cout << "Invalid value for forward-collector key : supported values "
-                      << K_SUPPORTED_VALUES_FORWARD_COLLECTOR << std::endl;
-            std::cout << "Terminating..." << std::endl;
-            exit(EXIT_FAILURE);
-        }
+    if (type == "two") {
+        forward_collector = new TwoPropagation(map);
+    } else if (type == "three") {
+        forward_collector = new ReversePropagation(map);
+    } else {
+        Logger->Error() << "Invalid value for forward-collector key : supported values "
+                        << K_SUPPORTED_VALUES_FORWARD_COLLECTOR << '\n';
+        Logger->Error() << "Terminating..." << '\n';
+        exit(EXIT_FAILURE);
     }
     return forward_collector;
 }
@@ -188,14 +173,10 @@ ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
 
 MigrationAccommodator *
 ComponentsGenerator::GenerateMigrationAccommodator() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mMap[K_MIGRATION_ACCOMMODATOR].empty()) {
-        std::cout << "No entry for migration-accommodator key : supported values [ "
-                     "cross-correlation ]"
-                  << std::endl;
-        std::cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for migration-accommodator key : supported values [ ""cross-correlation ]" << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -205,11 +186,12 @@ ComponentsGenerator::GenerateMigrationAccommodator() {
 
     if (type == "cross-correlation") {
         correlation_kernel = new CrossCorrelationKernel(map);
-    } else {
-        std::cout << "Invalid value for migration-accommodator key : supported values [ "
-                     "cross-correlation ]"
-                  << std::endl;
-        std::cout << "Terminating..." << std::endl;
+    }
+    if (correlation_kernel == nullptr) {
+        Logger->Error()
+                << "Invalid value for migration-accommodator key : supported values [ ""cross-correlation | isic | adcig | pstm]"
+                << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return correlation_kernel;
@@ -217,78 +199,17 @@ ComponentsGenerator::GenerateMigrationAccommodator() {
 
 TraceManager *
 ComponentsGenerator::GenerateTraceManager() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
-    if (this->mMap[K_TRACE_MANAGER].empty()) {
-        std::cout << "No entry for trace-manager key : supported values [ binary | segy ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    auto type = this->mMap[K_TRACE_MANAGER][OP_K_TYPE].get<string>();
     auto map = this->TruncateMap(K_TRACE_MANAGER);
-    TraceManager *trace_manager = nullptr;
-
-    if (type == "binary") {
-        trace_manager = new BinaryTraceManager(map);
-    } else if (type == "segy") {
-        trace_manager = new SeismicTraceManager(map);
-    } else {
-        std::cout << "Invalid value for trace-manager key : supported values [ binary | segy ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    TraceManager *trace_manager;
+    trace_manager = new SeismicTraceManager(map);
     return trace_manager;
-}
-
-ModellingConfigurationParser *
-ComponentsGenerator::GenerateModellingConfigurationParser() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
-    if (this->mMap[K_MODELLING_CONFIGURATION_PARSER].empty()) {
-        std::cout << "No entry for modelling-configuration-parser key : supported values [ text ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    auto type = this->mMap[K_MODELLING_CONFIGURATION_PARSER][OP_K_TYPE].get<string>();
-    auto map = this->TruncateMap(K_MODELLING_CONFIGURATION_PARSER);
-    ModellingConfigurationParser *modelling_configuration_parser;
-
-    if (type == "text") {
-        modelling_configuration_parser = new TextModellingConfigurationParser();
-    } else {
-        std::cout << "Invalid value for modelling-configuration-parser key : supported values [ text ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    return modelling_configuration_parser;
 }
 
 TraceWriter *
 ComponentsGenerator::GenerateTraceWriter() {
-    /* First order checking to know what if exit or not. */
-    this->CheckFirstOrder();
-
-    if (this->mMap[K_TRACE_WRITER].empty()) {
-        std::cout << "No entry for trace-writer key : supported values [ binary ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    auto type = this->mMap[K_TRACE_WRITER][OP_K_TYPE].get<string>();
-    JSONConfigurationMap *trace_writer_map = this->TruncateMap(K_TRACE_WRITER);
+    auto map = this->TruncateMap(K_TRACE_WRITER);
     TraceWriter *trace_writer;
-
-    if (type == "binary") {
-        trace_writer = new BinaryTraceWriter(trace_writer_map);
-    } else {
-        std::cout << "Invalid value for trace-writer key : supported values [ binary ]" << std::endl;
-        std::cout << "Terminating..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    trace_writer = new SeismicTraceWriter(map);
     return trace_writer;
 }
 
@@ -305,13 +226,4 @@ nlohmann::json ComponentsGenerator::GetWaveMap() {
     map[K_WAVE][K_SAMPLING] = this->mSampling;
     map[K_WAVE][K_EQUATION_ORDER] = this->mOrder;
     return map;
-}
-
-void ComponentsGenerator::CheckFirstOrder() {
-    if (this->mOrder == FIRST && this->mSampling == UNIFORM) {
-#if defined(USING_DPCPP)
-        std::cout << "First order not supported yet..." << std::endl;
-        exit(EXIT_FAILURE);
-#endif
-    }
 }

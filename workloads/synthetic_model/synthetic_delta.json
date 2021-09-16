@@ -1,0 +1,71 @@
+{
+  "meta-data": {
+    "type": "parameter",
+    "grid-size": {
+      "nx": 500,
+      "ny": 1,
+      "nz": 500
+    },
+    "cell-dimension": {
+      "dx": 6.25,
+      "dy": 6.25,
+      "dz": 6.25
+    },
+    "origin-coordinates": {
+      "x": 100.25,
+      "y": 300
+    }
+  },
+  "data": {
+    "reflector": [
+      {
+        "type": "plane",
+        "value": {
+          "before": 0,
+          "after": 0.1
+        },
+        "origin": {
+          "x-index": 0,
+          "y-index": 0,
+          "z-index": 99
+        },
+        "slope": {
+          "x-angle": 0,
+          "y-angle": 0
+        }
+      },
+      {
+        "type": "plane",
+        "value": {
+          "before": 0.1,
+          "after": 0.1
+        },
+        "origin": {
+          "x-index": 0,
+          "y-index": 0,
+          "z-index": 299
+        },
+        "slope": {
+          "x-angle": 0,
+          "y-angle": 0
+        }
+      },
+      {
+        "type": "plane",
+        "value": {
+          "before": 0.1,
+          "after": 0
+        },
+        "origin": {
+          "x-index": 0,
+          "y-index": 0,
+          "z-index": 399
+        },
+        "slope": {
+          "x-angle": 0,
+          "y-angle": 0
+        }
+      }
+    ]
+  }
+}

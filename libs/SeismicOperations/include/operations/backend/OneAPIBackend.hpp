@@ -1,12 +1,29 @@
-//
-// Created by amr on 03/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_BACKEND_ONEAPI_BACKEND_HPP
 #define OPERATIONS_LIB_BACKEND_ONEAPI_BACKEND_HPP
 
 #include <operations/common/Singleton.tpp>
+
 #include <CL/sycl.hpp>
+#include "dpc_common.hpp"
 
 namespace operations {
     namespace backend {
@@ -66,6 +83,22 @@ namespace operations {
              */
             void SetAlgorithm(SYCL_ALGORITHM aOneAPIAlgorithm);
 
+            /**
+             * @brief
+             * Gets the recommended workgroup number.
+             */
+            inline size_t GetWorkgroupNumber() const {
+                return mWorkgroupNumber;
+            }
+
+            /**
+             * @brief
+             * Gets the recommended workgroup size.
+             */
+            inline size_t GetWorkgroupSize() const {
+                return mWorkgroupSize;
+            }
+
         private:
             /**
              * @brief
@@ -84,6 +117,11 @@ namespace operations {
             cl::sycl::queue *mDeviceQueue;
             /// The DPC++ underlying algorithm being used.
             SYCL_ALGORITHM mOneAPIAlgorithm;
+            /// number of available workgroups for nd_range kernels
+            size_t mWorkgroupNumber;
+            /// size of workgroup for nd_range kernels
+            size_t mWorkgroupSize;
+
         };
     } //namespace backend
 } //namespace operations

@@ -1,23 +1,38 @@
-//
-// Created by marwan-elsafty on 18/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include  <stbx/generators/primitive/ComponentsGenerator.hpp>
 
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
-#include <libraries/nlohmann/json.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
 
 #include <string>
 
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
+using namespace bs::base::configurations;
 using namespace operations::common;
-using namespace operations::configuration;
 using namespace operations::components;
-using namespace operations::exceptions;
+using namespace bs::base::exceptions;
 
 
 void TEST_CASE_COMPONENTS_GENERATOR() {
@@ -65,54 +80,55 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
 
     auto components_generator = new ComponentsGenerator(map, order, sampling, approximation);
 
-    SECTION("GenerateComputationKernel") {
+    SECTION("GenerateComputationKernel")
+    {
         auto computation_kernel = components_generator->GenerateComputationKernel();
         REQUIRE(instanceof<ComputationKernel>(computation_kernel));
         delete computation_kernel;
     }
 
-    SECTION("GenerateModelHandler") {
+    SECTION("GenerateModelHandler")
+    {
         auto model_handler = components_generator->GenerateModelHandler();
         REQUIRE(instanceof<ModelHandler>(model_handler));
         delete model_handler;
     }
 
-    SECTION("GenerateSourceInjector") {
+    SECTION("GenerateSourceInjector")
+    {
         auto source_injector = components_generator->GenerateSourceInjector();
         REQUIRE(instanceof<SourceInjector>(source_injector));
         delete source_injector;
     }
 
-    SECTION("GenerateBoundaryManager") {
+    SECTION("GenerateBoundaryManager")
+    {
         auto boundary_manager = components_generator->GenerateBoundaryManager();
         REQUIRE(instanceof<BoundaryManager>(boundary_manager));
         delete boundary_manager;
     }
 
-    SECTION("GenerateForwardCollector") {
+    SECTION("GenerateForwardCollector")
+    {
         auto forward_collector = components_generator->GenerateForwardCollector(WRITE_PATH);
         REQUIRE(instanceof<ForwardCollector>(forward_collector));
     }
 
-    SECTION("GenerateMigrationAccommodator") {
+    SECTION("GenerateMigrationAccommodator")
+    {
         auto migration_accommodator = components_generator->GenerateMigrationAccommodator();
         REQUIRE(instanceof<MigrationAccommodator>(migration_accommodator));
     }
 
-    SECTION("GenerateTraceManager") {
+    SECTION("GenerateTraceManager")
+    {
         auto trace_manager = components_generator->GenerateTraceManager();
         REQUIRE(instanceof<TraceManager>(trace_manager));
         delete trace_manager;
     }
 
-    SECTION("GenerateModellingConfigurationParser") {
-        auto modelling_configuration_parser =
-                components_generator->GenerateModellingConfigurationParser();
-        REQUIRE(instanceof<ModellingConfigurationParser>(modelling_configuration_parser));
-        delete modelling_configuration_parser;
-    }
-
-    SECTION("GenerateTraceWriter") {
+    SECTION("GenerateTraceWriter")
+    {
         auto trace_writer = components_generator->GenerateTraceWriter();
         REQUIRE(instanceof<TraceWriter>(trace_writer));
         delete trace_writer;
@@ -121,4 +137,5 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
 
 TEST_CASE("ComponentsGenerator Class", "[Generator],[ComponentsGenerator]") {
     TEST_CASE_COMPONENTS_GENERATOR();
+
 }

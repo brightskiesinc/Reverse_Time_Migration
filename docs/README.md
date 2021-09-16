@@ -1,6 +1,5 @@
 # Contents
 
-
 ## [User Manual](manual)
 
 * [Advanced Running Options](manual/AdvancedRunningOptions.md)

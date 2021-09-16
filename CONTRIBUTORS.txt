@@ -8,12 +8,18 @@
 
 Ahmed Ayyad <ahmed.ayyad@brightskiesinc.com>
 Amr Nasr <amr.nasr@brightskiesinc.com>
+Bassant Magdy <bassant.magdy@brightskiesinc.com>
 Ehab Nasr <ehab.nasr@brightskiesinc.com>
 Karim Mourad <karim.mourad@brightskiesinc.com>
-Marwan Elsafty <marwan.elsafty.ext@brightskiesinc.com>
+Maram Hesham <maram.hesham@brightskiesinc.com>
+Marwan Elsafty <marwan.elsafty@brightskiesinc.com>
 Mennatallah Samier <mennatallah.samier@brightskiesinc.com>
 Merna Moawad <merna.moawad@brightskiesinc.com>
 Mohammad Basyouni <mohammad.basyouni@brightskiesinc.com>
 Mohamed El Sherbiny <mohamed.el-sherbiny@brightskiesinc.com>
 Ingy Mounir <ingy.mounir@brightskiesinc.com>
-Zeyad Osama <zeyad.osama.ext@brightskiesinc.com>
+Omar Marzouk <omar.marzouk@brightskiesinc.com>
+Osama El-mehy <osama.el-mehy@brightskiesinc.com>
+Pancee Sawmaa <pancee.sawmaa@brightskiesinc.com>
+Zeyad Habib <zeyad.habib@brightskiesinc.com>
+Zeyad Osama <zeyad.osama@brightskiesinc.com>

@@ -1,19 +1,37 @@
-//
-// Created by zeyad-osama on 26/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp"
-
-#include <memory-manager/MemoryManager.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/memory/MemoryManager.hpp>
 
 #include <cmath>
 
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
+
 
 WaveFieldsMemoryHandler::WaveFieldsMemoryHandler(
-        operations::configuration::ConfigurationMap *apConfigurationMap) {
+        bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
 }
 
@@ -22,9 +40,11 @@ WaveFieldsMemoryHandler::~WaveFieldsMemoryHandler() = default;
 void WaveFieldsMemoryHandler::AcquireConfiguration() {}
 
 void WaveFieldsMemoryHandler::CloneWaveFields(GridBox *_src, GridBox *_dst) {
-    uint wnx = _src->GetActualWindowSize(X_AXIS);
-    uint wny = _src->GetActualWindowSize(Y_AXIS);
-    uint wnz = _src->GetActualWindowSize(Z_AXIS);
+
+    uint wnx = _src->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = _src->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = _src->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     uint const window_size = wnx * wny * wnz;
 
     /// Allocating and zeroing wave fields.
@@ -59,9 +79,13 @@ void WaveFieldsMemoryHandler::CloneWaveFields(GridBox *_src, GridBox *_dst) {
 }
 
 void WaveFieldsMemoryHandler::CopyWaveFields(GridBox *_src, GridBox *_dst) {
-    uint wnx = _src->GetActualWindowSize(X_AXIS);
-    uint wny = _src->GetActualWindowSize(Y_AXIS);
-    uint wnz = _src->GetActualWindowSize(Z_AXIS);
+
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+
+    uint wnx = _src->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = _src->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = _src->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     uint const window_size = wnx * wny * wnz;
 
     for (auto wave_field : _src->GetWaveFields()) {
@@ -71,8 +95,8 @@ void WaveFieldsMemoryHandler::CopyWaveFields(GridBox *_src, GridBox *_dst) {
         if (src != nullptr && dst != nullptr) {
             Device::MemCpy(dst, src, window_size * sizeof(float));
         } else {
-            std::cerr << "No Wave Fields allocated to be copied... "
-                      << "Terminating..." << std::endl;
+            Logger->Error() << "No Wave Fields allocated to be copied... "
+                            << "Terminating..." << '\n';
             exit(EXIT_FAILURE);
         }
 
@@ -89,9 +113,10 @@ void WaveFieldsMemoryHandler::FreeWaveFields(GridBox *apGridBox) {
 
 void WaveFieldsMemoryHandler::SetComputationParameters(
         ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }

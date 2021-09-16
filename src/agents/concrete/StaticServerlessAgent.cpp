@@ -1,16 +1,32 @@
-//
-// Created by zeyad-osama on 01/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #if defined(USING_MPI)
 
 #include <stbx/agents/concrete/StaticServerlessAgent.hpp>
-
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <mpi.h>
 
 using namespace std;
 using namespace stbx::agents;
 using namespace operations::dataunits;
+using namespace bs::base::logger;
 
 StaticServerlessAgent::StaticServerlessAgent() {
     this->mCount = 0;
@@ -23,13 +39,14 @@ StaticServerlessAgent::~StaticServerlessAgent() {
 }
 
 GridBox *StaticServerlessAgent::Initialize() {
+    LoggerSystem *Logger=LoggerSystem::GetInstance();
     this->mpGridBox = mpEngine->Initialize();
 
     int provided;
     MPI_Init_thread(&this->argc, &this->argv, MPI_THREAD_FUNNELED, &provided);
 
     if (provided != MPI_THREAD_FUNNELED) {
-        std::cerr << "Warning MPI did not provide MPI_THREAD_FUNNELED..." << std::endl;
+        Logger->Error() << "Warning MPI did not provide MPI_THREAD_FUNNELED..."<<'\n';
     }
 
     this->mCommunication = MPI_COMM_WORLD;

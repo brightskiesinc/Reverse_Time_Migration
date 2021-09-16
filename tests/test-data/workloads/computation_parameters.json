@@ -10,8 +10,7 @@
     "cache-blocking": {
       "block-x": 5500,
       "block-z": 55,
-      "block-y": 1,
-      "cor-block": 256
+      "block-y": 1
     },
     "window": {
       "enable": true,

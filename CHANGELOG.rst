@@ -2,26 +2,20 @@
 Seismic Toolbox Release Notes
 ==============================================
 
-v3.1.0
+v3.0.2
 =======
 
-**Fixed**:
+**Added**:
 
-* Added OpenMP Offload support
-* Wave Approximations
-    * Isotropic Second Order
-* Migration Accommodators
-    * Cross Correlation
-* Boundary Conditions
-    * None (*All*)
-* Forward Collectors
-    * Reverse Propagation
-    * Two Propagation
-*  Model Handlers
-    * Seismic Model Handler
-    * Synthetic Model Handler
-* Source Injectors
-    * Ricker Source Injector
+* Do a full I/O (Thoth) library integration with the seismic toolbox, updating the read/write utilities to be fully dependent on Thoth and remove old library dependency.
+* Update modelling to depend on the I/O (Thoth) library as well.
+* Added source maximum frequency resampling and user specified maximum frequency amplitude percentage.
+* Added dip angle applying before stacking in correlation kernel.
+* Added boundary managers tests:
+    * None boundary manager
+    * Random boundary manager
+    * Sponge boundary manager
+    * CPML boundary manager
 
 
 v3.0.1
@@ -115,7 +109,6 @@ v2.1.0
 
 **Fixed**:
 
-* Fixed CUDA codebase (`#2`_)
 * Fixed OneAPI codebase (`#3`_)
 * Fixed MPI bug in all variants (`#5`_)
 * Fixed OpenMP ``ReversePropagation`` bug (`#7`_)
@@ -151,7 +144,7 @@ v2.0.0
 
 **Bugs**:
 
-*  CUDA and OneAPI broken
+*  OneAPI broken
 *  Modeller needs some final tweaks
 
 

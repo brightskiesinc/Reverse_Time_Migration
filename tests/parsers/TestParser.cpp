@@ -1,12 +1,27 @@
-//
-// Created by marwan on 24/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include <stbx/parsers/Parser.h>
+#include <stbx/parsers/Parser.hpp>
 
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
 using namespace stbx::parsers;
@@ -15,7 +30,8 @@ using json = nlohmann::json;
 
 
 void TEST_CASE_PARSER() {
-    SECTION("Register Files Function Test") {
+    SECTION("Register Files Function Test")
+    {
         auto *parser = Parser::GetInstance();
 
         string parameter_file =
@@ -124,8 +140,7 @@ void TEST_CASE_PARSER() {
     "cache-blocking": {
       "block-x": 5500,
       "block-y": 1,
-      "block-z": 55,
-      "cor-block": 256
+      "block-z": 55
     },
     "device": "none",
     "dt-relax": 0.9,
@@ -147,7 +162,7 @@ void TEST_CASE_PARSER() {
   "models": {
     "velocity": "data/iso/params/vel_z6.25m_x12.5m_exact.segy"
   },
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },
@@ -173,11 +188,13 @@ void TEST_CASE_PARSER() {
 )"_json;
 
 
-        SECTION("GetInstance Function Test") {
+        SECTION("GetInstance Function Test")
+        {
             REQUIRE(instanceof<Parser>(parser));
         }
 
-        SECTION("RegisterFile & GetFiles Functions Test") {
+        SECTION("RegisterFile & GetFiles Functions Test")
+        {
             parser->RegisterFile(parameter_file);
             parser->RegisterFile(configuration_file);
             parser->RegisterFile(callback_file);
@@ -191,22 +208,26 @@ void TEST_CASE_PARSER() {
             REQUIRE(std::find(files.begin(), files.end(), pipeline) != files.end());
         }
 
-        SECTION("BuildMap Function Test") {
+        SECTION("BuildMap Function Test")
+        {
             json map = parser->BuildMap();
 
             REQUIRE(map == ground_truth_map);
         }
 
-        SECTION("GetMap Function Test") {
+        SECTION("GetMap Function Test")
+        {
             REQUIRE(parser->GetMap() == ground_truth_map);
         }
 
-        SECTION("Parser Class Kill Function Test") {
+        SECTION("Parser Class Kill Function Test")
+        {
             REQUIRE(Parser::Kill() == nullptr);
         }
     }
 
-    SECTION("Register Folder Function Test") {
+    SECTION("Register Folder Function Test")
+    {
         auto *parser = Parser::GetInstance();
 
         string workloads =
@@ -317,8 +338,7 @@ void TEST_CASE_PARSER() {
     "cache-blocking": {
       "block-x": 5500,
       "block-y": 1,
-      "block-z": 55,
-      "cor-block": 256
+      "block-z": 55
     },
     "device": "none",
     "dt-relax": 0.9,
@@ -340,7 +360,7 @@ void TEST_CASE_PARSER() {
   "models": {
     "velocity": "data/iso/params/vel_z6.25m_x12.5m_exact.segy"
   },
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },
@@ -365,11 +385,13 @@ void TEST_CASE_PARSER() {
 }
 )"_json;
 
-        SECTION("GetInstance Function Test") {
+        SECTION("GetInstance Function Test")
+        {
             REQUIRE(instanceof<Parser>(parser));
         }
 
-        SECTION("RegisterFolder Function Test") {
+        SECTION("RegisterFolder Function Test")
+        {
             parser->RegisterFolder(workloads);
             vector<std::string> files = parser->GetFiles();
 
@@ -379,17 +401,20 @@ void TEST_CASE_PARSER() {
             REQUIRE(std::find(files.begin(), files.end(), pipeline) != files.end());
         }
 
-        SECTION("BuildMap Function Test") {
+        SECTION("BuildMap Function Test")
+        {
             json map = parser->BuildMap();
 
             REQUIRE(map == ground_truth_map);
         }
 
-        SECTION("GetMap Function Test") {
+        SECTION("GetMap Function Test")
+        {
             REQUIRE(parser->GetMap() == ground_truth_map);
         }
 
-        SECTION("Parser Class Kill Function Test") {
+        SECTION("Parser Class Kill Function Test")
+        {
             REQUIRE(Parser::Kill() == nullptr);
         }
     }
@@ -397,4 +422,5 @@ void TEST_CASE_PARSER() {
 
 TEST_CASE("Parser Class Tess", "[Parser]") {
     TEST_CASE_PARSER();
+
 }

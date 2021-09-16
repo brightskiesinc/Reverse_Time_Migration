@@ -1,13 +1,32 @@
-//
-// Created by ingy-mounir on 1/28/20.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include "operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp"
+#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
 
-#include <timer/Timer.h>
-#include <memory-manager/MemoryManager.h>
+#include <operations/configurations/MapKeys.h>
 #include <operations/utils/interpolation/Interpolator.hpp>
 #include <operations/utils/io/read_utils.h>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/memory/MemoryManager.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
 
 #include <iostream>
 #include <utility>
@@ -18,27 +37,23 @@ using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::interpolation;
-using namespace thoth::streams;
-using namespace thoth::dataunits;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
+using namespace bs::timer;
+using namespace bs::io::streams;
+using namespace bs::io::dataunits;
 
 SeismicTraceManager::SeismicTraceManager(
-        operations::configuration::ConfigurationMap *apConfigurationMap) {
+        bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mInterpolation = NONE;
     this->mpTracesHolder = new TracesHolder();
-    nlohmann::json configuration_map;
-    configuration_map[IO_K_PROPERTIES][IO_K_TEXT_HEADERS_ONLY] = false;
-    configuration_map[IO_K_PROPERTIES][IO_K_TEXT_HEADERS_STORE] = false;
-    thoth::configuration::JSONConfigurationMap io_conf_map(
-            configuration_map);
-    this->mpSeismicReader = new SegyReader(&io_conf_map);
-    this->mpSeismicReader->AcquireConfiguration();
     this->mShotStride = 1;
 }
 
 SeismicTraceManager::~SeismicTraceManager() {
     if (this->mpTracesHolder->Traces != nullptr) {
-        mem_free(this->mpTracesHolder->Traces);
+        delete this->mpTracesHolder->Traces;
         mem_free(this->mpTracesHolder->PositionsX);
         mem_free(this->mpTracesHolder->PositionsY);
     }
@@ -47,79 +62,72 @@ SeismicTraceManager::~SeismicTraceManager() {
 }
 
 void SeismicTraceManager::AcquireConfiguration() {
-    if (this->mpConfigurationMap->Contains(OP_K_INTERPOLATION, OP_K_TYPE)) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    if (this->mpConfigurationMap->Contains(OP_K_PROPRIETIES, OP_K_INTERPOLATION)) {
         string interpolation = OP_K_NONE;
-        interpolation = this->mpConfigurationMap->GetValue(OP_K_INTERPOLATION, OP_K_TYPE, interpolation);
+        interpolation = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_INTERPOLATION,
+                                                           interpolation);
         if (interpolation == OP_K_NONE) {
             this->mInterpolation = NONE;
         } else if (interpolation == OP_K_SPLINE) {
             this->mInterpolation = SPLINE;
         }
     } else {
-        cout << "Invalid value for trace-manager->interpolation key : "
-                "supported values [ none | spline ]" << std::endl;
-        cout << "Using default trace-manager->interpolation value: none..." << std::endl;
+        Logger->Error() << "Invalid value for trace-manager->interpolation key : "
+                           "supported values [ none | spline ]" << '\n';
+        Logger->Info() << "Using default trace-manager->interpolation value: none..." << '\n';
     }
 
     this->mShotStride = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_SHOT_STRIDE, this->mShotStride);
-    std::cout << "Using Shot Stride = " << this->mShotStride << " for trace-manager" << std::endl;
+    Logger->Info() << "Using Shot Stride = " << this->mShotStride << " for trace-manager" << '\n';
+    // Initialize reader.
+    bool header_only = false;
+    header_only = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_HEADER_ONLY,
+                                                     header_only);
+    std::string reader_type = "segy";
+    reader_type = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_TYPE,
+                                                     reader_type);
+    try {
+        SeismicReader::ToReaderType(reader_type);
+    } catch (exception &e) {
+        Logger->Error() << "Invalid trace manager type provided : " << e.what() << '\n';
+        Logger->Error() << "Terminating..." << '\n';
+        exit(EXIT_FAILURE);
+    }
+    Logger->Info() << "Trace manager will use " << reader_type << " format." << '\n';
+    nlohmann::json configuration_map =
+            nlohmann::json::parse(this->mpConfigurationMap->ToString());
+    bs::base::configurations::JSONConfigurationMap io_conf_map(configuration_map);
+    this->mpSeismicReader = new SeismicReader(
+            SeismicReader::ToReaderType(reader_type), &io_conf_map);
+    this->mpSeismicReader->AcquireConfiguration();
+    this->mpSeismicReader->SetHeaderOnlyMode(header_only);
 }
 
 void SeismicTraceManager::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 void SeismicTraceManager::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        std::cerr << "No GridBox provided... Terminating..." << std::endl;
+        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-
-    /* Does not support 3D. */
-    if (this->mpGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
-    }
-}
-
-Point3D SeismicTraceManager::SDeLocalizePoint(Point3D point, bool is_2D,
-                                              uint half_length,
-                                              uint bound_length) {
-    Point3D copy;
-    copy.x = point.x + half_length + bound_length;
-    copy.z = point.z + half_length + bound_length;
-    if (!is_2D) {
-        copy.y = point.y + half_length + bound_length;
-    } else {
-        copy.y = point.y;
-    }
-    return copy;
-}
-
-IPoint3D SeismicTraceManager::DeLocalizePointS(IPoint3D aIPoint3D,
-                                               bool is_2D,
-                                               uint half_length,
-                                               uint bound_length) {
-    IPoint3D copy;
-    copy.x = aIPoint3D.x + half_length + bound_length;
-    copy.z = aIPoint3D.z + half_length + bound_length;
-    if (!is_2D) {
-        copy.y = aIPoint3D.y + half_length + bound_length;
-    } else {
-        copy.y = aIPoint3D.y;
-    }
-    return copy;
 }
 
 void SeismicTraceManager::ReadShot(vector<string> file_names,
                                    uint shot_number,
                                    string sort_key) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     if (this->mpTracesHolder->Traces != nullptr) {
-        mem_free(this->mpTracesHolder->Traces);
+        delete this->mpTracesHolder->Traces;
         mem_free(this->mpTracesHolder->PositionsX);
         mem_free(this->mpTracesHolder->PositionsY);
 
@@ -128,20 +136,18 @@ void SeismicTraceManager::ReadShot(vector<string> file_names,
         this->mpTracesHolder->PositionsY = nullptr;
     }
     Gather *gather;
-    Timer *timer = Timer::GetInstance();
-    timer->StartTimer("IO::ReadSelectedShotFromSegyFile");
-    gather = this->mpSeismicReader->Read({std::to_string(shot_number)});
-    timer->StopTimer("IO::ReadSelectedShotFromSegyFile");
-
+    {
+        ScopeTimer t("IO::ReadSelectedShotFromSegyFile");
+        gather = this->mpSeismicReader->Read({std::to_string(shot_number)});
+    }
     if (gather == nullptr) {
-        std::cerr << "Didn't find a suitable file to read shot ID "
-                  << shot_number
-                  << " from..." << std::endl;
+        Logger->Error() << "Didn't find a suitable file to read shot ID "
+                        << shot_number
+                        << " from..." << '\n';
         exit(EXIT_FAILURE);
     } else {
-        std::cout << "Reading trace for shot ID "
-                  << shot_number
-                  << std::endl;
+        Logger->Info() << "Reading trace for shot ID "
+                       << shot_number << '\n';
     }
 
     utils::io::ParseGatherToTraces(gather,
@@ -155,24 +161,21 @@ void SeismicTraceManager::ReadShot(vector<string> file_names,
     delete gather;
 }
 
-void SeismicTraceManager::PreprocessShot(uint cut_off_time_step) {
+void SeismicTraceManager::PreprocessShot() {
     Interpolator::Interpolate(this->mpTracesHolder,
                               this->mpGridBox->GetNT(),
                               this->mTotalTime,
                               this->mInterpolation);
-
-    bool is_2D = this->mpGridBox->GetLogicalGridSize(Y_AXIS) == 1;
-    uint half_length = mpParameters->GetHalfLength();
-    uint bound_length = mpParameters->GetBoundaryLength();
-    this->mpSourcePoint =
-            SDeLocalizePoint(this->mpSourcePoint, is_2D, half_length, bound_length);
+    mpDTraces.Free();
+    mpDPositionsX.Free();
+    mpDPositionsY.Free();
     mpDTraces.Allocate(this->mpTracesHolder->SampleNT * this->mpTracesHolder->TraceSizePerTimeStep,
                        "Device traces");
     mpDPositionsX.Allocate(this->mpTracesHolder->TraceSizePerTimeStep, "trace x positions");
     mpDPositionsY.Allocate(this->mpTracesHolder->TraceSizePerTimeStep, "trace y positions");
-    Device::MemCpy(mpDTraces.GetNativePointer(), this->mpTracesHolder->Traces,
+    Device::MemCpy(mpDTraces.GetNativePointer(), this->mpTracesHolder->Traces->GetNativePointer(),
                    this->mpTracesHolder->SampleNT * this->mpTracesHolder->TraceSizePerTimeStep * sizeof(float),
-                   Device::COPY_HOST_TO_DEVICE);
+                   Device::COPY_DEVICE_TO_DEVICE);
     Device::MemCpy(mpDPositionsX.GetNativePointer(), this->mpTracesHolder->PositionsX,
                    this->mpTracesHolder->TraceSizePerTimeStep * sizeof(uint),
                    Device::COPY_HOST_TO_DEVICE);

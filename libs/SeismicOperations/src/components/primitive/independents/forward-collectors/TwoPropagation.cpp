@@ -1,25 +1,45 @@
-//
-// Created by amr-nasr on 19/12/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/components/independents/concrete/forward-collectors/TwoPropagation.hpp>
 
+#include <operations/configurations/MapKeys.h>
 #include <operations/utils/compressor/Compressor.hpp>
 
-#include <timer/Timer.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
 
 #include <sys/stat.h>
 
 using namespace std;
+using namespace bs::timer;
 using namespace operations::helpers;
 using namespace operations::components;
 using namespace operations::components::helpers;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::compressors;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
 
 
-TwoPropagation::TwoPropagation(operations::configuration::ConfigurationMap *apConfigurationMap) {
+TwoPropagation::TwoPropagation(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mpInternalGridBox = new GridBox();
     this->mpForwardPressure = nullptr;
@@ -68,32 +88,32 @@ void TwoPropagation::AcquireConfiguration() {
 }
 
 void TwoPropagation::FetchForward() {
-    uint wnx = this->mpMainGridBox->GetActualWindowSize(X_AXIS);
-    uint wny = this->mpMainGridBox->GetActualWindowSize(Y_AXIS);
-    uint wnz = this->mpMainGridBox->GetActualWindowSize(Z_AXIS);
+
+    uint wnx = this->mpMainGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = this->mpMainGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = this->mpMainGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
+
     uint const window_size = wnx * wny * wnz;
     // Retrieve data from files to host buffer
     if ((this->mTimeCounter + 1) % this->mMaxNT == 0) {
-        if (this->mIsCompression) {
-            Timer *timer = Timer::GetInstance();
-            timer->StartTimer("ForwardCollector::Decompression");
+        if (this->mIsCompression) { ;
             string str = this->mWritePath + "/temp_" + to_string(this->mTimeCounter / this->mMaxNT);
-            Compressor::Decompress(this->mpForwardPressureHostMemory,
-                                   this->mpMainGridBox->GetActualWindowSize(X_AXIS),
-                                   this->mpMainGridBox->GetActualWindowSize(Y_AXIS),
-                                   this->mpMainGridBox->GetActualWindowSize(Z_AXIS),
-                                   this->mMaxNT,
-                                   (double) this->mZFP_Tolerance,
-                                   this->mZFP_Parallel,
-                                   str.c_str(),
-                                   this->mZFP_IsRelative);
-            timer->StopTimer("ForwardCollector::Decompression");
+            {
+                ScopeTimer t("ForwardCollector::Decompression");
+                Compressor::Decompress(this->mpForwardPressureHostMemory, wnx, wny, wnz,
+                                       this->mMaxNT,
+                                       (double) this->mZFP_Tolerance,
+                                       this->mZFP_Parallel,
+                                       str.c_str(),
+                                       this->mZFP_IsRelative);
+            }
         } else {
-            Timer *timer = Timer::GetInstance();
-            timer->StartTimer("IO::ReadForward");
             string str = this->mWritePath + "/temp_" + to_string(this->mTimeCounter / this->mMaxNT);
-            bin_file_load(str.c_str(), this->mpForwardPressureHostMemory, this->mMaxNT * window_size);
-            timer->StopTimer("IO::ReadForward");
+            {
+                ScopeTimer t("IO::ReadForward");
+                bin_file_load(str.c_str(), this->mpForwardPressureHostMemory, this->mMaxNT * window_size);
+            }
         }
     }
     // Retrieve data from host buffer
@@ -114,9 +134,12 @@ void TwoPropagation::FetchForward() {
 }
 
 void TwoPropagation::ResetGrid(bool aIsForwardRun) {
-    uint wnx = this->mpMainGridBox->GetActualWindowSize(X_AXIS);
-    uint wny = this->mpMainGridBox->GetActualWindowSize(Y_AXIS);
-    uint wnz = this->mpMainGridBox->GetActualWindowSize(Z_AXIS);
+
+
+    uint wnx = this->mpMainGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = this->mpMainGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = this->mpMainGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     uint const window_size = wnx * wny * wnz;
 
     if (aIsForwardRun) {
@@ -231,9 +254,12 @@ void TwoPropagation::ResetGrid(bool aIsForwardRun) {
 }
 
 void TwoPropagation::SaveForward() {
-    uint wnx = this->mpMainGridBox->GetActualWindowSize(X_AXIS);
-    uint wny = this->mpMainGridBox->GetActualWindowSize(Y_AXIS);
-    uint wnz = this->mpMainGridBox->GetActualWindowSize(Z_AXIS);
+
+
+    uint wnx = this->mpMainGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = this->mpMainGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = this->mpMainGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     uint const window_size = wnx * wny * wnz;
 
     this->mTimeCounter++;
@@ -254,26 +280,23 @@ void TwoPropagation::SaveForward() {
     // Save host memory to file
     if ((this->mTimeCounter + 1) % this->mMaxNT == 0) {
         if (this->mIsCompression) {
-            Timer *timer = Timer::GetInstance();
-            timer->StartTimer("ForwardCollector::Compression");
             string str = this->mWritePath + "/temp_" + to_string(this->mTimeCounter / this->mMaxNT);
-            Compressor::Compress(this->mpForwardPressureHostMemory,
-                                 this->mpMainGridBox->GetActualWindowSize(X_AXIS),
-                                 this->mpMainGridBox->GetActualWindowSize(Y_AXIS),
-                                 this->mpMainGridBox->GetActualWindowSize(Z_AXIS),
-                                 this->mMaxNT,
-                                 (double) this->mZFP_Tolerance,
-                                 this->mZFP_Parallel,
-                                 str.c_str(),
-                                 this->mZFP_IsRelative);
-            timer->StopTimer("ForwardCollector::Compression");
+            {
+                ScopeTimer t("ForwardCollector::Compression");;
+                Compressor::Compress(this->mpForwardPressureHostMemory, wnx, wny, wnz,
+                                     this->mMaxNT,
+                                     (double) this->mZFP_Tolerance,
+                                     this->mZFP_Parallel,
+                                     str.c_str(),
+                                     this->mZFP_IsRelative);
+            }
         } else {
-            Timer *timer = Timer::GetInstance();
-            timer->StartTimer("IO::WriteForward");
             string str =
                     this->mWritePath + "/temp_" + to_string(this->mTimeCounter / this->mMaxNT);
-            bin_file_save(str.c_str(), this->mpForwardPressureHostMemory, this->mMaxNT * window_size);
-            timer->StopTimer("IO::WriteForward");
+            {
+                ScopeTimer t("IO::WriteForward");
+                bin_file_save(str.c_str(), this->mpForwardPressureHostMemory, this->mMaxNT * window_size);
+            }
         }
     }
 
@@ -291,23 +314,20 @@ void TwoPropagation::SaveForward() {
 }
 
 void TwoPropagation::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 void TwoPropagation::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpMainGridBox = apGridBox;
     if (this->mpMainGridBox == nullptr) {
-        std::cout << "Not a compatible GridBox... Terminating..." << std::endl;
+        Logger->Error() << "Not a compatible GridBox... Terminating..." << '\n';
         exit(EXIT_FAILURE);
-    }
-
-    /* Does not support 3D. */
-    if (this->mpMainGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
     }
 
     /*
@@ -317,24 +337,25 @@ void TwoPropagation::SetGridBox(GridBox *apGridBox) {
     auto framebuffer = new FrameBuffer<float>();
     this->mpMainGridBox->RegisterWaveField(WAVE | GB_PRSS | NEXT | DIR_Z, framebuffer);
 
+
     framebuffer->Allocate(
-            mpMainGridBox->GetActualWindowSize(X_AXIS) *
-            mpMainGridBox->GetActualWindowSize(Y_AXIS) *
-            mpMainGridBox->GetActualWindowSize(Z_AXIS),
+            this->mpMainGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize() *
+            this->mpMainGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() *
+            this->mpMainGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize(),
             mpParameters->GetHalfLength(),
             "next pressure");
 }
 
 void TwoPropagation::SetDependentComponents(
         ComponentsMap<DependentComponent> *apDependentComponentsMap) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     HasDependents::SetDependentComponents(apDependentComponentsMap);
 
     this->mpWaveFieldsMemoryHandler =
             (WaveFieldsMemoryHandler *)
                     this->GetDependentComponentsMap()->Get(MEMORY_HANDLER);
     if (this->mpWaveFieldsMemoryHandler == nullptr) {
-        std::cerr << "No Wave Fields Memory Handler provided... "
-                  << "Terminating..." << std::endl;
+        Logger->Error() << "No Wave Fields Memory Handler provided... " << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }

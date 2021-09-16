@@ -1,6 +1,17 @@
 ==============================================
-Seismic Operations Release Notes
+Seismic Toolbox Release Notes
 ==============================================
+
+v3.0.1
+=======
+
+**Fixed**:
+
+* CMake now doesn't specify a device for OneAPI
+* First touch is now specific to cpu.
+* Corrected the computational grid size.
+* Fix typo in OneAPI generator.
+
 
 v3.0.0
 =======
@@ -89,7 +100,6 @@ v2.1.0
 
 **Fixed**:
 
-* Fixed CUDA codebase.
 * Fixed OneAPI codebase.
 * Fixed MPI bug in all variants.
 * Fixed OpenMP ``ReversePropagation`` bug.
@@ -149,7 +159,7 @@ v2.0.0
 
 **Bugs**:
 
-*  CUDA and OneAPI broken
+*  OneAPI broken
 *  Modeller needs some final tweaks
 
 

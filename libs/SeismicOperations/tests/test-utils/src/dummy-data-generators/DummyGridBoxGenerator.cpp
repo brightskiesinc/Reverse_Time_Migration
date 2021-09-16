@@ -1,6 +1,22 @@
-//
-// Created by zeyad-osama on 01/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
 
@@ -11,6 +27,10 @@ GridBox *generate_grid_box_no_wind_2d();
 
 GridBox *generate_grid_box_inc_wind_2d();
 
+GridBox *generate_grid_box_no_wind_3d();
+
+GridBox *generate_grid_box_inc_wind_3d();
+
 GridBox *operations::testutils::generate_grid_box(
         OP_TU_DIMS aDims, OP_TU_WIND aWindow) {
     GridBox *gb = nullptr;
@@ -18,6 +38,10 @@ GridBox *operations::testutils::generate_grid_box(
         gb = generate_grid_box_no_wind_2d();
     } else if (aDims == OP_TU_2D && aWindow == OP_TU_INC_WIND) {
         gb = generate_grid_box_inc_wind_2d();
+    } else if (aDims == OP_TU_3D && aWindow == OP_TU_NO_WIND) {
+        gb = generate_grid_box_no_wind_3d();
+    } else if (aDims == OP_TU_3D && aWindow == OP_TU_INC_WIND) {
+        gb = generate_grid_box_inc_wind_3d();
     }
     return gb;
 }
@@ -53,42 +77,24 @@ GridBox *generate_grid_box_no_wind_2d() {
      * Setting variables inside grid box.
      */
 
-    grid_box->SetLogicalGridSize(X_AXIS, nx);
-    grid_box->SetLogicalGridSize(Y_AXIS, ny);
-    grid_box->SetLogicalGridSize(Z_AXIS, nz);
+    grid_box->SetAfterSamplingAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetInitialAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetWindowAxis(new Axis3D<unsigned int>(wnx, wny, wnz));
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetCellDimension(dz);
+    grid_box->GetInitialAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetInitialAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetInitialAxis()->GetZAxis().SetCellDimension(dz);
 
-    grid_box->SetLogicalWindowSize(X_AXIS, wnx);
-    grid_box->SetLogicalWindowSize(Y_AXIS, wny);
-    grid_box->SetLogicalWindowSize(Z_AXIS, wnz);
+    grid_box->GetInitialAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetInitialAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetInitialAxis()->GetZAxis().SetReferencePoint(sz);
 
-    grid_box->SetActualGridSize(X_AXIS, nx);
-    grid_box->SetActualGridSize(Y_AXIS, ny);
-    grid_box->SetActualGridSize(Z_AXIS, nz);
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetReferencePoint(sz);
 
-    grid_box->SetInitialGridSize(X_AXIS, nx);
-    grid_box->SetInitialGridSize(Y_AXIS, ny);
-    grid_box->SetInitialGridSize(Z_AXIS, nz);
-
-    grid_box->SetActualWindowSize(X_AXIS, wnx);
-    grid_box->SetActualWindowSize(Y_AXIS, wny);
-    grid_box->SetActualWindowSize(Z_AXIS, wnz);
-
-    grid_box->SetComputationGridSize(X_AXIS, wnx - 2 * hl);
-    grid_box->SetComputationGridSize(Y_AXIS, wny);
-    grid_box->SetComputationGridSize(Z_AXIS, wnz - 2 * hl);
-
-
-    grid_box->SetCellDimensions(X_AXIS, dx);
-    grid_box->SetCellDimensions(Y_AXIS, dy);
-    grid_box->SetCellDimensions(Z_AXIS, dz);
-
-    grid_box->SetInitialCellDimensions(X_AXIS, dx);
-    grid_box->SetInitialCellDimensions(Y_AXIS, dy);
-    grid_box->SetInitialCellDimensions(Z_AXIS, dz);
-
-    grid_box->SetReferencePoint(X_AXIS, sx);
-    grid_box->SetReferencePoint(Y_AXIS, sy);
-    grid_box->SetReferencePoint(Z_AXIS, sz);
 
     grid_box->SetDT(dt);
 
@@ -126,42 +132,132 @@ GridBox *generate_grid_box_inc_wind_2d() {
      * Setting variables inside grid box.
      */
 
-    grid_box->SetLogicalGridSize(X_AXIS, nx);
-    grid_box->SetLogicalGridSize(Y_AXIS, ny);
-    grid_box->SetLogicalGridSize(Z_AXIS, nz);
+    grid_box->SetAfterSamplingAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetInitialAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetWindowAxis(new Axis3D<unsigned int>(wnx, wny, wnz));
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetCellDimension(dz);
+    grid_box->GetInitialAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetInitialAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetInitialAxis()->GetZAxis().SetCellDimension(dz);
 
-    grid_box->SetLogicalWindowSize(X_AXIS, wnx);
-    grid_box->SetLogicalWindowSize(Y_AXIS, wny);
-    grid_box->SetLogicalWindowSize(Z_AXIS, wnz);
+    grid_box->GetInitialAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetInitialAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetInitialAxis()->GetZAxis().SetReferencePoint(sz);
 
-    grid_box->SetActualGridSize(X_AXIS, nx);
-    grid_box->SetActualGridSize(Y_AXIS, ny);
-    grid_box->SetActualGridSize(Z_AXIS, nz);
-
-    grid_box->SetInitialGridSize(X_AXIS, nx);
-    grid_box->SetInitialGridSize(Y_AXIS, ny);
-    grid_box->SetInitialGridSize(Z_AXIS, nz);
-
-    grid_box->SetActualWindowSize(X_AXIS, wnx);
-    grid_box->SetActualWindowSize(Y_AXIS, wny);
-    grid_box->SetActualWindowSize(Z_AXIS, wnz);
-
-    grid_box->SetComputationGridSize(X_AXIS, wnx - 2 * hl);
-    grid_box->SetComputationGridSize(Y_AXIS, wny);
-    grid_box->SetComputationGridSize(Z_AXIS, wnz - 2 * hl);
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetReferencePoint(sz);
 
 
-    grid_box->SetCellDimensions(X_AXIS, dx);
-    grid_box->SetCellDimensions(Y_AXIS, dy);
-    grid_box->SetCellDimensions(Z_AXIS, dz);
+    grid_box->SetDT(dt);
 
-    grid_box->SetInitialCellDimensions(X_AXIS, dx);
-    grid_box->SetInitialCellDimensions(Y_AXIS, dy);
-    grid_box->SetInitialCellDimensions(Z_AXIS, dz);
+    return grid_box;
+}
 
-    grid_box->SetReferencePoint(X_AXIS, sx);
-    grid_box->SetReferencePoint(Y_AXIS, sy);
-    grid_box->SetReferencePoint(Z_AXIS, sz);
+GridBox *generate_grid_box_no_wind_3d() {
+    /*
+    * Variables initialization for grid box.
+    */
+
+    int hl = 4;
+
+    int nx = 23;
+    int ny = 23;
+    int nz = 23;
+
+    int wnx = nx;
+    int wny = ny;
+    int wnz = nz;
+
+    int sx = 0;
+    int sy = 0;
+    int sz = 0;
+
+    float dx = 6.25f;
+    float dy = 6.25f;
+    float dz = 6.25f;
+
+    float dt = 0.00169821f;
+
+    auto *grid_box = new GridBox();
+
+    /*
+     * Setting variables inside grid box.
+     */
+    grid_box->SetAfterSamplingAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetInitialAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetWindowAxis(new Axis3D<unsigned int>(wnx, wny, wnz));
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetCellDimension(dz);
+    grid_box->GetInitialAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetInitialAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetInitialAxis()->GetZAxis().SetCellDimension(dz);
+
+    grid_box->GetInitialAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetInitialAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetInitialAxis()->GetZAxis().SetReferencePoint(sz);
+
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetReferencePoint(sz);
+
+
+    grid_box->SetDT(dt);
+
+    return grid_box;
+}
+
+GridBox *generate_grid_box_inc_wind_3d() {
+    /*
+    * Variables initialization for grid box.
+    */
+
+    int hl = 4;
+
+    int nx = 23;
+    int ny = 23;
+    int nz = 23;
+
+    int wnx = 21;
+    int wny = 21;
+    int wnz = 21;
+
+    int sx = 0;
+    int sy = 0;
+    int sz = 0;
+
+    float dx = 6.25f;
+    float dy = 6.25f;
+    float dz = 6.25f;
+
+    float dt = 0.00169821;
+
+    auto *grid_box = new GridBox();
+
+    /*
+     * Setting variables inside grid box.
+     */
+
+    grid_box->SetAfterSamplingAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetInitialAxis(new Axis3D<unsigned int>(nx, ny, nz));
+    grid_box->SetWindowAxis(new Axis3D<unsigned int>(wnx, wny, wnz));
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetCellDimension(dz);
+    grid_box->GetInitialAxis()->GetXAxis().SetCellDimension(dx);
+    grid_box->GetInitialAxis()->GetYAxis().SetCellDimension(dy);
+    grid_box->GetInitialAxis()->GetZAxis().SetCellDimension(dz);
+
+    grid_box->GetInitialAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetInitialAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetInitialAxis()->GetZAxis().SetReferencePoint(sz);
+
+    grid_box->GetAfterSamplingAxis()->GetXAxis().SetReferencePoint(sx);
+    grid_box->GetAfterSamplingAxis()->GetYAxis().SetReferencePoint(sy);
+    grid_box->GetAfterSamplingAxis()->GetZAxis().SetReferencePoint(sz);
 
     grid_box->SetDT(dt);
 

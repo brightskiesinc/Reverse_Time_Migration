@@ -1,0 +1,51 @@
+{
+  "meta-data": {
+    "type": "traces",
+    "source": {
+      "start": {
+        "x-index": 0,
+        "y-index": 0,
+        "z-index": 0
+      },
+      "end": {
+        "x-index": 449,
+        "y-index": 0,
+        "z-index": 0
+      },
+      "increment": {
+        "x-index": 4,
+        "y-index": 0,
+        "z-index": 0
+      }
+    },
+    "source-relative-receivers": {
+      "start": {
+        "x-offset": 50,
+        "y-offset": 0,
+        "z-offset": 0
+      },
+      "number": {
+        "x": 100,
+        "y": 0,
+        "z": 0
+      },
+      "increment": {
+        "x-index": 1,
+        "y-index": 0,
+        "z-index": 0
+      }
+    },
+    "time-sampling": 0.01,
+    "sample-number": 400,
+    "cell-dimension": {
+      "dx": 6.25,
+      "dy": 0
+    },
+    "origin-coordinates": {
+      "x": 100.25,
+      "y": 300
+    }
+  },
+  "data": {
+  }
+}

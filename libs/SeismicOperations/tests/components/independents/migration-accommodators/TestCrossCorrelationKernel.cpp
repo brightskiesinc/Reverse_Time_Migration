@@ -1,10 +1,27 @@
-//
-// Created by ahmed-ayyad on 01/18/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
-#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 
+#include <operations/configurations/MapKeys.h>
+#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 #include <operations/common/DataTypes.h>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
@@ -12,13 +29,13 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <libraries/catch/catch.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
+using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 
 
@@ -51,13 +68,14 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -80,15 +98,14 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
     float temp_a[window_size];
     float temp_b[window_size];
     float ground_truth[window_size];
-    float ground_truth_1[window_size];
-    float ground_truth_2[window_size];
+    float stack_ground_truth[window_size];
 
     for (int i = 0; i < window_size; i++) {
-        temp_a[i] = (float) rand() * 100 / RAND_MAX;
-        temp_b[i] = (float) rand() * 100 / RAND_MAX;
+        temp_a[i] = (int) ((float) rand() * 100.0f / RAND_MAX);
+        temp_b[i] = (int) ((float) rand() * 100.0f / RAND_MAX);
         ground_truth[i] = temp_a[i] * temp_b[i];
-        ground_truth_1[i] = temp_a[i] * temp_a[i];
-        ground_truth_2[i] = temp_b[i] * temp_b[i];
+        stack_ground_truth[i] = ground_truth[i]
+                                / (sqrtf(temp_a[i] * temp_a[i] * temp_b[i] * temp_b[i]) + 1e-20f);
     }
 
     Device::MemCpy(apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer(), temp_b,
@@ -142,7 +159,7 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
             for (int k = offset; k < nzEnd; k++) {
                 int window_index = j * wnx * wnz + k * wnx + i;
                 int grid_index = j * nx * nz + k * nx + i;
-                misses += !approximately_equal(stack_result[grid_index], ground_truth[window_index]);
+                misses += !approximately_equal(stack_result[grid_index], stack_ground_truth[window_index]);
             }
         }
     }
@@ -160,11 +177,10 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
     misses = 0;
 
     for (int i = 0; i < window_size; i++) {
-        temp_a[i] = (float) rand() * 100 / RAND_MAX;
-        temp_b[i] = (float) rand() * 100 / RAND_MAX;
-        ground_truth[i] += temp_a[i] * temp_b[i];
-        ground_truth_1[i] += temp_a[i] * temp_a[i];
-        ground_truth_2[i] += temp_b[i] * temp_b[i];
+        temp_a[i] = (int) ((float) rand() * 100.0f / RAND_MAX);
+        temp_b[i] = (int) ((float) rand() * 100.0f / RAND_MAX);
+        stack_ground_truth[i] += (temp_a[i] * temp_b[i])
+                                 / (sqrtf(temp_a[i] * temp_a[i] * temp_b[i] * temp_b[i]) + 1e-20f);
     }
     Device::MemCpy(forward_gridbox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer(), temp_a,
                    window_size * sizeof(float), Device::COPY_HOST_TO_DEVICE);
@@ -181,7 +197,7 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
             for (int k = offset; k < nzEnd; k++) {
                 int window_index = j * wnx * wnz + k * wnx + i;
                 int grid_index = j * nx * nz + k * nx + i;
-                misses += !approximately_equal(stack_result[grid_index], ground_truth[window_index]);
+                misses += !approximately_equal(stack_result[grid_index], stack_ground_truth[window_index]);
             }
         }
     }
@@ -191,22 +207,23 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
 
     auto migration_result = uut->GetMigrationData();
 
-    REQUIRE(migration_result->GetGridSize(X_AXIS) == apGridBox->GetLogicalGridSize(X_AXIS));
-    REQUIRE(migration_result->GetGridSize(Y_AXIS) == apGridBox->GetLogicalGridSize(Y_AXIS));
-    REQUIRE(migration_result->GetGridSize(Z_AXIS) == apGridBox->GetLogicalGridSize(Z_AXIS));
-    REQUIRE(migration_result->GetNT() == apGridBox->GetNT());
 
-    REQUIRE(migration_result->GetCellDimensions(X_AXIS) == apGridBox->GetCellDimensions(X_AXIS));
-    REQUIRE(migration_result->GetCellDimensions(Y_AXIS) == apGridBox->GetCellDimensions(Y_AXIS));
-    REQUIRE(migration_result->GetCellDimensions(Z_AXIS) == apGridBox->GetCellDimensions(Z_AXIS));
-    REQUIRE(migration_result->GetDT() == apGridBox->GetDT());
+    REQUIRE(migration_result->GetGridSize(X_AXIS) == nx);
+    REQUIRE(migration_result->GetGridSize(Y_AXIS) == ny);
+    REQUIRE(migration_result->GetGridSize(Z_AXIS) == nz);
+
+    REQUIRE(migration_result->GetCellDimensions(X_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension());
+    REQUIRE(migration_result->GetCellDimensions(Y_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension());
+    REQUIRE(migration_result->GetCellDimensions(Z_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension());
+
     REQUIRE(migration_result->GetGatherDimension() == 1);
 
-    REQUIRE(migration_result->GetResults().size() == 3);
+    REQUIRE(migration_result->GetResults().size() == 1);
 
     auto migration_buffer = migration_result->GetResultAt(0)->GetData();
-    auto source_illumination_buffer = migration_result->GetResultAt(1)->GetData();
-    auto receiver_illumination_buffer = migration_result->GetResultAt(2)->GetData();
 
     /// Loop over migration buffer test case - 2nd round
     for (int i = offset; i < nxEnd; i++) {
@@ -215,9 +232,7 @@ void TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(GridBox *apGridBox,
                 int window_index = j * wnx * wnz + k * wnx + i;
                 int grid_index = j * nx * nz + k * nx + i;
 
-                misses += !approximately_equal(migration_buffer[grid_index], ground_truth[window_index]);
-                misses += !approximately_equal(source_illumination_buffer[grid_index], ground_truth_1[window_index]);
-                misses += !approximately_equal(receiver_illumination_buffer[grid_index], ground_truth_2[window_index]);
+                misses += !approximately_equal(migration_buffer[grid_index], stack_ground_truth[window_index]);
             }
         }
     }
@@ -265,13 +280,14 @@ void TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -398,15 +414,17 @@ void TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(GridBox *apGridBox,
 
     auto migration_result = uut->GetMigrationData();
 
-    REQUIRE(migration_result->GetGridSize(X_AXIS) == apGridBox->GetLogicalGridSize(X_AXIS));
-    REQUIRE(migration_result->GetGridSize(Y_AXIS) == apGridBox->GetLogicalGridSize(Y_AXIS));
-    REQUIRE(migration_result->GetGridSize(Z_AXIS) == apGridBox->GetLogicalGridSize(Z_AXIS));
-    REQUIRE(migration_result->GetNT() == apGridBox->GetNT());
+    REQUIRE(migration_result->GetGridSize(X_AXIS) == nx);
+    REQUIRE(migration_result->GetGridSize(Y_AXIS) == ny);
+    REQUIRE(migration_result->GetGridSize(Z_AXIS) == nz);
 
-    REQUIRE(migration_result->GetCellDimensions(X_AXIS) == apGridBox->GetCellDimensions(X_AXIS));
-    REQUIRE(migration_result->GetCellDimensions(Y_AXIS) == apGridBox->GetCellDimensions(Y_AXIS));
-    REQUIRE(migration_result->GetCellDimensions(Z_AXIS) == apGridBox->GetCellDimensions(Z_AXIS));
-    REQUIRE(migration_result->GetDT() == apGridBox->GetDT());
+    REQUIRE(migration_result->GetCellDimensions(X_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension());
+    REQUIRE(migration_result->GetCellDimensions(Y_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension());
+    REQUIRE(migration_result->GetCellDimensions(Z_AXIS) ==
+            apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension());
+
     REQUIRE(migration_result->GetGatherDimension() == 1);
 
     REQUIRE(migration_result->GetResults().size() == 1);
@@ -440,26 +458,62 @@ TEST_CASE("CrossCorrelation - No Compensation - 2D - No Window", "[No Window],[2
     TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("CrossCorrelation - No Compensation - 2D - Window", "[Window],[2D]") {
     TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("CrossCorrelation - No Compensation - 3D - No Window", "[No Window],[3D]") {
+    TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("CrossCorrelation - No Compensation - 3D - Window", "[Window],[3D]") {
+    TEST_CASE_CROSS_CORRELATION_NO_COMPENSATION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("CrossCorrelation - Combined Compensation - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("CrossCorrelation - Combined Compensation - 2D - Window", "[Window],[2D]") {
     TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("CrossCorrelation - Combined Compensation - 3D - No Window", "[No Window],[3D]") {
+    TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("CrossCorrelation - Combined Compensation - 3D - Window", "[Window],[3D]") {
+    TEST_CASE_CROSS_CORRELATION_COMBINED_COMPENSATION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }

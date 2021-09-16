@@ -1,6 +1,21 @@
-//
-// Created by amr-nasr on 16/10/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_MANAGER_HPP
@@ -51,11 +66,8 @@ namespace operations {
              * of muting or special pre-processing applied on the traces and setting the
              * number of time steps of the simulation appropriately. Any changes needed to
              * be applied on the meta data of the grid should be done.
-             *
-             * @param[in] cut_off_time
-             * The time step at which the source injection ends.
              */
-            virtual void PreprocessShot(uint cut_off_time) = 0;
+            virtual void PreprocessShot() = 0;
 
             /**
              * @brief Function that injects traces into the current frame of our GridBox
@@ -67,7 +79,7 @@ namespace operations {
              * Starts from nt - 1 with this being the time of the first trace
              * i.e. (backward propagation starts from nt - 1)
              */
-            virtual void ApplyTraces(uint time_step) = 0;
+            virtual void ApplyTraces(int time_step) = 0;
 
             /**
              * @brief Applies Isotropic Field upon all parameters' models

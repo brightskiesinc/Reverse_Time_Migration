@@ -1,17 +1,32 @@
-//
-// Created by amr-nasr on 11/21/19.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
 
 #include <operations/backend/OneAPIBackend.hpp>
+#include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
-#include <timer/Timer.h>
-#include <memory-manager/MemoryManager.h>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+#include <bs/base/memory/MemoryManager.hpp>
 
 #include <cstring>
 
-#define fma(a, b, c) (a) * (b) + (c)
 
 using namespace cl::sycl;
 using namespace std;
@@ -19,33 +34,16 @@ using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::backend;
+using namespace bs::base::memory;
+using namespace bs::timer;
 
-template void SecondOrderComputationKernel::Compute<true, O_2>();
+FORWARD_DECLARE_COMPUTE_TEMPLATE(SecondOrderComputationKernel, Compute)
 
-template void SecondOrderComputationKernel::Compute<true, O_4>();
-
-template void SecondOrderComputationKernel::Compute<true, O_8>();
-
-template void SecondOrderComputationKernel::Compute<true, O_12>();
-
-template void SecondOrderComputationKernel::Compute<true, O_16>();
-
-template void SecondOrderComputationKernel::Compute<false, O_2>();
-
-template void SecondOrderComputationKernel::Compute<false, O_4>();
-
-template void SecondOrderComputationKernel::Compute<false, O_8>();
-
-template void SecondOrderComputationKernel::Compute<false, O_12>();
-
-template void SecondOrderComputationKernel::Compute<false, O_16>();
-
-template<bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
+template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
 void SecondOrderComputationKernel::Compute() {
-    // Read parameters into local variables to be shared.
-
-    size_t nx = mpGridBox->GetActualWindowSize(X_AXIS);
-    size_t nz = mpGridBox->GetActualWindowSize(Z_AXIS);
+    /* Read parameters into local variables to be shared. */
+    size_t nx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    size_t nz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     float *prev_base = mpGridBox->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     float *curr_base = mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
@@ -53,71 +51,65 @@ void SecondOrderComputationKernel::Compute() {
 
     float *vel_base = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
 
-    // Pre-compute the coefficients for each direction.
+    /* Pre-compute the coefficients for each direction. */
     int hl = HALF_LENGTH_;
+    int flops_per_second = 6 * HALF_LENGTH_ + 5;
+    int size = (nx - 2 * HALF_LENGTH_) * (nz - 2 * HALF_LENGTH_);
+
+    ElasticTimer timer("ComputationKernel::Kernel", size, 4, true,
+                       flops_per_second);
+
+    timer.Start();
     if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+            size_t num_groups = OneAPIBackend::GetInstance()->GetWorkgroupNumber();
+            size_t wgsize = OneAPIBackend::GetInstance()->GetWorkgroupSize();
+
+            int compute_nz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize();
+            int compute_nx = mpParameters->GetHalfLength() +
+                             this->mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize();
+
+            size_t z_stride = (compute_nz + num_groups - 1) / num_groups;
+
+            auto global_range = range<1>(num_groups);
+            auto local_range = range<1>(wgsize);
+            const size_t wnx = nx;
+            const size_t wnz = nz;
             const float *current = curr_base;
-            float *next = next_base;
             const float *prev = prev_base;
+            float *next = next_base;
             const float *vel = vel_base;
             const float *c_x = mpCoeffX->GetNativePointer();
             const float *c_z = mpCoeffZ->GetNativePointer();
-            const float c_xyz = mCoeffXYZ;
             const int *v = mpVerticalIdx->GetNativePointer();
-            const size_t wnx = nx;
-            const size_t wnz = nz;
-            auto global_range = range<2>(mpGridBox->GetComputationGridSize(X_AXIS),
-                                         mpGridBox->GetComputationGridSize(Z_AXIS));
-            auto local_range = range<2>(mpParameters->GetBlockX(), mpParameters->GetBlockZ());
-            auto global_offset = id<2>(HALF_LENGTH_, HALF_LENGTH_);
-            auto global_nd_range = nd_range<2>(global_range, local_range, global_offset);
-
-
-            cgh.parallel_for<class secondOrderComputationKernel>(
-                    global_nd_range, [=](nd_item<2> it) {
-                        int x = it.get_global_id(0);
-                        int z = it.get_global_id(1);
-
-                        int idx = wnx * z + x;
-
-
-                        float value = current[idx] * c_xyz;
-
-                        value = fma(current[idx - 1] + current[idx + 1], c_x[0], value);
-                        value = fma(current[idx - v[0]] + current[idx + v[0]], c_z[0], value);
-
-                        if (HALF_LENGTH_ > 1) {
-                            value = fma(current[idx - 2] + current[idx + 2], c_x[1], value);
-                            value = fma(current[idx - v[1]] + current[idx + v[1]], c_z[1], value);
-                        }
-                        if (HALF_LENGTH_ > 2) {
-                            value = fma(current[idx - 3] + current[idx + 3], c_x[2], value);
-                            value = fma(current[idx - 4] + current[idx + 4], c_x[3], value);
-                            value = fma(current[idx - v[2]] + current[idx + v[2]], c_z[2], value);
-                            value = fma(current[idx - v[3]] + current[idx + v[3]], c_z[3], value);
-                        }
-                        if (HALF_LENGTH_ > 4) {
-                            value = fma(current[idx - 5] + current[idx + 5], c_x[4], value);
-                            value = fma(current[idx - 6] + current[idx + 6], c_x[5], value);
-                            value = fma(current[idx - v[4]] + current[idx + v[4]], c_z[4], value);
-                            value = fma(current[idx - v[5]] + current[idx + v[5]], c_z[5], value);
-                        }
-                        if (HALF_LENGTH_ > 6) {
-                            value = fma(current[idx - 7] + current[idx + 7], c_x[6], value);
-                            value = fma(current[idx - 8] + current[idx + 8], c_x[7], value);
-                            value = fma(current[idx - v[6]] + current[idx + v[6]], c_z[6], value);
-                            value = fma(current[idx - v[7]] + current[idx + v[7]], c_z[7], value);
-                        }
-
-                        next[idx] = (2 * current[idx]) - prev[idx] + (vel[idx] * value);
-
+            const float c_xyz = mCoeffXYZ;
+            cgh.parallel_for_work_group(
+                    global_range, local_range, [=](group<1> grp) {
+                        size_t z_id = grp.get_id(0) * z_stride + HALF_LENGTH_;
+                        size_t end_z =
+                                (z_id + z_stride) < (compute_nz + HALF_LENGTH_) ?
+                                (z_id + z_stride) : (compute_nz +
+                                                     HALF_LENGTH_);
+                        grp.parallel_for_work_item([&](h_item<1> it) {
+                            for (size_t iz = z_id; iz < end_z; iz++) {
+                                size_t offset = iz * wnx + it.get_local_id(0);
+                                for (size_t ix = HALF_LENGTH_; ix < hl + compute_nx; ix += wgsize) {
+                                    size_t idx = offset + ix;
+                                    float value = current[idx] * c_xyz;
+                                    DERIVE_SEQ_AXIS_EQ_OFF(idx, 1, +, current, c_x, value)
+                                    DERIVE_ARRAY_AXIS_EQ_OFF(idx, v, +, current, c_z, value)
+                                    next[idx] = (2 * current[idx]) - prev[idx] + (vel[idx] * value);
+                                }
+                            }
+                        });
                     });
         });
     } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
-        int compute_nz = mpGridBox->GetComputationGridSize(Z_AXIS);
+        int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize();
+        int compute_nx = mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize();
+
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range = range<2>(compute_nz, mpGridBox->GetComputationGridSize(X_AXIS));
+            auto global_range = range<2>(compute_nz, compute_nx);
             auto local_range = range<2>(mpParameters->GetBlockZ(), mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
             const float *current = curr_base;
@@ -132,10 +124,10 @@ void SecondOrderComputationKernel::Compute() {
             const int local_nx = mpParameters->GetBlockX() + 2 * hl;
             auto localRange_ptr_cur = range<1>(((mpParameters->GetBlockX() + (2 * hl)) *
                                                 (mpParameters->GetBlockZ() + (2 * hl))));
-            //  Create an accessor for SLM buffer
+            /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx =
@@ -146,7 +138,7 @@ void SecondOrderComputationKernel::Compute() {
                         float c_x_loc[HALF_LENGTH_];
                         float c_z_loc[HALF_LENGTH_];
                         int v_loc[HALF_LENGTH_];
-                        // Set local coeff.
+                        /* Set local coefficient. */
                         for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
                             c_x_loc[iter] = c_x[iter];
                             c_z_loc[iter] = c_z[iter];
@@ -155,7 +147,8 @@ void SecondOrderComputationKernel::Compute() {
                         bool copyHaloX = false;
                         bool copyHaloY = false;
                         const unsigned int items_X = it.get_local_range(1);
-                        // Set Shared Memory.
+
+                        /* Set shared memory. */
                         local[identifiant] = current[idx];
                         if (id0 < HALF_LENGTH_) {
                             copyHaloX = true;
@@ -192,9 +185,10 @@ void SecondOrderComputationKernel::Compute() {
                     });
         });
     } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
-        int compute_nz = mpGridBox->GetComputationGridSize(Z_AXIS) / mpParameters->GetBlockZ();
+        int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize() / mpParameters->GetBlockZ();
+
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range = range<2>(compute_nz, mpGridBox->GetComputationGridSize(X_AXIS));
+            auto global_range = range<2>(compute_nz, mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize());
             auto local_range = range<2>(1, mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
             const float *current = curr_base;
@@ -213,7 +207,7 @@ void SecondOrderComputationKernel::Compute() {
             //  Create an accessor for SLM buffer
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx = it.get_global_id(1) + hl +
@@ -271,9 +265,10 @@ void SecondOrderComputationKernel::Compute() {
                     });
         });
     } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
-        int compute_nz = mpGridBox->GetComputationGridSize(Z_AXIS) / mpParameters->GetBlockZ();
+        int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize() / mpParameters->GetBlockZ();
+
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range = range<2>(compute_nz, mpGridBox->GetComputationGridSize(X_AXIS));
+            auto global_range = range<2>(compute_nz, mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize());
             auto local_range = range<2>(1, mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
             const float *current = curr_base;
@@ -288,16 +283,17 @@ void SecondOrderComputationKernel::Compute() {
             const int pad = 0;
             auto localRange_ptr_cur =
                     range<1>((mpParameters->GetBlockX() + (2 * hl) + pad));
-            //  Create an accessor for SLM buffer
+
+            /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for<class secondOrderComputation_dpcpp_gpu>(
+            cgh.parallel_for(
                     workgroup_range, [=](nd_item<2> it) {
                         float *local = tab.get_pointer();
                         int idx = it.get_global_id(1) + hl +
                                   (it.get_global_id(0) * idx_range + hl) * nx;
-                        size_t id0 = it.get_local_id(1);
-                        size_t identifiant = (id0 + hl);
+                        int id0 = it.get_local_id(1);
+                        int identifiant = (id0 + hl);
                         float c_x_loc[HALF_LENGTH_];
                         float c_z_loc[HALF_LENGTH_];
                         int v_end = v[HALF_LENGTH_ - 1];
@@ -306,7 +302,7 @@ void SecondOrderComputationKernel::Compute() {
                         for (unsigned int iter = 0; iter <= HALF_LENGTH_; iter++) {
                             front[iter] = current[idx + nx * iter];
                         }
-                        for (unsigned int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                        for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
                             back[iter - 1] = current[idx - nx * iter];
                             c_x_loc[iter - 1] = c_x[iter - 1];
                             c_z_loc[iter - 1] = c_z[iter - 1];
@@ -316,6 +312,7 @@ void SecondOrderComputationKernel::Compute() {
                             copyHaloX = true;
                         const unsigned int items_X = it.get_local_range(1);
                         for (int i = 0; i < idx_range; i++) {
+                            it.barrier(access::fence_space::local_space);
                             local[identifiant] = front[0];
                             if (copyHaloX) {
                                 local[identifiant - HALF_LENGTH_] = current[idx - HALF_LENGTH_];
@@ -352,5 +349,39 @@ void SecondOrderComputationKernel::Compute() {
                     });
         });
     }
+    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    timer.Stop();
+}
+
+void SecondOrderComputationKernel::PreprocessModel() {
+
+    int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
+
+
+    float dt2 = mpGridBox->GetDT() * mpGridBox->GetDT();
+
+    /*
+     * Preprocess the velocity model by calculating the dt2 * c2 component of
+     * the wave equation.
+     */
+    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit(
+            [&](sycl::handler &cgh) {
+                auto global_range = range<3>(nx, ny, nz);
+                auto local_range = range<3>(1, 1, 1);
+                auto global_nd_range = nd_range<3>(global_range, local_range);
+                float *vel_device = mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
+
+                cgh.parallel_for(
+                        global_nd_range, [=](sycl::nd_item<3> it) {
+                            int x = it.get_global_id(0);
+                            int y = it.get_global_id(1);
+                            int z = it.get_global_id(2);
+                            float value = vel_device[y * nz * nx + z * nx + x];
+                            vel_device[y * nz * nx + z * nx + x] =
+                                    value * value * dt2;
+                        });
+            });
     OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
 }

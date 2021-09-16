@@ -1,0 +1,13 @@
+{
+  "system": {
+    "algorithm": {
+      "type": "rtm"
+    },
+    "agent": {
+      "type": "normal"
+    },
+    "writer": {
+      "type": "normal"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "text-headers-only": false,
+    "text-headers-store": false,
+    "percentile": 98.5,
+    "pool-uuid": "f9e78524-12dd-48f5-b491-a9849449d29b",
+    "container-uuid": "f9e78524-12dd-48f5-b491-a9849449d293"
+  }
+}

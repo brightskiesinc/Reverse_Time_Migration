@@ -1,6 +1,21 @@
-//
-// Created by amr-nasr on 18/11/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp"
 #include <operations/backend/OneAPIBackend.hpp>
@@ -79,7 +94,7 @@ void RandomExtension::VelocityExtensionHelper(
         end_y = 1;
         start_y = 0;
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.single_task<class random_get_max_velocity>([=]() {
+            cgh.single_task([=]() {
                 // Get maximum property_array value
                 for (int row = start_z + boundary_length; row < end_z - boundary_length;
                      row++) {
@@ -100,7 +115,7 @@ void RandomExtension::VelocityExtensionHelper(
     } else {
         // Get maximum property_array value.
         OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.single_task<class random_get_max_velocity>([=]() {
+            cgh.single_task([=]() {
                 // Get maximum property_array_value
                 for (int depth = start_y + boundary_length;
                      depth < end_y - boundary_length; depth++) {
@@ -133,7 +148,7 @@ void RandomExtension::VelocityExtensionHelper(
             auto local_range = range<3>(1, 1, 1);
             auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Random_velocity_extension_Y>(
+            cgh.parallel_for(
                     global_nd_range, [=](nd_item<3> it) {
                         int column = it.get_global_id(0) + start_x;
                         int depth = it.get_global_id(1);
@@ -171,7 +186,7 @@ void RandomExtension::VelocityExtensionHelper(
         auto local_range = range<3>(1, 1, 1);
         auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Random_velocity_extension_X>(
+        cgh.parallel_for(
                 global_nd_range, [=](nd_item<3> it) {
                     int column = it.get_global_id(0);
                     int depth = it.get_global_id(1) + start_y;
@@ -207,7 +222,7 @@ void RandomExtension::VelocityExtensionHelper(
         auto local_range = range<3>(1, 1, 1);
         auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Random_velocity_extension_Z>(
+        cgh.parallel_for(
                 global_nd_range, [=](nd_item<3> it) {
                     int column = it.get_global_id(0) + start_x;
                     int depth = it.get_global_id(1) + start_y;
@@ -247,7 +262,7 @@ void RandomExtension::VelocityExtensionHelper(
         auto local_range = range<3>(1, 1, 1);
         auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Random_velocity_corner_X_Z>(
+        cgh.parallel_for(
                 global_nd_range, [=](nd_item<3> it) {
                     int column = it.get_global_id(0);
                     int depth = it.get_global_id(1) + start_y;
@@ -305,7 +320,7 @@ void RandomExtension::VelocityExtensionHelper(
             auto local_range = range<3>(1, 1, 1);
             auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Random_velocity_corner_Y_Z>(
+            cgh.parallel_for(
                     global_nd_range, [=](nd_item<3> it) {
                         int column = it.get_global_id(0) + start_x;
                         int depth = it.get_global_id(1);
@@ -363,7 +378,7 @@ void RandomExtension::VelocityExtensionHelper(
             auto local_range = range<3>(1, 1, 1);
             auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Random_velocity_corner_X_Y_0>(
+            cgh.parallel_for(
                     global_nd_range, [=](nd_item<3> it) {
                         int column = it.get_global_id(0);
                         int depth = it.get_global_id(1);
@@ -404,7 +419,7 @@ void RandomExtension::VelocityExtensionHelper(
             auto local_range = range<3>(1, 1, 1);
             auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Random_velocity_corner_X_Y_1>(
+            cgh.parallel_for(
                     global_nd_range, [=](nd_item<3> it) {
                         int column = it.get_global_id(0);
                         int depth = it.get_global_id(1);

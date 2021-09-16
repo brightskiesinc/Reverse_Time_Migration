@@ -1,37 +1,60 @@
 {
   "callbacks": {
-    "su": {
-      "enable": true,
-      "show-each": 200,
-      "little-endian": false
-    },
-    "csv": {
+    "writer": {
+      "active-types": [
+        {
+          "su": {
+            "properties": {
+              "write-little-endian": false
+            }
+          }
+        },
+        {
+          "csv": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "image": {
+            "properties": {
+              "percentile": 98.5
+            }
+          }
+        },
+        {
+          "binary": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "segy": {
+            "properties": {
+            }
+          }
+        }
+      ],
       "enable": true,
       "show-each": 200
-    },
-    "image": {
-      "enable": true,
-      "show-each": 200,
-      "percentile": 98.5
     },
     "norm": {
-      "enable": true,
+      "enable": false,
       "show-each": 200
     },
-    "bin": {
-      "enable": true,
-      "show-each": 200
-    },
-    "segy": {
-      "enable": true,
-      "show-each": 200
-    },
-    "writers": {
+    "writers-configuration": {
       "migration": {
         "enable": true
       },
-      "velocity": {
-        "enable": true
+      "parameters": {
+        "enable": true,
+        "output": [
+          "velocity",
+          "density",
+          "epsilon",
+          "delta",
+          "theta"
+        ]
       },
       "traces-raw": {
         "enable": true
@@ -39,8 +62,15 @@
       "traces-preprocessed": {
         "enable": true
       },
-      "re-extended-velocity": {
-        "enable": true
+      "re-extended-parameters": {
+        "enable": true,
+        "output": [
+          "velocity",
+          "density",
+          "epsilon",
+          "delta",
+          "theta"
+        ]
       },
       "each-stacked-shot": {
         "enable": true

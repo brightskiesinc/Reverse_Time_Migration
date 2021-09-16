@@ -1,13 +1,29 @@
-//
-// Created by ingy-mounir on 02/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #include <operations/components/independents/concrete/forward-collectors/ReversePropagation.hpp>
 
 #include <operations/common/DataTypes.h>
 #include <operations/components/dependency/concrete/HasDependents.hpp>
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-#include <operations/configurations/concrete/JSONConfigurationMap.hpp>
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
@@ -15,14 +31,13 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <libraries/catch/catch.hpp>
+#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
-using namespace operations;
+using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 using namespace operations::helpers;
 
@@ -75,13 +90,13 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -174,9 +189,17 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(GridBox *apGridBox,
     forward_collector->ResetGrid(false);
     auto grid_box = forward_collector->GetForwardGrid();
 
+    /*
     REQUIRE(grid_box->GetActualGridSize(X_AXIS) == nx);
     REQUIRE(grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(grid_box->GetActualGridSize(Z_AXIS) == nz);
+    REQUIRE(grid_box->GetActualGridSize(Z_AXIS) == nz);*/
+
+
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
+
     REQUIRE(grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -283,13 +306,13 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -400,9 +423,11 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(GridBox *apGridBox,
     forward_collector->ResetGrid(false);
     auto grid_box = forward_collector->GetForwardGrid();
 
-    REQUIRE(grid_box->GetActualGridSize(X_AXIS) == nx);
-    REQUIRE(grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(grid_box->GetActualGridSize(Z_AXIS) == nz);
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
+
     REQUIRE(grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -551,7 +576,7 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(GridBox *apGridBox,
             }
         }
     }
-    REQUIRE (misses == 0);
+    REQUIRE(misses == 0);
 
     delete apGridBox;
     delete apParameters;
@@ -567,26 +592,62 @@ TEST_CASE("Reverse Forward Collector - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("Reverse Forward Collector - 3D - No Window", "[No Window],[3D]") {
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("Reverse Forward Collector - 3D - Window", "[Window],[3D]") {
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("Reverse Forward Collector Injection - 3D - No Window", "[No Window],[3D]") {
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
+            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
+}
+
+TEST_CASE("Reverse Forward Collector Injection - 3D - Window", "[Window],[3D]") {
+    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
+            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
+            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
+            generate_average_case_configuration_map_wave()
+    );
 }

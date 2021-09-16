@@ -1,0 +1,38 @@
+stages:
+  - compile
+  - check
+  - test
+
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+
+compile:
+  stage: compile
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --tests --examples
+    - ./clean_build.sh
+
+check:
+  stage: check
+  image: pp-openmp-bundle
+  allow_failure: true
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --examples
+    - ./clean_build.sh
+    - apt update && apt -y install cppcheck
+    - cppcheck --project=bin/compile_commands.json
+
+test:
+  stage: test
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --tests
+    - ./clean_build.sh
+    - cd ./bin && ctest -v
