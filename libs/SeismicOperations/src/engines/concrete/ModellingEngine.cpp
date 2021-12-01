@@ -1,25 +1,41 @@
-//
-// Created by amr-nasr on 12/11/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include "operations/engines/concrete/ModellingEngine.hpp"
+#include <bs/base/memory/MemoryManager.hpp>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
 
-#include <memory-manager/MemoryManager.h>
-
-/// { @todo To be removed when all NotImplementedException() are resolved
-#include "operations/exceptions/NotImplementedException.h"
-/// }
+#include <operations/engines/concrete/ModellingEngine.hpp>
 
 #define PB_STR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PB_WIDTH 50
 
 using namespace std;
+using namespace bs::timer;
+using namespace bs::base::configurations;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
+using namespace operations::configurations;
 using namespace operations::engines;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::helpers::callbacks;
-using namespace operations::exceptions;
 
 void print_modelling_progress(double percentage, const char *str = nullptr) {
     int val = (int) (percentage * 100);
@@ -67,7 +83,6 @@ ModellingEngine::ModellingEngine(ModellingEngineConfigurations *apConfiguration,
      */
     this->mpCallbacks = new CallbackCollection();
     this->mpParameters = apParameters;
-    this->mpTimer = Timer::GetInstance();
 }
 
 /**
@@ -93,7 +108,6 @@ ModellingEngine::ModellingEngine(ModellingEngineConfigurations *apConfiguration,
     /// argument to the constructor.
     this->mpParameters = apParameters;
 
-    this->mpTimer = Timer::GetInstance();
 }
 
 ModellingEngine::~ModellingEngine() = default;
@@ -102,7 +116,7 @@ ModellingEngine::~ModellingEngine() = default;
  * Run the initialization steps for the modelling engine.
  */
 GridBox *ModellingEngine::Initialize() {
-    this->mpTimer->StartTimer("Engine::Initialization");
+    ScopeTimer t("Engine::Initialization");
 #ifndef NDEBUG
     this->mpCallbacks->BeforeInitialization(this->mpParameters);
 #endif
@@ -142,89 +156,109 @@ GridBox *ModellingEngine::Initialize() {
         component->AcquireConfiguration();
     }
 
-    this->mpTimer->StartTimer("ModelHandler::ReadModel");
-    GridBox *grid_box =
-            this->mpConfiguration->GetModelHandler()->ReadModel(
-                    this->mpConfiguration->GetModelFiles());
-    this->mpTimer->StopTimer("ModelHandler::ReadModel");
+    this->mpParameters->SetMaxPropagationFrequency(
+            this->mpConfiguration->GetSourceInjector()->GetMaxFrequency());
+
+    ElasticTimer timer("ModelHandler::ReadModel");
+    timer.Start();
+    auto gb = this->mpConfiguration->GetModelHandler()->ReadModel(
+            this->mpConfiguration->GetModelFiles());
+    timer.Stop();
 
     /// Set the GridBox with the parameters given to the constructor for
     /// all needed functions.
     for (auto component :
             this->mpConfiguration->GetComponents()->ExtractValues()) {
-        component->SetGridBox(grid_box);
+        component->SetGridBox(gb);
     }
 
     /**
      * All pre-processing needed to be done on the model before the beginning of
      * the reverse time migration, should be applied in this function.
      */
-    this->mpTimer->StartTimer("ModelHandler::PreprocessModel");
-    this->mpConfiguration->GetModelHandler()->PreprocessModel();
-    this->mpTimer->StopTimer("ModelHandler::PreprocessModel");
+    {
+        ScopeTimer timer("ModelHandler::PreprocessModel");
+        this->mpConfiguration->GetComputationKernel()->PreprocessModel();
+    }
 
     /**
      * Extends the velocities/densities to the added boundary parts to the
      * velocity/density of the model appropriately. This is only called once after
      * the initialization of the model.
      */
-    this->mpTimer->StartTimer("BoundaryManager::ExtendModel");
-    this->mpConfiguration->GetBoundaryManager()->ExtendModel();
-    this->mpTimer->StopTimer("BoundaryManager::ExtendModel");
+    {
+        ScopeTimer timer("BoundaryManager::ExtendModel");
+        this->mpConfiguration->GetBoundaryManager()->ExtendModel();
+    }
 
 #ifndef NDEBUG
-    this->mpCallbacks->AfterInitialization(grid_box);
+    this->mpCallbacks->AfterInitialization(gb);
 #endif
-
-    /**
-     * This function is used to parse the modelling_configuration_file to get the
-     * parameters of ModellingConfiguration struct (parameters of modeling)
-     * Parses a file with the proper format as the modelling configuration.
-     */
-    ModellingConfiguration model_conf =
-            this->mpConfiguration->GetModellingConfigurationParser()->ParseConfiguration(
-                    this->mpConfiguration->GetModellingConfigurationFile(),
-                    grid_box->GetActualGridSize(Y_AXIS) == 1);
-
-    /// Getting the number of time steps for the grid from the model_conf struct
-    grid_box->SetNT(int(model_conf.TotalTime / grid_box->GetDT()));
-
-    /**
-     * Initializes the trace writer with all needed data for it
-     * to be able to start recording traces according the the given configuration.
-     */
-    this->mpConfiguration->GetTraceWriter()->InitializeWriter(
-            &model_conf, this->mpConfiguration->GetTraceFiles());
-
-    /// After updating the model_conf struct by the data exist in the
-    /// modelling_configuration_file put its value in the modelling_configuration
-    /// struct of this class
-    this->mpModellingConfiguration = model_conf;
 
     this->mpConfiguration->GetComputationKernel()->SetBoundaryManager(
             this->mpConfiguration->GetBoundaryManager());
-    this->mpTimer->StopTimer("Engine::Initialization");
-
-    grid_box->Report(VERBOSE);
-    return grid_box;
+    gb->Report(VERBOSE);
+    return gb;
 }
 
 vector<uint> ModellingEngine::GetValidShots() {
-    /// @todo To be enhanced to handle more than one shot per run.
-    vector<uint> shots = {0};
-    return shots;
+    auto logger = LoggerSystem::GetInstance();
+    logger->Info() << "Detecting available shots for processing..." << '\n';
+
+    ElasticTimer timer("Engine::GetValidShots");
+    timer.Start();
+    vector<uint> possible_shots =
+            this->mpConfiguration->GetTraceManager()->GetWorkingShots(
+                    this->mpConfiguration->GetTraceFiles(),
+                    this->mpConfiguration->GetSortMin(),
+                    this->mpConfiguration->GetSortMax(),
+                    this->mpConfiguration->GetSortKey());
+    timer.Stop();
+
+    if (possible_shots.empty()) {
+        logger->Error() << "No valid shots detected... terminating." << '\n';
+        exit(EXIT_FAILURE);
+    }
+    logger->Info() << "Valid shots detected to process\t: "
+                   << possible_shots.size() << '\n';
+    return possible_shots;
 }
 
 void ModellingEngine::MigrateShots(vector<uint> aShotNumbers, GridBox *apGridBox) {
-    this->mpTimer->StartTimer("Engine::Model");
-    /// If not in the debug mode(release mode) call the ReExtendModel() of
-    /// this class
-    /*!
-     * Extends the velocities/densities to the added boundary parts to the
-     * velocity/density of the model appropriately. This is called repeatedly with
-     * before the forward propagation of each shot.
-     */
-    this->mpConfiguration->GetBoundaryManager()->ReExtendModel();
+    for (auto shot_number : aShotNumbers) {
+        this->MigrateShots(shot_number, apGridBox);
+    }
+}
+
+void ModellingEngine::MigrateShots(uint shot_id, GridBox *apGridBox) {
+    ScopeTimer t("Engine::Model");
+    {
+        ScopeTimer timer("TraceManager::ReadShot");
+        this->mpConfiguration->GetTraceManager()->ReadShot(
+                this->mpConfiguration->GetTraceFiles(), shot_id, this->mpConfiguration->GetSortKey());
+    }
+#ifndef NDEBUG
+    this->mpCallbacks->BeforeShotPreprocessing(
+            this->mpConfiguration->GetTraceManager()->GetTracesHolder());
+#endif
+    {
+        ScopeTimer timer("TraceManager::PreprocessShot");
+        this->mpConfiguration->GetTraceManager()->PreprocessShot();
+    }
+#ifndef NDEBUG
+    this->mpCallbacks->AfterShotPreprocessing(
+            this->mpConfiguration->GetTraceManager()->GetTracesHolder());
+#endif
+    this->mpConfiguration->GetSourceInjector()->SetSourcePoint(
+            this->mpConfiguration->GetTraceManager()->GetSourcePoint());
+    {
+        ScopeTimer timer("ModelHandler::SetupWindow");
+        this->mpConfiguration->GetModelHandler()->SetupWindow();
+    }
+    {
+        ScopeTimer timer("BoundaryManager::ReExtendModel");
+        this->mpConfiguration->GetBoundaryManager()->ReExtendModel();
+    }
 #ifndef NDEBUG
     /// If in the debug mode use the call back of BeforeForwardPropagation and
     /// give it our updated GridBox
@@ -235,51 +269,51 @@ void ModellingEngine::MigrateShots(vector<uint> aShotNumbers, GridBox *apGridBox
     /*!
      * Begin the forward propagation and recording of the traces.
      */
-    this->Forward(apGridBox, aShotNumbers);
-    mem_free(apGridBox);
-    this->mpTimer->StopTimer("Engine::Model");
+    this->Forward(apGridBox, shot_id);
 }
 
 MigrationData *ModellingEngine::Finalize(GridBox *apGridBox) {
+    this->mpConfiguration->GetTraceWriter()->Finalize();
     return nullptr;
 }
 
-void ModellingEngine::Forward(GridBox *apGridBox, vector<uint> aShotNumbers) {
-    this->mpTimer->StartTimer("Engine::Forward");
+void ModellingEngine::Forward(GridBox *apGridBox, uint shot_id) {
+    ScopeTimer t("Engine::Forward");
+    auto logger = LoggerSystem::GetInstance();
+    {
+        ScopeTimer timer("TraceWriter::StartRecordingInstance");
+        this->mpConfiguration->GetTraceWriter()->StartRecordingInstance(
+                *this->mpConfiguration->GetTraceManager()->GetTracesHolder()
+        );
+    }
+    this->mpConfiguration->GetComputationKernel()->SetMode(
+            components::KERNEL_MODE::FORWARD);
+    int timesteps = this->mpConfiguration->GetSourceInjector()->GetPrePropagationNT();
+    // Do prequel source injection before main forward propagation.
+    for (int it = -timesteps; it < 1; it++) {
+        {
+            ScopeTimer timer("SourceInjector::ApplySource");
+            this->mpConfiguration->GetSourceInjector()->ApplySource(it);
+        }
 
-    /**
-     * This function is used to set the source point for the source injector
-     * function with the source_point that exist in the modelling_configuration of
-     * this class Sets the source point to apply the injection to it.
-     */
-    this->mpConfiguration->GetSourceInjector()->SetSourcePoint(
-            &this->mpModellingConfiguration.SourcePoint);
-    this->mpTimer->StartTimer("ModelHandler::SetupWindow");
-    this->mpConfiguration->GetModelHandler()->SetupWindow();
-    this->mpTimer->StopTimer("ModelHandler::SetupWindow");
-    this->mpTimer->StartTimer("BoundaryManager::ReExtendModel");
-    this->mpConfiguration->GetBoundaryManager()->ReExtendModel();
-    this->mpTimer->StopTimer("BoundaryManager::ReExtendModel");
-    cout << "Forward Propagation" << endl;
-    int onePercent = apGridBox->GetNT() / 100 + 1;
+        {
+            ScopeTimer timer("Forward::ComputationKernel::Step");
+            this->mpConfiguration->GetComputationKernel()->Step();
+        }
+#ifndef NDEBUG
+        this->mpCallbacks->AfterForwardStep(apGridBox, it);
+#endif
+    }
+    uint onePercent = apGridBox->GetNT() / 100 + 1;
     for (uint t = 1; t < apGridBox->GetNT(); t++) {
-        /**
-         * Function to apply source injection to the wave field(s). It should inject
-         * the current frame in our grid with the appropriate value. It should be
-         * responsible of controlling when to stop the injection.
-         */
-        this->mpConfiguration->GetSourceInjector()->ApplySource(t);
-
-        /**
-         * This function should solve the wave equation. It calculates the next
-         * time-step from previous and current frames. It should also update the
-         * GridBox structure so that after the function call, the GridBox structure
-         * current frame should point to the newly calculated result, the previous
-         * frame should point to the current frame at the time of the function call.
-         * The next frame should point to the previous frame at the time of the
-         * function call.
-         */
-        this->mpConfiguration->GetComputationKernel()->Step();
+        {
+            ScopeTimer timer("SourceInjector::ApplySource");
+            this->mpConfiguration->GetSourceInjector()->ApplySource(t);
+        }
+        {
+            ScopeTimer timer("Forward::ComputationKernel::Step");
+            this->mpConfiguration->GetComputationKernel()->Step();
+        }
 
 #ifndef NDEBUG
         /// If in the debug mode use the call back of AfterForwardStep and give
@@ -287,16 +321,22 @@ void ModellingEngine::Forward(GridBox *apGridBox, vector<uint> aShotNumbers) {
         this->mpCallbacks->AfterForwardStep(apGridBox, t);
 #endif
         /// If not in the debug mode (release mode) we use call the RecordTrace()
+        {
+            ScopeTimer timer("TraceWriter::RecordTrace");
+            this->mpConfiguration->GetTraceWriter()->RecordTrace(t);
+        }
         /**
          * Records the traces from the domain according to the configuration given
          * in the initialize function.
          */
-        this->mpConfiguration->GetTraceWriter()->RecordTrace();
         if ((t % onePercent) == 0) {
             print_modelling_progress(((float) t) / apGridBox->GetNT(), "Forward Propagation");
         }
     }
     print_modelling_progress(1, "Forward Propagation");
-    cout << " ... Done" << endl;
-    this->mpTimer->StopTimer("Engine::Forward");
+    logger->Info() << " ... Done" << '\n';
+    {
+        ScopeTimer timer("TraceWriter::FinishRecordingInstance");
+        this->mpConfiguration->GetTraceWriter()->FinishRecordingInstance(shot_id);
+    }
 }

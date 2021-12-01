@@ -2,16 +2,15 @@
   "computation-parameters": {
     "stencil-order": 8,
     "boundary-length": 20,
-    "source-frequency": 20,
+    "source-frequency": 10,
     "isotropic-radius": 5,
     "dt-relax": 0.9,
     "algorithm": "cpu",
     "device": "none",
     "cache-blocking": {
-      "block-x": 256,
-      "block-z": 16,
-      "block-y": 1,
-      "cor-block": 256
+      "block-x": 5500,
+      "block-z": 55,
+      "block-y": 1
     },
     "window": {
       "enable": true,

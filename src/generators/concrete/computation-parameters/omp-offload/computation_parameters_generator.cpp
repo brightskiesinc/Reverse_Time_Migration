@@ -1,73 +1,85 @@
-//
-// Created by zeyad-osama on 20/07/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <iostream>
+#include <omp.h>
+
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
 #include <stbx/generators/primitive/ComputationParametersGetter.hpp>
-
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 
 #include <operations/common/ComputationParameters.hpp>
 #include <operations/common/DataTypes.h>
 
-#include <libraries/nlohmann/json.hpp>
-#include <omp.h>
-
-#include <iostream>
-
-using namespace operations::common;
-using namespace stbx::generators;
 using json = nlohmann::json;
+using namespace bs::base::logger;
+using namespace stbx::generators;
+using namespace operations::common;
 
 void print_parameters(ComputationParameters *parameters) {
-    std::cout << std::endl;
-    std::cout << "Used parameters : " << std::endl;
-    std::cout << "\torder of stencil used : " << parameters->GetHalfLength() * 2 << std::endl;
-    std::cout << "\tboundary length used : " << parameters->GetBoundaryLength() << std::endl;
-    std::cout << "\tsource frequency : " << parameters->GetSourceFrequency() << std::endl;
-    std::cout << "\tdt relaxation coefficient : " << parameters->GetRelaxedDT() << std::endl;
-    std::cout << "\t# of threads : " << parameters->GetThreadCount() << std::endl;
-    std::cout << "\tblock factor in x-direction : " << parameters->GetBlockX() << std::endl;
-    std::cout << "\tblock factor in z-direction : " << parameters->GetBlockZ() << std::endl;
-    std::cout << "\tblock factor in y-direction : " << parameters->GetBlockY() << std::endl;
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    Logger->Info() << "Used parameters : " << '\n';
+    Logger->Info() << "\torder of stencil used : " << parameters->GetHalfLength() * 2 << '\n';
+    Logger->Info() << "\tboundary length used : " << parameters->GetBoundaryLength() << '\n';
+    Logger->Info() << "\tsource frequency : " << parameters->GetSourceFrequency() << '\n';
+    Logger->Info() << "\tdt relaxation coefficient : " << parameters->GetRelaxedDT() << '\n';
+    Logger->Info() << "\t# of threads : " << parameters->GetThreadCount() << '\n';
+    Logger->Info() << "\tblock factor in x-direction : " << parameters->GetBlockX() << '\n';
+    Logger->Info() << "\tblock factor in z-direction : " << parameters->GetBlockZ() << '\n';
+    Logger->Info() << "\tblock factor in y-direction : " << parameters->GetBlockY() << '\n';
     if (parameters->IsUsingWindow()) {
-        std::cout << "\tWindow mode : enabled" << std::endl;
+        Logger->Info() << "\tWindow mode : enabled" << '\n';
         if (parameters->GetLeftWindow() == 0 && parameters->GetRightWindow() == 0) {
-            std::cout << "\t\tNO WINDOW IN X-axis" << std::endl;
+            Logger->Info() << "\t\tNO WINDOW IN X-axis" << '\n';
         } else {
-            std::cout << "\t\tLeft window : " << parameters->GetLeftWindow() << std::endl;
-            std::cout << "\t\tRight window : " << parameters->GetRightWindow() << std::endl;
+            Logger->Info() << "\t\tLeft window : " << parameters->GetLeftWindow() << '\n';
+            Logger->Info() << "\t\tRight window : " << parameters->GetRightWindow() << '\n';
         }
         if (parameters->GetFrontWindow() == 0 && parameters->GetBackWindow() == 0) {
-            std::cout << "\t\tNO WINDOW IN Y-axis" << std::endl;
+            Logger->Info() << "\t\tNO WINDOW IN Y-axis" << '\n';
         } else {
-            std::cout << "\t\tFrontal window : " << parameters->GetFrontWindow() << std::endl;
-            std::cout << "\t\tBackward window : " << parameters->GetBackWindow() << std::endl;
+            Logger->Info() << "\t\tFrontal window : " << parameters->GetFrontWindow() << '\n';
+            Logger->Info() << "\t\tBackward window : " << parameters->GetBackWindow() << '\n';
         }
         if (parameters->GetDepthWindow() != 0) {
-            std::cout << "\t\tDepth window : " << parameters->GetDepthWindow() << std::endl;
+            Logger->Info() << "\t\tDepth window : " << parameters->GetDepthWindow() << '\n';
         } else {
-            std::cout << "\t\tNO WINDOW IN Z-axis" << std::endl;
+            Logger->Info() << "\t\tNO WINDOW IN Z-axis" << '\n';
         }
     } else {
-        std::cout << "\tWindow mode : disabled (To enable set use-window=yes)..." << std::endl;
+        Logger->Info() << "\tWindow mode : disabled (To enable set use-window=yes)..." << '\n';
     }
-    std::cout << std::endl;
 }
 
-operations::common::ComputationParameters *generate_parameters(json &map) {
-    std::cout << "Parsing OpenMP computation properties..." << std::endl;
+operations::common::ComputationParameters *
+generate_parameters(json &map) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    Logger->Info() << "Parsing OpenMP Offload computation properties..." << '\n';
     json computation_parameters_map = map["computation-parameters"];
 
     int boundary_length = -1, block_x = -1, block_z = -1, block_y = -1, order = -1;
     int left_win = -1, right_win = -1, front_win = -1, back_win = -1, depth_win = -1, use_window = -1;
-    int n_threads;
     float dt_relax = -1, source_frequency = -1;
     HALF_LENGTH half_length = O_8;
-
-#pragma omp parallel
-    {
-        n_threads = omp_get_num_threads();
-    }
 
     auto computation_parameters_getter = new ComputationParametersGetter(computation_parameters_map);
     StencilOrder so = computation_parameters_getter->GetStencilOrder();
@@ -89,74 +101,75 @@ operations::common::ComputationParameters *generate_parameters(json &map) {
     depth_win = w.depth_win;
     use_window = w.use_window;
 
+
+
     if (order == -1) {
-        std::cout << "No valid value provided for key 'stencil-order'..." << std::endl;
-        std::cout << "Using default stencil order of 8" << std::endl;
+        Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';
+        Logger->Info() << "Using default stencil order of 8" << '\n';
         half_length = O_8;
     }
     if (boundary_length == -1) {
-        std::cout << "No valid value provided for key 'boundary-length'..." << std::endl;
-        std::cout << "Using default boundary-length of 20" << std::endl;
+        Logger->Error() << "No valid value provided for key 'boundary-length'..." << '\n';
+        Logger->Info() << "Using default boundary-length of 20" << '\n';
         boundary_length = 20;
     }
     if (source_frequency == -1) {
-        std::cout << "No valid value provided for key 'source-frequency'..." << std::endl;
-        std::cout << "Using default source frequency of 20" << std::endl;
+        Logger->Error() << "No valid value provided for key 'source-frequency'..." << '\n';
+        Logger->Info() << "Using default source frequency of 20" << '\n';
         source_frequency = 20;
     }
     if (dt_relax == -1) {
-        std::cout << "No valid value provided for key 'dt-relax'..." << std::endl;
-        std::cout << "Using default relaxation coefficient for dt calculation of 0.4"
-                  << std::endl;
+        Logger->Error() << "No valid value provided for key 'dt-relax'..." << '\n';
+        Logger->Info() << "Using default relaxation coefficient for dt calculation of 0.4" << '\n';
         dt_relax = 0.4;
     }
     if (block_x == -1) {
-        std::cout << "No valid value provided for key 'block-x'..." << std::endl;
-        std::cout << "Using default blocking factor in x-direction of 560" << std::endl;
+        Logger->Error() << "No valid value provided for key 'block-x'..." << '\n';
+        Logger->Info() << "Using default blocking factor in x-direction of 560" << '\n';
         block_x = 560;
     }
     if (block_z == -1) {
-        std::cout << "No valid value provided for key 'block-z'..." << std::endl;
-        std::cout << "Using default blocking factor in z-direction of 35" << std::endl;
+        Logger->Error() << "No valid value provided for key 'block-z'..." << '\n';
+        Logger->Info() << "Using default blocking factor in z-direction of 35" << '\n';
         block_z = 35;
     }
     if (use_window == -1) {
-        std::cout << "No valid value provided for key 'use-window'..." << std::endl;
-        std::cout << "Disabling window by default.." << std::endl;
+        Logger->Error() << "No valid value provided for key 'use-window'..." << '\n';
+        Logger->Info() << "Disabling window by default.." << '\n';
         use_window = 0;
     }
     if (use_window) {
         if (left_win == -1) {
-            std::cout << "No valid value provided for key 'left-window'..." << std::endl;
-            std::cout
+            Logger->Error() << "No valid value provided for key 'left-window'..." << '\n';
+            Logger->Info()
                     << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis"
-                    << std::endl;
+                    << '\n';
             left_win = 0;
         }
         if (right_win == -1) {
-            std::cout << "No valid value provided for key 'right-window'..." << std::endl;
-            std::cout
+            Logger->Error() << "No valid value provided for key 'right-window'..." << '\n';
+            Logger->Info()
                     << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis"
-                    << std::endl;
+                    << '\n';
             right_win = 0;
         }
         if (depth_win == -1) {
-            std::cout << "No valid value provided for key 'depth-window'..." << std::endl;
-            std::cout << "Using default window size of 0 - notice if window is 0, no windowing happens" << std::endl;
+            Logger->Error() << "No valid value provided for key 'depth-window'..." << '\n';
+            Logger->Info() << "Using default window size of 0 - notice if window is 0, no windowing happens" << '\n';
             depth_win = 0;
         }
         if (front_win == -1) {
-            std::cout << "No valid value provided for key 'front-window'..." << std::endl;
-            std::cout
+            Logger->Error() << "No valid value provided for key 'front-window'..." << '\n';
+            Logger->Info()
                     << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis"
-                    << std::endl;
+                    << '\n';
             front_win = 0;
         }
         if (back_win == -1) {
-            std::cout << "No valid value provided for key 'back-window'..." << std::endl;
-            std::cout
+            Logger->Error() << "No valid value provided for key 'back-window'..." << '\n';
+            Logger->Info()
                     << "Using default window size of 0- notice if both window in an axis are 0, no windowing happens on that axis"
-                    << std::endl;
+                    << '\n';
             back_win = 0;
         }
     }
@@ -177,8 +190,8 @@ operations::common::ComputationParameters *generate_parameters(json &map) {
     parameters->SetApproximation(configurationsGenerator->GetApproximation());
     parameters->SetPhysics(configurationsGenerator->GetPhysics());
 
-    /// OMP
-    parameters->SetThreadCount(n_threads);
+        /// OMP
+  //  parameters->SetThreadCount(n_threads);
     parameters->SetBlockX(block_x);
     parameters->SetBlockZ(block_z);
     parameters->SetBlockY(block_y);

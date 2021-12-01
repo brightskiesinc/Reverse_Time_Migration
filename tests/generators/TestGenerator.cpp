@@ -1,6 +1,23 @@
-//
-// Created by marwan-elsafty on 17/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <stbx/generators/Generator.hpp>
 
@@ -9,53 +26,71 @@
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
+using namespace std;
+
+using namespace bs::base::exceptions;
+using namespace bs::base::configurations;
 
 using namespace stbx::agents;
 using namespace stbx::writers;
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
+using namespace operations::configurations;
 using namespace operations::common;
 using namespace operations::helpers::callbacks;
-using namespace operations::configuration;
 using namespace operations::components;
-using namespace operations::exceptions;
-
-using namespace std;
 
 
 void TEST_CASE_GENERATOR() {
     nlohmann::json ground_truth_map = R"(
            {
   "callbacks": {
-    "su": {
-      "enable": true,
-      "show-each": 200,
-      "little-endian": false
-    },
-    "csv": {
+    "writer": {
+      "active-types": [
+        {
+          "su": {
+            "properties": {
+              "write-little-endian": false
+            }
+          }
+        },
+        {
+          "csv": {
+            "properties": {
+            }
+          }
+        },
+        {
+          "image": {
+            "properties": {
+              "percentile": 98.5
+            }
+          }
+        },
+        {
+          "binary": {
+            "properties": {
+
+            }
+          }
+        },
+        {
+          "segy": {
+            "properties": {
+
+            }
+          }
+        }
+      ],
       "enable": true,
       "show-each": 200
-    },
-    "image": {
-      "enable": true,
-      "show-each": 200,
-      "percentile": 98.5
     },
     "norm": {
       "enable": true,
       "show-each": 200
     },
-    "bin": {
-      "enable": true,
-      "show-each": 200
-    },
-    "segy": {
-      "enable": true,
-      "show-each": 200
-    },
-    "writers": {
+    "writers-configuration": {
       "migration": {
         "enable": true
       },
@@ -97,12 +132,11 @@ void TEST_CASE_GENERATOR() {
     "isotropic-radius": 5,
     "dt-relax": 0.9,
     "algorithm": "cpu",
-    "Device": "none",
+    "device": "none",
     "cache-blocking": {
       "block-x": 128,
       "block-z": 16,
-      "block-y": 1,
-      "cor-block": 256
+      "block-y": 1
     },
     "window": {
       "enable": true,
@@ -134,7 +168,8 @@ void TEST_CASE_GENERATOR() {
     "boundary-manager": {
       "type": "none",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": false,
+        "grain-side-length": 200
       }
     },
     "migration-accommodator": {
@@ -147,38 +182,40 @@ void TEST_CASE_GENERATOR() {
       "type": "three"
     },
     "trace-manager": {
-      "type": "segy",
       "properties": {
-        "shot-stride" : 2
+        "type": "segy",
+        "shot-stride": 2,
+        "interpolation": "none",
+        "header-only": false
       }
     },
     "source-injector": {
       "type": "ricker"
     },
     "model-handler": {
-      "type": "segy"
+      "properties": {
+        "type": "segy"
+      }
     },
     "trace-writer": {
-          "type": "binary"
-    },
-    "modelling-configuration-parser": {
-      "type": "text"
+      "properties": {
+        "type": "segy",
+        "output-file": "data/synthetic_model_traces"
+      }
     }
   },
   "interpolation": {
     "type": "none"
   },
 
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },
     "writer": {
       "type": "normal"
     }
-  },
-  "modelling-file": "workloads/synthetic_model/modelling.json",
-  "output-file": "data/shot.trace"
+  }
 
 }
     )"_json;
@@ -202,7 +239,7 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(instanceof<ModelHandler>(configuration->GetModelHandler()));
         REQUIRE(instanceof<SourceInjector>(configuration->GetSourceInjector()));
         REQUIRE(instanceof<BoundaryManager>(configuration->GetBoundaryManager()));
-        REQUIRE(instanceof<ModellingConfigurationParser>(configuration->GetModellingConfigurationParser()));
+        REQUIRE(instanceof<TraceManager>(configuration->GetTraceManager()));
         REQUIRE(instanceof<TraceWriter>(configuration->GetTraceWriter()));
     }
 
@@ -226,8 +263,7 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(computationParameters->GetBlockY() == 1);
         REQUIRE(computationParameters->GetBlockZ() == 16);
 
-    }
-    SECTION("GenerateRTMConfiguration Function Testing") {
+    }SECTION("GenerateRTMConfiguration Function Testing") {
         RTMEngineConfigurations *configuration = generator->GenerateRTMConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ComputationKernel>(configuration->GetComputationKernel()));

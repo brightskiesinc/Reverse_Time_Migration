@@ -1,16 +1,32 @@
-//
-// Created by zeyad-osama on 08/07/2020.
-//
-
-#include <operations/utils/interpolation/Interpolator.hpp>
-
-#include <memory-manager/MemoryManager.h>
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <iostream>
 
+#include <operations/utils/interpolation/Interpolator.hpp>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/memory/MemoryManager.hpp>
+
+using namespace bs::base::logger;
+using namespace bs::base::memory;
 using namespace operations::utils::interpolation;
 using namespace operations::dataunits;
-
 
 float lerp1(float t, float a, float b);
 
@@ -41,10 +57,11 @@ Interpolator::Interpolate(TracesHolder *apTraceHolder, uint actual_nt, float tot
 }
 
 float *Interpolator::InterpolateLinear(TracesHolder *apTraceHolder, uint actual_nt, float total_time) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     uint sample_nt = apTraceHolder->SampleNT;
     if (actual_nt <= sample_nt) {
-        std::cerr << "Interpolation terminated..." << std::endl;
-        std::cerr << "Actual size should be at least equal sample size..." << std::endl;
+        Logger->Error() << "Interpolation terminated..." << '\n';
+        Logger->Info() << "Actual size should be at least equal sample size..." << '\n';
         return nullptr;
     }
 
@@ -55,14 +72,15 @@ float *Interpolator::InterpolateLinear(TracesHolder *apTraceHolder, uint actual_
     double step = ((float) sample_nt) / actual_nt;
     double t_curr, t_next, t_intr, trace_curr, trace_next, slope, fx;
 
-    uint trace_size_per_timestep = apTraceHolder->TraceSizePerTimeStep;
-    for (int i = 0; i < trace_size_per_timestep; ++i) {
+    auto num_elements_per_time_step = apTraceHolder->TraceSizePerTimeStep;
+    auto traces = apTraceHolder->Traces->GetHostPointer();
+    for (int i = 0; i < num_elements_per_time_step; ++i) {
         int idx = 0;
         for (int t = 0; t < sample_nt - 1; ++t) {
             t_curr = t;
             t_next = t + 1;
-            trace_curr = apTraceHolder->Traces[t * trace_size_per_timestep + i];
-            trace_next = apTraceHolder->Traces[(t + 1) * trace_size_per_timestep + i];
+            trace_curr = traces[t * num_elements_per_time_step + i];
+            trace_next = traces[(t + 1) * num_elements_per_time_step + i];
             slope = (trace_next - trace_curr) / (t_next - t_curr);
 
             while (true) {
@@ -71,17 +89,21 @@ float *Interpolator::InterpolateLinear(TracesHolder *apTraceHolder, uint actual_
                     break;
                 }
                 fx = trace_curr + (slope * (t_intr - t_curr));
-                interpolated_trace[idx++ * trace_size_per_timestep + i] = fx;
+                interpolated_trace[idx++ * num_elements_per_time_step + i] = fx;
             }
         }
     }
+    apTraceHolder->Traces->Free();
+    apTraceHolder->Traces->Allocate(actual_nt * apTraceHolder->TraceSizePerTimeStep);
+    Device::MemCpy(apTraceHolder->Traces->GetNativePointer(), interpolated_trace,
+                   actual_nt * num_elements_per_time_step * sizeof(float),
+                   dataunits::Device::COPY_HOST_TO_DEVICE);
+    mem_free(interpolated_trace);
 
-    mem_free(apTraceHolder->Traces);
-    apTraceHolder->Traces = interpolated_trace;
     apTraceHolder->SampleNT = actual_nt;
     apTraceHolder->SampleDT = total_time / actual_nt;
 
-    return interpolated_trace;
+    return apTraceHolder->Traces->GetNativePointer();
 }
 
 void Interpolator::InterpolateTrilinear(float *old_grid, float *new_grid,

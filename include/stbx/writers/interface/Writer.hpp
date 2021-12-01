@@ -1,15 +1,39 @@
-//
-// Created by zeyad-osama on 02/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef PIPELINE_WRITERS_WRITER_HPP
 #define PIPELINE_WRITERS_WRITER_HPP
+
+#include <fstream>
+#include <sys/stat.h>
 
 #include <operations/engines/concrete/RTMEngine.hpp>
 #include <operations/common/DataTypes.h>
 #include <operations/utils/io/write_utils.h>
 #include <operations/utils/filters/noise_filtering.h>
 
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+#include <bs/io/api/cpp/BSIO.hpp>
+
+using namespace bs::timer;
+using namespace bs::timer::configurations;
 
 namespace stbx {
     namespace writers {
@@ -25,7 +49,9 @@ namespace stbx {
              * @brief Constructor could be overridden to
              * initialize needed  member variables.
              */
-            Writer() = default;
+            Writer() : mFilteredMigration(nullptr), mRawMigration(nullptr), mpMigrationData(nullptr) {
+                this->mOutputTypes = {"binary", "segy"};
+            }
 
             /**
              * @brief Destructor should be overridden to
@@ -40,21 +66,32 @@ namespace stbx {
              * all functions.
              * @param aEngine : RTMEngine
              */
-            inline void AssignMigrationData(
-                    operations::dataunits::MigrationData *apMigrationData) {
-                mpMigrationData = apMigrationData;
+            inline void AssignMigrationData(operations::dataunits::MigrationData *apMigrationData) {
+                this->mpMigrationData = apMigrationData;
             }
 
+            virtual void Write(const std::string &aWritePath, bool is_traces = false) {
+                mkdir(aWritePath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+                this->SpecifyRawMigration();
+                this->PostProcess();
+                this->Filter();
+                this->WriteFrame(mRawMigration, aWritePath + "/raw_migration");
+                this->WriteFrame(mFilteredMigration, aWritePath + "/filtered_migration");
+                this->WriteTimeResults(aWritePath);
+            }
 
-            virtual void Write(const std::string &write_path, bool is_traces = false) {
-                SpecifyRawMigration();
-                PostProcess();
-                Filter();
-                WriteSegy(mRawMigration, write_path + "/raw_migration");
-                WriteSegy(mFilteredMigration, write_path + "/filtered_migration");
-                WriteBinary(mRawMigration, write_path + "/raw_migration");
-                WriteBinary(mFilteredMigration, write_path + "/filtered_migration");
-                WriteTimeResults(write_path);
+            /**
+            * @brief  Writes time results performed by Timer.
+            * @param aWritePath : string     File name to be written.
+            */
+            void WriteTimeResults(const std::string &aWritePath) {
+                std::vector<std::ostream *> streams;
+                streams.emplace_back(&std::cout);
+                std::ofstream ofs;
+                ofs.open(aWritePath + "/timing_results.txt");
+                streams.emplace_back(&ofs);
+                TimerManager::GetInstance()->Report(streams);
+                ofs.close();
             }
 
         protected:
@@ -83,109 +120,70 @@ namespace stbx {
              * @param frame : float *       Frame to be filtered
              */
             virtual void Filter() {
-                Timer *timer = Timer::GetInstance();
-                timer->StartTimer("Writer::FilterMigration");
-
                 uint nx = this->mpMigrationData->GetGridSize(X_AXIS);
                 uint ny = this->mpMigrationData->GetGridSize(Y_AXIS);
                 uint nz = this->mpMigrationData->GetGridSize(Z_AXIS);
 
                 mFilteredMigration = new float[nx * ny * nz];
 
-                operations::utils::filters::filter_stacked_correlation(this->mRawMigration,
-                                                                       this->mFilteredMigration,
-                                                                       nx, ny, nz,
-                                                                       this->mpMigrationData->GetCellDimensions(X_AXIS),
-                                                                       this->mpMigrationData->GetCellDimensions(Y_AXIS),
-                                                                       this->mpMigrationData->GetCellDimensions(
-                                                                               Z_AXIS));
-                timer->StopTimer("Writer::FilterMigration");
+                {
+                    ScopeTimer t("Writer::FilterMigration");
+                    operations::utils::filters::filter_stacked_correlation(
+                            this->mRawMigration,
+                            this->mFilteredMigration,
+                            nx, ny, nz,
+                            this->mpMigrationData->GetCellDimensions(X_AXIS),
+                            this->mpMigrationData->GetCellDimensions(Y_AXIS),
+                            this->mpMigrationData->GetCellDimensions(Z_AXIS));
+                }
             };
 
             /**
-             * @brief  Writes migration data into .segy format
+             * @brief  Writes migration data into the specified format
              * @note *mpMigrationData will be internally used
              * @param file_name : string     File name to be written.
              * @param is_traces : bool       Check
              */
-            virtual void WriteSegy(float *frame, const std::string &file_name, bool is_traces = false) {
-                operations::dataunits::MigrationData *md = mpMigrationData;
-                std::string file_name_extension = file_name + ".segy";
-
-                operations::utils::io::write_segy(this->mpMigrationData->GetGridSize(X_AXIS),
-                                                  this->mpMigrationData->GetGridSize(Y_AXIS),
-                                                  this->mpMigrationData->GetGridSize(Z_AXIS),
-                                                  this->mpMigrationData->GetNT(),
-                                                  this->mpMigrationData->GetCellDimensions(X_AXIS),
-                                                  this->mpMigrationData->GetCellDimensions(Y_AXIS),
-                                                  this->mpMigrationData->GetCellDimensions(Z_AXIS),
-                                                  this->mpMigrationData->GetDT(),
-                                                  frame, file_name_extension, is_traces);
-            };
-
-            /**
-             * @brief  Writes migration data into .bin format
-             * @note *mpMigrationData will be internally used
-             * @param file_name : string     File name to be written.
-             * @param is_traces : bool       Check
-             */
-            virtual void WriteBinary(float *frame, const std::string &file_name, bool is_traces = false) {
-                std::string file_name_extension = file_name + ".bin";
-                operations::utils::io::write_binary(frame,
-                                                    this->mpMigrationData->GetGridSize(X_AXIS),
-                                                    this->mpMigrationData->GetGridSize(Z_AXIS),
-                                                    file_name_extension.c_str());
-            };
-
-            /**
-             * @brief  Writes migration data into .su format
-             * @note *mpMigrationData will be internally used
-             * @param file_name : string     File name to be written.
-             * @param is_traces : bool       Check
-             */
-            virtual void WriteSU(float *frame, const std::string &file_name, bool is_traces = false) {
-                std::string file_name_extension = file_name + ".su";
-            };
-
-            /**
-             * @brief  Writes migration data into .csv format
-             * @note *mpMigrationData will be internally used
-             * @param file_name : string     File name to be written.
-             * @param is_traces : bool       Check
-             */
-            virtual void WriteCSV(float *frame, const std::string &file_name, bool is_traces = false) {
-                std::string file_name_extension = file_name + ".csv";
-            };
-
-            /**
-             * @brief  Writes migration data into .png format
-             * @note *mpMigrationData will be internally used
-             * @param file_name : string     File name to be written.
-             * @param is_traces : bool       Check
-             */
-            virtual void WriteImage(float *frame, const std::string &file_name, bool is_traces = false) {
-                std::string file_name_extension = file_name + ".png";
-            };
-
-            /**
-             * @brief  Writes time results performed by Timer.
-             * @param file_name : string     File name to be written.
-             */
-            void WriteTimeResults(const std::string &file_name) {
-                Timer *timer = Timer::GetInstance();
-                std::cout << std::endl << "Timings of the application are: " << std::endl;
-                std::cout << "==============================" << std::endl;
-                timer->ExportToFile(file_name + "/timing_results.txt", 1);
-            };
+            virtual void WriteFrame(float *frame, const std::string &file_name, uint shots = 1) {
+                uint ns;
+                float ds;
+                float sample_rate;
+                ns = this->mpMigrationData->GetGridSize(Z_AXIS);
+                ds = this->mpMigrationData->GetCellDimensions(Z_AXIS);
+                sample_rate = 1e3;
+                auto gathers = operations::utils::io::TransformToGather(
+                        frame,
+                        this->mpMigrationData->GetGridSize(X_AXIS),
+                        this->mpMigrationData->GetGridSize(Y_AXIS),
+                        ns,
+                        ds,
+                        this->mpMigrationData->GetMetadataGather(),
+                        shots,
+                        sample_rate
+                );
+                for (auto &output_type : this->mOutputTypes) {
+                    std::string path = file_name;
+                    bs::base::configurations::JSONConfigurationMap map({});
+                    bs::io::streams::SeismicWriter writer(
+                            bs::io::streams::SeismicWriter::ToWriterType(output_type), &map);
+                    writer.AcquireConfiguration();
+                    writer.Initialize(path);
+                    writer.Write(gathers);
+                    writer.Finalize();
+                }
+                for (auto g : gathers) {
+                    delete g;
+                }
+            }
 
         protected:
             /// Engine instance needed by agent to preform task upon
             operations::dataunits::MigrationData *mpMigrationData;
-
             float *mFilteredMigration;
-
             float *mRawMigration;
+            std::vector<std::string> mOutputTypes;
         };
+
     }//namespace writers
 }//namespace stbx
 

@@ -1,76 +1,88 @@
-//
-// Created by ahmed-ayyad on 29/11/2020.
-//
-
-#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
-
-#include <operations/utils/sampling/Sampler.hpp>
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <cmath>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
+#include <operations/utils/sampling/Sampler.hpp>
+#include <operations/configurations/MapKeys.h>
 
 #define EPSILON 1e-20
 
 using namespace std;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::sampling;
 
 
-CrossCorrelationKernel::CrossCorrelationKernel(operations::configuration::ConfigurationMap *apConfigurationMap) {
+CrossCorrelationKernel::CrossCorrelationKernel(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mCompensationType = NO_COMPENSATION;
 }
 
 CrossCorrelationKernel::~CrossCorrelationKernel() {
-    delete (this->mpShotCorrelation);
-    delete (this->mpTotalCorrelation);
-    delete (this->mpSourceIllumination);
-    delete (this->mpReceiverIllumination);
-    delete (this->mpTotalSourceIllumination);
-    delete (this->mpTotalReceiverIllumination);
+    delete this->mpShotCorrelation;
+    delete this->mpTotalCorrelation;
+    delete this->mpSourceIllumination;
+    delete this->mpReceiverIllumination;
 }
 
 void CrossCorrelationKernel::AcquireConfiguration() {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+
     string compensation = "no";
     compensation = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_COMPENSATION, compensation);
 
     if (compensation.empty()) {
-        cout << "No entry for migration-accommodator.compensation key : supported values [ "
-                "no | source | receiver | combined ]"
-             << std::endl;
-        cout << "Terminating..." << std::endl;
+        Logger->Error() << "No entry for migration-accommodator.compensation key : supported values [ "
+                           "no | source | receiver | combined ]" << '\n';
+        Logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     } else if (compensation == OP_K_COMPENSATION_NONE) {
         this->SetCompensation(NO_COMPENSATION);
-        cout << "No illumination compensation is requested" << std::endl;
-    } else if (compensation == OP_K_COMPENSATION_SOURCE) {
-        this->SetCompensation(SOURCE_COMPENSATION);
-        cout << "Applying source illumination compensation" << std::endl;
-    } else if (compensation == OP_K_COMPENSATION_RECEIVER) {
-        this->SetCompensation(RECEIVER_COMPENSATION);
-        cout << "Applying receiver illumination compensation" << std::endl;
+        Logger->Info() << "No illumination compensation is requested" << '\n';
     } else if (compensation == OP_K_COMPENSATION_COMBINED) {
         this->SetCompensation(COMBINED_COMPENSATION);
-        cout << "Applying combined illumination compensation" << std::endl;
+        Logger->Info() << "Applying combined illumination compensation" << '\n';
     } else {
-        cout << "Invalid value for migration-accommodator.compensation key : supported values [ "
-                OP_K_COMPENSATION_NONE " | "
-                OP_K_COMPENSATION_SOURCE  " | "
-                OP_K_COMPENSATION_RECEIVER  " | "
-                OP_K_COMPENSATION_COMBINED " ]"
-             << std::endl;
-        cout << "Terminating..." << std::endl;
+        Logger->Info() << "Invalid value for migration-accommodator.compensation key : supported values [ "
+                          OP_K_COMPENSATION_NONE " | "
+                          OP_K_COMPENSATION_COMBINED " ]" << '\n';
+        Logger->Info() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 void CrossCorrelationKernel::Correlate(dataunits::DataUnit *apDataUnit) {
+
     auto grid_box = (GridBox *) apDataUnit;
 
-    if (this->mpGridBox->GetLogicalGridSize(Y_AXIS) == 1) {
+    uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
+
+    if (ny == 1) {
         switch (this->mCompensationType) {
             case NO_COMPENSATION:
                 Correlation<true, NO_COMPENSATION>(grid_box);
@@ -91,10 +103,33 @@ void CrossCorrelationKernel::Correlate(dataunits::DataUnit *apDataUnit) {
     }
 }
 
+void CrossCorrelationKernel::Stack() {
+    if (this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize() == 1) {
+        switch (this->mCompensationType) {
+            case NO_COMPENSATION:
+                Stack < true, NO_COMPENSATION > ();
+                break;
+            case COMBINED_COMPENSATION:
+                Stack < true, COMBINED_COMPENSATION > ();
+                break;
+        }
+    } else {
+        switch (this->mCompensationType) {
+            case NO_COMPENSATION:
+                Stack < false, NO_COMPENSATION > ();
+                break;
+            case COMBINED_COMPENSATION:
+                Stack < false, COMBINED_COMPENSATION > ();
+                break;
+        }
+    }
+}
+
 void CrossCorrelationKernel::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -104,34 +139,34 @@ void CrossCorrelationKernel::SetCompensation(COMPENSATION_TYPE aCOMPENSATION_TYP
 }
 
 void CrossCorrelationKernel::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        std::cerr << "No GridBox provided... Terminating..." << std::endl;
+        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-
-    /* Does not support 3D. */
-    if (this->mpGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
-    }
-
     InitializeInternalElements();
 }
 
 void CrossCorrelationKernel::InitializeInternalElements() {
     // Grid.
-    uint nx = this->mpGridBox->GetActualGridSize(X_AXIS);
-    uint ny = this->mpGridBox->GetActualGridSize(Y_AXIS);
-    uint nz = this->mpGridBox->GetActualGridSize(Z_AXIS);
+
+    uint nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    uint nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
+
     uint grid_size = nx * ny * nz;
     uint grid_bytes = grid_size * sizeof(float);
 
-    // Window.
-    uint wnx = this->mpGridBox->GetActualWindowSize(X_AXIS);
-    uint wny = this->mpGridBox->GetActualWindowSize(Y_AXIS);
-    uint wnz = this->mpGridBox->GetActualWindowSize(Z_AXIS);
+    /* Window initialization. */
+
+    uint wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    uint wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     uint window_size = wnx * wny * wnz;
     uint window_bytes = window_size * sizeof(float);
+
 
     mpShotCorrelation = new FrameBuffer<float>();
     mpShotCorrelation->Allocate(window_size, mpParameters->GetHalfLength(), "shot_correlation");
@@ -148,21 +183,15 @@ void CrossCorrelationKernel::InitializeInternalElements() {
     mpTotalCorrelation = new FrameBuffer<float>();
     mpTotalCorrelation->Allocate(grid_size, mpParameters->GetHalfLength(), "stacked_shot_correlation");
     Device::MemSet(mpTotalCorrelation->GetNativePointer(), 0, grid_bytes);
-
-    mpTotalSourceIllumination = new FrameBuffer<float>();
-    mpTotalSourceIllumination->Allocate(grid_size, mpParameters->GetHalfLength(), "stacked_source_illumination");
-    Device::MemSet(mpTotalSourceIllumination->GetNativePointer(), 0, grid_bytes);
-
-    mpTotalReceiverIllumination = new FrameBuffer<float>();
-    mpTotalReceiverIllumination->Allocate(grid_size, mpParameters->GetHalfLength(), "stacked_receiver_illumination");
-    Device::MemSet(mpTotalReceiverIllumination->GetNativePointer(), 0, grid_bytes);
 }
 
 void CrossCorrelationKernel::ResetShotCorrelation() {
+
     uint window_bytes = sizeof(float) *
-                        this->mpGridBox->GetActualWindowSize(X_AXIS) *
-                        this->mpGridBox->GetActualWindowSize(Y_AXIS) *
-                        this->mpGridBox->GetActualWindowSize(Z_AXIS);
+                        this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize() *
+                        this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() *
+                        this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
+
     Device::MemSet(this->mpShotCorrelation->GetNativePointer(), 0, window_bytes);
     Device::MemSet(this->mpSourceIllumination->GetNativePointer(), 0, window_bytes);
     Device::MemSet(this->mpReceiverIllumination->GetNativePointer(), 0, window_bytes);
@@ -176,77 +205,39 @@ FrameBuffer<float> *CrossCorrelationKernel::GetStackedShotCorrelation() {
     return this->mpTotalCorrelation;
 }
 
-float *Unpad(float *apOriginalArray, uint nx, uint ny, uint nz,
-             uint nx_original, uint ny_original, uint nz_original) {
-    if (nx == nx_original && nz == nz_original && ny == ny_original) {
-        return apOriginalArray;
-    } else {
-        auto copy_array = new float[ny_original * nz_original * nx_original];
-        for (uint iy = 0; iy < ny_original; iy++) {
-            for (uint iz = 0; iz < nz_original; iz++) {
-                for (uint ix = 0; ix < nx_original; ix++) {
-                    copy_array[iy * nz_original * nx_original + iz * nx_original + ix] =
-                            apOriginalArray[iy * nz * nx + iz * nx + ix];
-                }
-            }
-        }
-        return copy_array;
-    }
-}
-
 MigrationData *CrossCorrelationKernel::GetMigrationData() {
     vector<Result *> results;
-    results.clear();
-    uint lnx = this->mpGridBox->GetLogicalGridSize(X_AXIS);
-    uint lny = this->mpGridBox->GetLogicalGridSize(Y_AXIS);
-    uint lnz = this->mpGridBox->GetLogicalGridSize(Z_AXIS);
-    uint nx = this->mpGridBox->GetActualGridSize(X_AXIS);
-    uint ny = this->mpGridBox->GetActualGridSize(Y_AXIS);
-    uint nz = this->mpGridBox->GetActualGridSize(Z_AXIS);
-    switch (mCompensationType) {
-        case NO_COMPENSATION:
-            results.push_back(new Result(Unpad(
-                    this->mpTotalCorrelation->GetHostPointer(),
-                    nx, ny, nz,
-                    lnx, lny, lnz)));
-            break;
-        case COMBINED_COMPENSATION:
-            results.push_back(new Result(Unpad(this->mpTotalCorrelation->GetHostPointer(),
-                                               nx, ny, nz,
-                                               lnx, lny, lnz)));
-            results.push_back(new Result(Unpad(this->mpTotalSourceIllumination->GetHostPointer(),
-                                               nx, ny, nz,
-                                               lnx, lny, lnz)));
-            results.push_back(new Result(Unpad(this->mpTotalReceiverIllumination->GetHostPointer(),
-                                               nx, ny, nz,
-                                               lnx, lny, lnz)));
-            break;
-        default:
-            results.push_back(new Result(Unpad(this->mpTotalCorrelation->GetHostPointer(),
-                                               nx, ny, nz,
-                                               lnx, lny, lnz)));
-            break;
-    }
-    for (auto &result : results) {
-        float *input = result->GetData();
-        auto *output = new float[mpGridBox->GetInitialGridSize(X_AXIS) *
-                                 mpGridBox->GetInitialGridSize(Y_AXIS) *
-                                 mpGridBox->GetInitialGridSize(Z_AXIS)];
-        Sampler::Resize(input, output,
-                        mpGridBox->GetActualGridSize(), mpGridBox->GetInitialGridSize(),
-                        mpParameters);
-        if (!(nx == lnx && nz == lnz && ny == lny)) {
-            delete[] input;
-        }
-        result = new Result(output);
-    }
-    return new MigrationData(this->mpGridBox->GetInitialGridSize(X_AXIS),
-                             this->mpGridBox->GetInitialGridSize(Y_AXIS),
-                             this->mpGridBox->GetInitialGridSize(Z_AXIS),
-                             this->mpGridBox->GetNT(),
-                             this->mpGridBox->GetInitialCellDimensions(X_AXIS),
-                             this->mpGridBox->GetInitialCellDimensions(Y_AXIS),
-                             this->mpGridBox->GetInitialCellDimensions(Z_AXIS),
-                             this->mpGridBox->GetDT(),
+
+
+    uint nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    uint nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
+
+    auto *result = new float[nx * ny * nz];
+    memcpy(result, this->mpTotalCorrelation->GetHostPointer(),
+           nx * nz * ny * sizeof(float));
+    results.push_back(new Result(result));
+
+    return new MigrationData(nx,
+                             ny,
+                             nz,
+                             this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension(),
+                             this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension(),
+                             this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension(),
+                             this->mpGridBox->GetParameterGatherHeader(),
                              results);
+
+}
+
+void CrossCorrelationKernel::SetSourcePoint(Point3D *apSourcePoint) {
+    this->mSourcePoint = *apSourcePoint;
+}
+
+uint
+CrossCorrelationKernel::CalculateDipAngleDepth(double aDipAngle, int aCurrentPositionX, int aCurrentPositionY) const {
+    /* Opposite = Adjacent * tan(theta) */
+    float theta = (M_PI / 2) - aDipAngle;
+    return ceil(tan(theta) * fabs(sqrt(
+            pow(((int) this->mSourcePoint.x) - aCurrentPositionX, 2)
+            + pow(((int) this->mSourcePoint.y) - aCurrentPositionY, 2))));
 }

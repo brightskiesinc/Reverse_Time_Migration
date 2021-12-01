@@ -1,6 +1,7 @@
 # Advanced Running Options
 
 ## Program Arguments
+
 ```
 Usage : ./bin/Engine
 
@@ -15,7 +16,7 @@ Optional flags :
 	Computation parameter configurations path.
 	Default is "./workloads/bp_model/computation_parameters.json"
 	
-	-s <engine-configuration-file> : 
+	-e <engine-configuration-file> : 
 	Engine configurations configurations path.
 	Default is "./workloads/bp_model/engine_configuration.json"
 	
@@ -31,12 +32,12 @@ Optional flags :
 	Print the options for this command,
 ```
 
-
 ## Configuration Files
 
 All configuration files are ```*.json``` files which has a generic structure for a user friendly experience.
 
 ### Structure
+
 ```json
 {
   "<BLOCK>": {
@@ -44,11 +45,13 @@ All configuration files are ```*.json``` files which has a generic structure for
     }
 }
 ```
+
 You can either add all blocks to one file or separate them to the following structured files.
 
-
 ### Computation Parameter Configuration Block
+
 The computation parameter configuration file is a JSON file which has the following structure:
+
 ```json
 {
   "computation-parameters": {
@@ -61,8 +64,7 @@ The computation parameter configuration file is a JSON file which has the follow
     "cache-blocking": {
       "block-x": "5500",
       "block-z": "55",
-      "block-y": "1",
-      "cor-block": "256"
+      "block-y": "1"
     },
     "window": {
       "enable": "yes",
@@ -81,7 +83,8 @@ The computation parameter configuration file is a JSON file which has the follow
 #### Computation Parameters Block
 
 **```stencil-order```**\
-Signifies the order of the approximation of the finite difference for space derivatives. The supported values are ```2```, ```4```, ```8```, ```12``` and  ```16```.
+Signifies the order of the approximation of the finite difference for space derivatives. The supported values
+are ```2```, ```4```, ```8```, ```12``` and  ```16```.
 
 **```boundary-length```**\
 Is a number that signifies the boundary layer thickness, can have any integer value ```>= 0```.
@@ -90,30 +93,36 @@ Is a number that signifies the boundary layer thickness, can have any integer va
 Should be specified in Hz. Should be a value ```> 0```.
 
 **```dt-relax```**\
-Is the factor to be multiplied in the dt calculated by the stability criteria as an extra measure of safety, should be > 0 and < 1, normally 0.9.
+Is the factor to be multiplied in the dt calculated by the stability criteria as an extra measure of safety, should be >
+0 and < 1, normally 0.9.
 
 **```block-x```, ```block-z``` and ```block-y```**\
-These parameters control the cache blocking in OpenMP and the workgroup/elements per workitem in DPC++, they have different constraints according to the device or technology used (The constraint is told in the running part for each device).
-
-**```cor-block```**\
-Is a DPC++ only parameter that controls the workgroup size for the correlation operation.
+These parameters control the cache blocking in OpenMP and the workgroup/elements per workitem in DPC++, they have
+different constraints according to the device or technology used (The constraint is told in the running part for each
+device).
 
 **```algorithm```**\
-Is a DPC++ only parameter that can take the value of ```cpu```, ```gpu```, ```gpu-semi-shared``` and ```gpu-shared```. 
-The different gpu options will select different kernel optimizations to run. Both ```gpu``` and ```gpu-shared``` give the best performance when the blocking is tuned correctly.
+Is a DPC++ only parameter that can take the value of ```cpu```, ```gpu```, ```gpu-semi-shared``` and ```gpu-shared```.
+The different gpu options will select different kernel optimizations to run. Both ```gpu``` and ```gpu-shared``` give
+the best performance when the blocking is tuned correctly.
 
 **```device```**\
-Is a DPC++ only parameter that can either be none, making device selection be using default selector according to type of the algorithm chosen. A pattern can also be provided to make a custom device selection and choose a certain device. Example: ```"device" : "Gen9"``` to specifically select Intel Gen9 Graphics card.
+Is a DPC++ only parameter that can either be none, making device selection be using default selector according to type
+of the algorithm chosen. A pattern can also be provided to make a custom device selection and choose a certain device.
+Example: ```"device" : "Gen9"``` to specifically select Intel Gen9 Graphics card.
 
 <br>
 
 #### Window Block
+
 **```enable```**\
-Is an option that enables windowing migration, this make the migration of each shot only happen in a sub-domain taken from the full domain according to window parameters, around the source of each shot. This contributes to large speedups, but might affect accuracy if not careful in selecting the window. Supported options are <```yes```> and <```no```>.
+Is an option that enables windowing migration, this make the migration of each shot only happen in a sub-domain taken
+from the full domain according to window parameters, around the source of each shot. This contributes to large speedups,
+but might affect accuracy if not careful in selecting the window. Supported options are <```yes```> and <```no```>.
 
 **```left-window```**\
 The window to take left of the source point in x-axis.
- 
+
 **```right-window```**\
 The window to take right of the source point in x-axis.
 
@@ -129,9 +138,10 @@ The window to take in front of the source point in y-axis(Only effective in 3D, 
 \
 **N.B.** A sample of this file is available in 'workloads/bp_model/computation_parameters.txt'.
 
-
 ### Engines Configurations Block
-The main engine configuration file will define the properties to use in the different computations. A sample of this file is available in **```'workloads/bp_model/engine_configuration.json'```**.
+
+The main engine configuration file will define the properties to use in the different computations. A sample of this
+file is available in **```'workloads/bp_model/engine_configuration.json'```**.
 
 ```json
 {
@@ -162,7 +172,10 @@ The main engine configuration file will define the properties to use in the diff
   "components": {
     "boundary-manager": {
       "type": "random",
-      "use-top-layer": "yes"
+      "properties": {
+        "use-top-layer": false,
+        "grain-side-length": 200
+      }
     },
     "migration-accommodator": {
       "type": "cross-correlation",
@@ -186,7 +199,9 @@ The main engine configuration file will define the properties to use in the diff
 ```
 
 #### Models Block
+
 Models file as indicated in the engine configuration. It goes with the following pattern:
+
 ```json
 {
   "traces": {
@@ -203,7 +218,9 @@ Models file as indicated in the engine configuration. It goes with the following
 ```
 
 #### Traces Block
+
 Traces file as indicated in the engine configuration. It goes with the following pattern:
+
 ```json
 {
   "models": {
@@ -213,15 +230,19 @@ Traces file as indicated in the engine configuration. It goes with the following
 ```
 
 * This is a block comprised of multiple attributes:
-    * Minimum shot id to start migration from. This is inclusive meaning the shot with the corresponding number will be processed. If we have no minimum limit wanted, write none on the first line.
-    * Maximum shot id to stop processing after. This is an inclusive meaning the shot with the corresponding number will be processed. If we have no maximum limit wanted, write none on the second line.
+    * Minimum shot id to start migration from. This is inclusive meaning the shot with the corresponding number will be
+      processed. If we have no minimum limit wanted, write none on the first line.
+    * Maximum shot id to stop processing after. This is an inclusive meaning the shot with the corresponding number will
+      be processed. If we have no maximum limit wanted, write none on the second line.
     * Multiple lines each having a trace file path.
 * The previous example is for a valid traces configuration file which will process shot 601 and 602
 
-
 ### Callback Configuration Block
-* Callback configuration file to produce intermediate files for visualization or value tracking. A sample of this file is available in **```'workloads/bp_model/callback_configuration.json'```**.
+
+* Callback configuration file to produce intermediate files for visualization or value tracking. A sample of this file
+  is available in **```'workloads/bp_model/callback_configuration.json'```**.
 * Note: images will be generated only if opencv is enabled in the configurations(./config.sh -i on)
+
 ```json
 {
   "callbacks": {
@@ -294,9 +315,9 @@ Traces file as indicated in the engine configuration. It goes with the following
     ```shell script
     suximage < file.su perc=98.5
     ````
-    
+
 * For visualization of the **```.bin```** files, ximage can be used directly.
     ```shell script
     ximage < file.bin n1=195
     ```
-    notice in binary you'd need to provide the trace length in the command to visualize it
+  notice in binary you'd need to provide the trace length in the command to visualize it

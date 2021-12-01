@@ -1,15 +1,29 @@
-//
-// Created by marwan-elsafty on 24/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <prerequisites/libraries/catch/catch.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
 
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 
-#include <libraries/catch/catch.hpp>
-#include <libraries/nlohmann/json.hpp>
-
-using namespace stbx::generators;
-using namespace operations::configuration;
 using namespace std;
+using namespace stbx::generators;
 
 
 void TEST_CASE_CONFIGURATIONS_GENERATOR() {
@@ -89,23 +103,12 @@ void TEST_CASE_CONFIGURATIONS_GENERATOR() {
         }
 
         SECTION("GetTraceFiles Function Testing") {
-            auto *configuration = new RTMEngineConfigurations();
-            vector<string> traces_files = configurations_generator->GetTraceFiles(configuration);
+            vector<string> traces_files = configurations_generator->GetTraceFiles();
 
-            REQUIRE(configuration->GetSortMin() == 0);
-            REQUIRE(configuration->GetSortMax() == 601);
-            REQUIRE(configuration->GetSortKey() == "CSR");
+            REQUIRE(configurations_generator->GetTracesMin() == 0);
+            REQUIRE(configurations_generator->GetTracesMax() == 601);
+            REQUIRE(configurations_generator->GetTracesSortKey() == "CSR");
             REQUIRE(traces_files.back() == "path test");
-        }
-
-        SECTION("GetModellingFile Function Testing") {
-            string file_name = configurations_generator->GetModellingFile();
-            REQUIRE(file_name == "modelling-file test");
-        }
-
-        SECTION("GetOutputFile Function Testing") {
-            string filename = configurations_generator->GetOutputFile();
-            REQUIRE(filename == "output-file test");
         }
     }
 }

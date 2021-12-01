@@ -1,17 +1,35 @@
-//
-// Created by amr-nasr on 21/10/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include "operations/components/independents/concrete/boundary-managers/NoBoundaryManager.hpp"
+#include <bs/base/api/cpp/BSBase.hpp>
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp"
+#include <operations/components/independents/concrete/boundary-managers/NoBoundaryManager.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp>
 
+
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
 
-NoBoundaryManager::NoBoundaryManager(operations::configuration::ConfigurationMap *apConfigurationMap) {
+NoBoundaryManager::NoBoundaryManager(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
 }
 
@@ -41,26 +59,22 @@ void NoBoundaryManager::ApplyBoundary(uint kernel_id) {
 }
 
 void NoBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
 }
 
 void NoBoundaryManager::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        std::cerr << "No GridBox provided... Terminating..." << std::endl;
+        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-
-    /* Does not support 3D. */
-    if (this->mpGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
-    }
-
     InitializeExtensions();
 }
 

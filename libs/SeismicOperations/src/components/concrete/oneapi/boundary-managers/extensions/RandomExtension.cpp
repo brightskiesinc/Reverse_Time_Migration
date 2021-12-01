@@ -1,485 +1,324 @@
-//
-// Created by amr-nasr on 18/11/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp"
-#include <operations/backend/OneAPIBackend.hpp>
-
-#include <algorithm>
-#include <cstdlib>
+#include <bs/base/backend/Backend.hpp>
 
 using namespace cl::sycl;
 using namespace std;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::dataunits;
-using namespace operations::backend;
+using namespace bs::base::backend;
 
-/*
- * helper function because the SYCL::abs is not supported for now
- */
-inline float _abs(float argA) {
-    if (argA < 0) {
-        argA = -argA;
-    }
-    return argA;
-}
-
-/*
- * helper function to randomize the contents of a buffer
- */
-static void randomize(float *array, int size) {
-    auto temp_arr = (float *) malloc(sizeof(float) * size);
-    int i;
-
-    for (i = 0; i < size; i++) {
-        temp_arr[i] = (float) rand() / (float) (RAND_MAX);
-    }
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit(
-            [&](handler &cgh) { cgh.memcpy(array, temp_arr, sizeof(float) * size); });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-    free(temp_arr);
-}
-
-void RandomExtension::VelocityExtensionHelper(
-        float *property_array,
-        int start_x, int start_y, int start_z,
-        int end_x, int end_y, int end_z,
-        int nx, int ny, int nz,
-        uint boundary_length) {
-    /*!
-     * change the values of velocities at boundaries (HALF_LENGTH excluded) to
-     * zeros the start for x , y and z is at HALF_LENGTH and the end is at (nx -
-     * HALF_LENGTH) or (ny - HALF_LENGTH) or (nz- HALF_LENGTH)
-     */
-    int nz_nx = nx * nz;
-    float max_velocity = 0;
+void RandomExtension::VelocityExtensionHelper(float *apPropertyArray, 
+                                              int aStartX, int aStartY, int aStartZ, 
+                                              int aEndX, int aEndY, int aEndZ,
+                                              int aNx, int aNy, int aNz, 
+                                              uint aBoundaryLength) {
 
     /*
-     * create empty array of random values to be used to fill the property
+     * initialize values required for grain computing
      */
-    unsigned long random_size;
-    if (ny == 1) {
-        random_size = (end_x + boundary_length) * (end_z + boundary_length) * 2;
-    } else {
-        random_size = (end_y + boundary_length) * (end_x + boundary_length) *
-                      (end_z + boundary_length) * 2;
+    int dx = mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension(); 
+    int dy = mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension();
+    int dz = mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
+    int grain_sidelength = this->mGrainSideLength; // in meters
+
+    int stride_x = grain_sidelength / dx;
+    int stride_z = grain_sidelength / dz;
+
+    int stride_y = 0;
+
+    if(aNy != 1){
+        stride_y = grain_sidelength / dy;
     }
-    float *random_data;
-    random_data = (float *) cl::sycl::malloc_device(
-            sizeof(float) * random_size,
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->get_device(),
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->get_context());
-    float *dev_max_velocity = (float *) cl::sycl::malloc_device(
-            sizeof(float) * 1,
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->get_device(),
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->get_context());
-    // In case of 2D
-    if (ny == 1) {
-        end_y = 1;
-        start_y = 0;
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.single_task<class random_get_max_velocity>([=]() {
-                // Get maximum property_array value
-                for (int row = start_z + boundary_length; row < end_z - boundary_length;
-                     row++) {
-                    for (int column = start_x + boundary_length;
-                         column < end_x - boundary_length; column++) {
-                        if (dev_max_velocity[0] < property_array[row * nx + column]) {
-                            dev_max_velocity[0] = property_array[row * nx + column];
-                        }
-                    }
+
+	/**
+	 * copy to host memory
+	 */
+	int allocated_memory = aNx * aNy * aNz * sizeof(float);
+	float * property_array_host = (float *) malloc(allocated_memory);
+
+	Device::MemCpy(property_array_host, apPropertyArray, allocated_memory);
+
+    /*
+     * compute maximum value of the property
+     */
+    float max_velocity = 0;
+    max_velocity = *max_element(property_array_host, property_array_host + aNx * aNy * aNz);
+
+    /*
+     * processing boundaries in X dimension "left and right bounds"
+     */
+
+    /*
+     * populate random seeds
+     */
+    vector<Point3D> seeds;
+
+
+    float temp = 0;
+    for (int row = aStartZ + aBoundaryLength; row < aEndZ - aBoundaryLength; row += stride_z) {
+        for (int column = 0; column < aBoundaryLength ; column += stride_x) {
+
+            int index = row * aNx + column + aStartX;
+            temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
+            property_array_host[index] = abs(property_array_host[row * aNx + aBoundaryLength + aStartX] - temp);
+
+            seeds.push_back(Point3D(column + aStartX, 1, row));
+            
+            index = row * aNx + (aEndX - column - 1);
+            temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
+            property_array_host[index] = abs(property_array_host[row * aNx + (aEndX - 1 - aBoundaryLength)] - temp);
+
+            seeds.push_back(Point3D((aEndX - column - 1), 1, row));
+        }
+    }
+
+
+    /*
+     * fill empty points
+     */
+    for (int row = aStartZ + aBoundaryLength; row < aEndZ - aBoundaryLength; row++) {
+        for (int column = 0; column < aBoundaryLength; column++) {
+
+            Point3D left_point(column + aStartX, 1, row);
+            Point3D right_point((aEndX - column - 1), 1, row);
+
+            /*
+             * check if this point is a seed point
+             * same check works for both left and right points
+             */
+            bool is_seed = false;
+            for(auto seed:seeds){
+                if(left_point == seed){
+                    is_seed = true;
+                    break;
                 }
-            });
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.memcpy(&max_velocity, dev_max_velocity, sizeof(float) * 1);
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-    } else {
-        // Get maximum property_array value.
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.single_task<class random_get_max_velocity>([=]() {
-                // Get maximum property_array_value
-                for (int depth = start_y + boundary_length;
-                     depth < end_y - boundary_length; depth++) {
-                    for (int row = start_z + boundary_length;
-                         row < end_z - boundary_length; row++) {
-                        for (int column = start_x + boundary_length;
-                             column < end_x - boundary_length; column++) {
-                            if (dev_max_velocity[0] <
-                                property_array[depth * nz_nx + row * nx + column]) {
-                                dev_max_velocity[0] =
-                                        property_array[depth * nz_nx + row * nx + column];
-                            }
-                        }
-                    }
+            }
+            if(is_seed){
+                continue; // this is a seed point, don't fill
+            }
+
+            Point3D left_point_seed(0,0,0);
+            Point3D right_point_seed(0,0,0);
+            /*
+             * Get nearest seed
+             */
+
+            for(auto seed:seeds){
+                if(
+                        (seed.x <= left_point.x) && (seed.x + stride_x > left_point.x) &&
+                        (seed.z <= left_point.z) && (seed.z + stride_z > left_point.z)
+                ){
+                    left_point_seed = seed;
                 }
-            });
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.memcpy(&max_velocity, dev_max_velocity, sizeof(float) * 1);
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-        // general case for 3D
-        randomize(random_data, random_size);
-        /*!putting random values for velocities at the boundaries for y and with all
-         * x and z */
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range =
-                    range<3>(end_x - start_x, boundary_length, end_z - start_z);
-            auto local_range = range<3>(1, 1, 1);
-            auto global_nd_range = nd_range<3>(global_range, local_range);
 
-            cgh.parallel_for<class Random_velocity_extension_Y>(
-                    global_nd_range, [=](nd_item<3> it) {
-                        int column = it.get_global_id(0) + start_x;
-                        int depth = it.get_global_id(1);
-                        int row = it.get_global_id(2) + start_z;
+                if(
+                        (seed.x >= right_point.x) && (seed.x - stride_x < right_point.x) &&
+                        (seed.z <= right_point.z) && (seed.z + stride_z > right_point.z)
+                ){
+                    right_point_seed = seed;
+                }
+            }
 
-                        /*! Create temporary value */
-                        float temp =
-                                random_data[it.get_global_linear_id()] *
-                                ((float) (boundary_length - (depth)) / boundary_length) *
-                                max_velocity;
-                        /*!for values from x = HALF_LENGTH TO x= HALF_LENGTH +BOUND_LENGTH*/
-                        int p_idx = (depth + start_y) * nz_nx + row * nx + column;
-                        int p2_idx =
-                                (boundary_length + start_y) * nz_nx + row * nx + column;
-                        property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                        /*! Create temporary value */
-                        temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                               ((float) (boundary_length - (depth)) / boundary_length) *
-                               max_velocity;
-                        /*!for values from x = nx-HALF_LENGTH TO x =
-                         * nx-HALF_LENGTH-BOUND_LENGTH*/
-                        p_idx = (end_y - 1 - depth) * nz_nx + row * nx + column;
-                        p2_idx = (end_y - 1 - boundary_length) * nz_nx + row * nx + column;
-                        property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                    });
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+            /*
+             * populate left point
+             */
+            int id_x;
+            int id_z;
+
+            float px = RANDOM_VALUE;
+            float pz = RANDOM_VALUE;
+
+            float denom_x = (float)(left_point.x - left_point_seed.x)  / stride_x;
+            float denom_z = (float)(left_point.z - left_point_seed.z) / stride_z;
+
+            if((px <= denom_x) && (pz <= denom_z)){
+                id_x = left_point_seed.x + stride_x;
+                id_z = left_point_seed.z + stride_z;
+            } else if ((px <= denom_x) && (pz > denom_z)){
+                id_x = left_point_seed.x + stride_x;
+                id_z = left_point_seed.z;
+            } else if ((px > denom_x) && (pz <= denom_z)){
+                id_x = left_point_seed.x;
+                id_z = left_point_seed.z + stride_z;
+            } else {
+                id_x = left_point_seed.x;
+                id_z = left_point_seed.z;
+            }
+
+            if (id_z >= aEndZ - aBoundaryLength) {
+                id_z = left_point_seed.z;
+            }
+            property_array_host[left_point.z * aNx + left_point.x] = property_array_host[id_z * aNx + id_x];
+
+            /*
+             * populate right point
+             */
+
+            px = RANDOM_VALUE;
+            pz = RANDOM_VALUE;
+
+            denom_x = (float)(right_point_seed.x - right_point.x) / stride_x;
+            denom_z = (float)(right_point.z - right_point_seed.z) / stride_z;
+
+            if((px >= denom_x) && (pz <= denom_z)){
+                id_x = right_point_seed.x;
+                id_z = right_point_seed.z + stride_z;
+            } else if ((px >= denom_x) && (pz > denom_z)){
+                id_x = right_point_seed.x;
+                id_z = right_point_seed.z;
+            } else if ((px < denom_x) && (pz <= denom_z)){
+                id_x = right_point_seed.x - stride_x;
+                id_z = right_point_seed.z + stride_z;
+            } else if ((px < denom_x) && (pz > denom_z)){
+                id_x = right_point_seed.x - stride_x;
+                id_z = right_point_seed.z;
+            }
+
+            if (id_x >= aEndX) {
+                id_x = right_point_seed.x;
+            }
+
+            if (id_z >= aEndZ - aBoundaryLength) {
+                id_z = right_point_seed.z;
+            }
+            property_array_host[right_point.z * aNx + right_point.x] = property_array_host[id_z * aNx + id_x];
+        }
     }
-    randomize(random_data, random_size);
-    /*!putting random values for velocities at the boundaries for X and with all Y
-     * and Z */
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        auto global_range =
-                range<3>(boundary_length, end_y - start_y, end_z - start_z);
-        auto local_range = range<3>(1, 1, 1);
-        auto global_nd_range = nd_range<3>(global_range, local_range);
 
-        cgh.parallel_for<class Random_velocity_extension_X>(
-                global_nd_range, [=](nd_item<3> it) {
-                    int column = it.get_global_id(0);
-                    int depth = it.get_global_id(1) + start_y;
-                    int row = it.get_global_id(2) + start_z;
+    seeds.clear();
 
-                    /*! Create temporary value */
-                    float temp = random_data[it.get_global_linear_id()] *
-                                 ((float) (boundary_length - (column)) / boundary_length) *
-                                 max_velocity;
-                    /*!for values from x = HALF_LENGTH TO x= HALF_LENGTH +BOUND_LENGTH*/
-                    int p_idx = depth * nz_nx + row * nx + column + start_x;
-                    int p2_idx = depth * nz_nx + row * nx + boundary_length + start_x;
-                    property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                    /*! Create temporary value */
-                    temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                           ((float) (boundary_length - (column)) / boundary_length) *
-                           max_velocity;
-                    /*!for values from x = nx-HALF_LENGTH TO x =
-                     * nx-HALF_LENGTH-BOUND_LENGTH*/
-                    p_idx = depth * nz_nx + row * nx + (end_x - 1 - column);
-                    p2_idx = depth * nz_nx + row * nx + (end_x - 1 - boundary_length);
-                    property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                });
-    });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    /*
+     * processing boundaries in Z dimension "bottom bound"
+     */
 
-    randomize(random_data, random_size);
-    /*!putting random values for velocities at the boundaries for z and with all x
-     * and y */
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        auto global_range =
-                range<3>(end_x - start_x, end_y - start_y, boundary_length);
-        auto local_range = range<3>(1, 1, 1);
-        auto global_nd_range = nd_range<3>(global_range, local_range);
+    /*
+     * populate random seeds
+     */
+    for (int row = 0; row < aBoundaryLength; row += stride_z) {
+        for (int column = aStartX; column < aEndX; column += stride_x) {
 
-        cgh.parallel_for<class Random_velocity_extension_Z>(
-                global_nd_range, [=](nd_item<3> it) {
-                    int column = it.get_global_id(0) + start_x;
-                    int depth = it.get_global_id(1) + start_y;
-                    int row = it.get_global_id(2);
 
-                    /*! Create temporary value */
-                    float temp = random_data[it.get_global_linear_id()] *
-                                 ((float) (boundary_length - (row)) / boundary_length) *
-                                 max_velocity;
-                    /*!for values from x = HALF_LENGTH TO x= HALF_LENGTH +BOUND_LENGTH*/
-                    int p_idx = depth * nz_nx + (start_z + row) * nx + column;
-                    int p2_idx =
-                            depth * nz_nx + (start_z + boundary_length) * nx + column;
-                    // Remove top layer boundary : give value as zero since having top
-                    // layer random boundaries will introduce too much noise.
-                    property_array[p_idx] = 0; //_abs(property_array[p2_idx] - temp);
-                    /*! Create temporary value */
-                    temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                           ((float) (boundary_length - (row)) / boundary_length) *
-                           max_velocity;
-                    /*!for values from x = nx-HALF_LENGTH TO x =
-                     * nx-HALF_LENGTH-BOUND_LENGTH*/
-                    p_idx = depth * nz_nx + (end_z - 1 - row) * nx + column;
-                    p2_idx = depth * nz_nx + (end_z - 1 - boundary_length) * nx + column;
-                    property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                });
-    });
+            int index = (aEndZ - row - 1) * aNx + column;
+            temp = GET_RANDOM_VALUE(aBoundaryLength, row) * max_velocity;
+            property_array_host[index] = abs(property_array_host[(aEndZ - 1 - aBoundaryLength) * aNx + column] - temp);
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-
-    randomize(random_data, random_size);
-    // Random-Corners in the boundaries nx-nz boundary intersection at bottom--
-    // top boundaries not needed.
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-        auto global_range =
-                range<3>(boundary_length, end_y - start_y, boundary_length);
-        auto local_range = range<3>(1, 1, 1);
-        auto global_nd_range = nd_range<3>(global_range, local_range);
-
-        cgh.parallel_for<class Random_velocity_corner_X_Z>(
-                global_nd_range, [=](nd_item<3> it) {
-                    int column = it.get_global_id(0);
-                    int depth = it.get_global_id(1) + start_y;
-                    int row = it.get_global_id(2);
-
-                    uint offset = std::min(row, column);
-                    /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    /*! Top left boundary in other words */
-                    property_array[depth * nz_nx + (start_z + row) * nx + column +
-                                   start_x] = 0;
-                    /*!for values from z = nz-HALF_LENGTH TO z =
-                     * nz-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    /*! Bottom left boundary in other words */
-                    float temp = random_data[it.get_global_linear_id()] *
-                                 ((float) (boundary_length - (offset)) / boundary_length) *
-                                 max_velocity;
-                    int p_idx = depth * nz_nx + (end_z - 1 - row) * nx + column + start_x;
-                    int p2_idx = depth * nz_nx + (end_z - 1 - boundary_length) * nx +
-                                 start_x + boundary_length;
-                    property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                    /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH */
-                    /*! Top right boundary in other words */
-                    property_array[depth * nz_nx + (start_z + row) * nx +
-                                   (end_x - 1 - column)] = 0;
-                    /*!for values from z = nz-HALF_LENGTH TO z =
-                     * nz-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH - BOUND_LENGTH
-                     */
-                    /*! Bottom right boundary in other words */
-                    temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    /*!for values from x = nx-HALF_LENGTH TO x =
-                     * nx-HALF_LENGTH-BOUND_LENGTH*/
-                    p_idx = depth * nz_nx + (end_z - 1 - row) * nx + (end_x - 1 - column);
-                    p2_idx = depth * nz_nx + (end_z - 1 - boundary_length) * nx +
-                             (end_x - 1 - boundary_length);
-                    property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                });
-    });
-
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-
-    randomize(random_data, random_size);
-    // If 3-D, zero corners in the y-x and y-z plans.
-    if (ny > 1) {
-        // Random-Corners in the boundaries ny-nz boundary intersection at bottom--
-        // top boundaries not needed.
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range =
-                    range<3>(end_x - start_x, boundary_length, boundary_length);
-            auto local_range = range<3>(1, 1, 1);
-            auto global_nd_range = nd_range<3>(global_range, local_range);
-
-            cgh.parallel_for<class Random_velocity_corner_Y_Z>(
-                    global_nd_range, [=](nd_item<3> it) {
-                        int column = it.get_global_id(0) + start_x;
-                        int depth = it.get_global_id(1);
-                        int row = it.get_global_id(2);
-
-                        uint offset = std::min(row, depth);
-                        /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for y = HALF_LENGTH to y = HALF_LENGTH + BOUND_LENGTH */
-                        property_array[(depth + start_y) * nz_nx + (start_z + row) * nx +
-                                       column] = 0;
-                        /*!for values from z = nz-HALF_LENGTH TO z =
-                         * nz-HALF_LENGTH-BOUND_LENGTH*/
-                        /*! and for y = HALF_LENGTH to y = HALF_LENGTH + BOUND_LENGTH */
-                        float temp =
-                                random_data[it.get_global_linear_id()] *
-                                ((float) (boundary_length - (offset)) / boundary_length) *
-                                max_velocity;
-                        int p_idx =
-                                (depth + start_y) * nz_nx + (end_z - 1 - row) * nx + column;
-                        int p2_idx = (start_y + boundary_length) * nz_nx +
-                                     (end_z - 1 - boundary_length) * nx + column;
-                        property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                        /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for y = ny-HALF_LENGTH to y = ny-HALF_LENGTH - BOUND_LENGTH
-                         */
-                        property_array[(end_y - 1 - depth) * nz_nx + (start_z + row) * nx +
-                                       column] = 0;
-                        /*!for values from z = nz-HALF_LENGTH TO z =
-                         * nz-HALF_LENGTH-BOUND_LENGTH */
-                        /*! and for y = ny-HALF_LENGTH to y = ny - HALF_LENGTH -
-                         * BOUND_LENGTH */
-                        temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                               ((float) (boundary_length - (offset)) / boundary_length) *
-                               max_velocity;
-                        /*!for values from x = nx-HALF_LENGTH TO x =
-                         * nx-HALF_LENGTH-BOUND_LENGTH*/
-                        p_idx =
-                                (end_y - 1 - depth) * nz_nx + (end_z - 1 - row) * nx + column;
-                        p2_idx = (end_y - 1 - boundary_length) * nz_nx +
-                                 (end_z - 1 - boundary_length) * nx + column;
-                        property_array[p_idx] = _abs(property_array[p2_idx] - temp);
-                    });
-        });
-
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-
-        randomize(random_data, random_size);
-        // Zero-Corners in the boundaries nx-ny boundary intersection on the top
-        // layer--boundaries not needed.
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range =
-                    range<3>(boundary_length, boundary_length, boundary_length);
-            auto local_range = range<3>(1, 1, 1);
-            auto global_nd_range = nd_range<3>(global_range, local_range);
-
-            cgh.parallel_for<class Random_velocity_corner_X_Y_0>(
-                    global_nd_range, [=](nd_item<3> it) {
-                        int column = it.get_global_id(0);
-                        int depth = it.get_global_id(1);
-                        int row = it.get_global_id(2) + start_z;
-
-                        /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                        property_array[(depth + start_y) * nz_nx + row * nx + column +
-                                       start_x] = 0;
-                        /*!for values from y = ny-HALF_LENGTH TO y =
-                         * ny-HALF_LENGTH-BOUND_LENGTH*/
-                        /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                        property_array[(end_y - 1 - depth) * nz_nx + row * nx + column +
-                                       start_x] = 0;
-                        /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH
-                         */
-                        property_array[(depth + start_y) * nz_nx + row * nx +
-                                       (end_x - 1 - column)] = 0;
-                        /*!for values from y = ny-HALF_LENGTH TO y =
-                         * ny-HALF_LENGTH-BOUND_LENGTH*/
-                        /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH -
-                         * BOUND_LENGTH */
-                        property_array[(end_y - 1 - depth) * nz_nx + row * nx +
-                                       (end_x - 1 - column)] = 0;
-                    });
-        });
-
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
-
-        randomize(random_data, random_size);
-        // Random-Corners in the boundaries nx-ny boundary intersection.
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            auto global_range =
-                    range<3>(boundary_length, boundary_length, boundary_length);
-            auto local_range = range<3>(1, 1, 1);
-            auto global_nd_range = nd_range<3>(global_range, local_range);
-
-            cgh.parallel_for<class Random_velocity_corner_X_Y_1>(
-                    global_nd_range, [=](nd_item<3> it) {
-                        int column = it.get_global_id(0);
-                        int depth = it.get_global_id(1);
-                        int row = it.get_global_id(2) + start_z;
-
-                        uint offset = std::min(column, depth);
-                        /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                        float temp =
-                                random_data[it.get_global_linear_id()] *
-                                ((float) (boundary_length - (offset)) / boundary_length) *
-                                max_velocity;
-                        property_array[(depth + start_y) * nz_nx + row * nx + column +
-                                       start_x] =
-                                _abs(property_array[(boundary_length + start_y) * nz_nx +
-                                                    row * nx + boundary_length + start_x] -
-                                     temp);
-                        /*!for values from y = ny-HALF_LENGTH TO y =
-                         * ny-HALF_LENGTH-BOUND_LENGTH*/
-                        /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                        temp = random_data[random_size - 1 - it.get_global_linear_id()] *
-                               ((float) (boundary_length - (offset)) / boundary_length) *
-                               max_velocity;
-                        property_array[(end_y - 1 - depth) * nz_nx + row * nx + column +
-                                       start_x] =
-                                _abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                                    row * nx + boundary_length + start_x] -
-                                     temp);
-                        /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH
-                         */
-                        /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH
-                         */
-                        temp = (random_data[it.get_global_linear_id()] *
-                                random_data[random_size - 1 - it.get_global_linear_id()]) *
-                               ((float) (boundary_length - (offset)) / boundary_length) *
-                               max_velocity;
-                        property_array[(depth + start_y) * nz_nx + row * nx +
-                                       (end_x - 1 - column)] =
-                                _abs(property_array[(boundary_length + start_y) * nz_nx +
-                                                    row * nx + (end_x - 1 - boundary_length)] -
-                                     temp);
-                        /*!for values from y = ny-HALF_LENGTH TO y =
-                         * ny-HALF_LENGTH-BOUND_LENGTH*/
-                        /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH -
-                         * BOUND_LENGTH */
-                        temp = (random_data[it.get_global_linear_id()] +
-                                random_data[random_size - 1 - it.get_global_linear_id()]) *
-                               ((float) (boundary_length - (offset)) / boundary_length) *
-                               max_velocity;
-                        property_array[(end_y - 1 - depth) * nz_nx + row * nx +
-                                       (end_x - 1 - column)] =
-                                _abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                                    row * nx + (end_x - 1 - boundary_length)] -
-                                     temp);
-                    });
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+            seeds.push_back(Point3D(column, 1, (aEndZ - row - 1)));
+        }
     }
+
+    /*
+     * fill empty points
+     */
+    for (int row = 0; row < aBoundaryLength; row ++) {
+        for (int column = aStartX; column < aEndX; column ++)  {
+
+            Point3D bottom_point(column, 1, (aEndZ - row - 1));
+
+            /*
+             * check if this point is a seed point
+             */
+            bool is_seed = false;
+            for(auto seed:seeds){
+                if(bottom_point == seed){
+                    is_seed = true;
+                    break;
+                }
+            }
+            if(is_seed){
+                continue; // this is a seed point, don't fill
+            }
+
+            Point3D bottom_point_seed(0,0,0);
+            /*
+             * Get nearest seed
+             */
+
+            for(auto seed:seeds){
+                if(
+                        (seed.x <= bottom_point.x) && (seed.x + stride_x > bottom_point.x) &&
+                        (seed.z >= bottom_point.z) && (seed.z - stride_z < bottom_point.z)
+                ){
+                    bottom_point_seed = seed;
+                }
+            }
+
+            /*
+             * populate left point
+             */
+            int id_x;
+            int id_z;
+
+            float px = RANDOM_VALUE;
+            float pz = RANDOM_VALUE;
+
+            float denom_x = (float)(bottom_point.x - bottom_point_seed.x)  / stride_x;
+            float denom_z = (float)(bottom_point_seed.z - bottom_point.z) / stride_z;
+
+            if((px <= denom_x) && (pz >= denom_z)){
+                id_x = bottom_point_seed.x + stride_x;
+                id_z = bottom_point_seed.z;
+            } else if ((px <= denom_x) && (pz < denom_z)){
+                id_x = bottom_point_seed.x + stride_x;
+                id_z = bottom_point_seed.z - stride_z;
+            } else if ((px > denom_x) && (pz >= denom_z)){
+                id_x = bottom_point_seed.x;
+                id_z = bottom_point_seed.z;
+            } else if ((px > denom_x) && (pz < denom_z)){
+                id_x = bottom_point_seed.x;
+                id_z = bottom_point_seed.z - stride_z;
+            }
+
+            if (id_z >= aEndZ) {
+                id_z = bottom_point_seed.z;
+            }
+            property_array_host[bottom_point.z * aNx + bottom_point.x] = property_array_host[id_z * aNx + id_x];
+        }
+    }
+
+	seeds.clear();
+
+	/**
+	 * reflect to device memory
+	 */
+	Device::MemCpy(apPropertyArray, property_array_host, allocated_memory);
 }
 
-void RandomExtension::TopLayerExtensionHelper(
-        float *property_array,
-        int start_x, int start_y, int start_z,
-        int end_x, int end_y, int end_z,
-        int nx, int ny, int nz,
-        uint boundary_length) {
+void 
+RandomExtension::TopLayerExtensionHelper(float *apPropertyArray,
+                                         int aStartX, int aStartY, int aStartZ,
+                                         int aEndX, int aEndY, int aEndZ,
+                                         int aNx, int aNy, int aNz,
+                                         uint aBoundaryLength) {
+    // Do nothing, no top layer to remove in random boundaries.
+}
+
+void 
+RandomExtension::TopLayerRemoverHelper(float *apPropertyArray,
+                                       int aStartX, int aStartY, int aStartZ,
+                                       int aEndX, int aEndY, int aEndZ,
+                                       int aNx, int aNy, int aNz,
+                                       uint aBoundaryLength) {
     // Do nothing, no top layer to extend in random boundaries.
 }
 
-void RandomExtension::TopLayerRemoverHelper(
-        float *property_array,
-        int start_x, int start_y, int start_z,
-        int end_x, int end_y, int end_z,
-        int nx, int ny, int nz,
-        uint boundary_length) {
-    // Do nothing, no top layer to remove in random boundaries.
-}

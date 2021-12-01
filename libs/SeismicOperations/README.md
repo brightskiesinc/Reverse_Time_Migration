@@ -15,17 +15,13 @@ It also provides the implementation of the engine that will use the components f
 be used as a base for any engine oriented variation.
 </p>
 
-
-## Features 
+## Features
 
 You can find detailed features [here](docs/manual/Features.md).
 
 ### Engines
 
 * [RTM](include/operations/engines/concrete/RTMEngine.hpp)
-* [FWI](include/operations/engines/concrete/FWIEngine.hpp)
-* [PSDM](include/operations/engines/concrete/PSDMEngine.hpp)
-* [PSTM](include/operations/engines/concrete/PSTMEngine.hpp)
 
 ### Components
 
@@ -36,14 +32,9 @@ You can find detailed features [here](docs/manual/Features.md).
 * [Source Injector](include/operations/components/independents/primitive/SourceInjector.hpp)
 * [Trace Manager](include/operations/components/independents/primitive/TraceManager.hpp)
 * [Trace Writer](include/operations/components/independents/primitive/TraceWriter.hpp)
-* [Modelling Configuration Parser](include/operations/components/independents/primitive/ModellingConfigurationParser.hpp)
-* [Ray Tracer](include/operations/components/independents/primitive/RayTracer.hpp)
-* [Residual Manager](include/operations/components/independents/primitive/ResidualManager.hpp)
-* [Stoppage Criteria](include/operations/components/independents/primitive/StoppageCriteria.hpp)
-* [Model Updater](include/operations/components/independents/primitive/ModelUpdater.hpp)
-
 
 ## Prerequisites
+
 * **CMake**\
   ```CMake``` version 3.5 or higher.
 
@@ -65,19 +56,21 @@ You can find detailed features [here](docs/manual/Features.md).
     * v4.3 recommended
     * You can download it from a script found in ```prerequisites/frameworks/opencv``` folder
 
-
 ## Versioning
 
 When installing Seismic Operations, require its version. For us, this is what ```major.minor.patch``` means:
 
-- ```major``` - **MAJOR breaking changes**; includes major new features, major changes in how the whole system works, and complete rewrites; it allows us to _considerably_ improve the product, and add features that were previously impossible.
+- ```major``` - **MAJOR breaking changes**; includes major new features, major changes in how the whole system works,
+  and complete rewrites; it allows us to _considerably_ improve the product, and add features that were previously
+  impossible.
 - ```minor``` - **MINOR breaking changes**; it allows us to add big new features.
 - ```patch``` - **NO breaking changes**; includes bug fixes and non-breaking new features.
-
 
 ## Changelog
 
 For previous versions, please see our [CHANGELOG](CHANGELOG.rst) file.
 
 ## License
-This project is licensed under the The GNU Lesser General Public License, version 3.0 (LGPL-3.0) Legal License - see the [LICENSE](LICENSE.txt) file for details
+
+This project is licensed under the The GNU Lesser General Public License, version 3.0 (LGPL-3.0) Legal License - see
+the [LICENSE](LICENSE.txt) file for details

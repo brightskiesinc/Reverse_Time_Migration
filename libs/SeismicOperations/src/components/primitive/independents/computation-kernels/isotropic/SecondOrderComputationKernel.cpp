@@ -1,27 +1,41 @@
-//
-// Created by amr-nasr on 11/21/19.
-//
-
-#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-#include <operations/exceptions/Exceptions.h>
-
-#include <timer/Timer.h>
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <iostream>
 #include <cmath>
 
-#define fma(a, b, c) (a) * (b) + (c)
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
 using namespace std;
+using namespace bs::timer;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
 
 
 SecondOrderComputationKernel::SecondOrderComputationKernel(
-        operations::configuration::ConfigurationMap *apConfigurationMap) {
+        bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mpMemoryHandler = new WaveFieldsMemoryHandler(apConfigurationMap);
     this->mpBoundaryManager = nullptr;
@@ -42,48 +56,52 @@ ComputationKernel *SecondOrderComputationKernel::Clone() {
     return new SecondOrderComputationKernel(*this);
 }
 
-void SecondOrderComputationKernel::Step() {
-    /* Take a step in time. */
-    if (this->mpCoeffX == nullptr) {
-        this->InitializeVariables();
-    }
+template<KERNEL_MODE KERNEL_MODE_>
+void SecondOrderComputationKernel::Compute() {
 
-    if ((this->mpGridBox->GetLogicalGridSize(Y_AXIS)) == 1) {
-        switch (this->mpParameters->GetHalfLength()) {
-            case O_2:
-                this->Compute<true, O_2>();
-                break;
-            case O_4:
-                this->Compute<true, O_4>();
-                break;
-            case O_8:
-                this->Compute<true, O_8>();
-                break;
-            case O_12:
-                this->Compute<true, O_12>();
-                break;
-            case O_16:
-                this->Compute<true, O_16>();
-                break;
-        }
+    int logical_ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
+
+    if (logical_ny == 1) {
+        this->Compute<KERNEL_MODE_, true>();
     } else {
-        switch (this->mpParameters->GetHalfLength()) {
-            case O_2:
-                this->Compute<false, O_2>();
-                break;
-            case O_4:
-                this->Compute<false, O_4>();
-                break;
-            case O_8:
-                this->Compute<false, O_8>();
-                break;
-            case O_12:
-                this->Compute<false, O_12>();
-                break;
-            case O_16:
-                this->Compute<false, O_16>();
-                break;
-        }
+        this->Compute<KERNEL_MODE_, false>();
+    }
+}
+
+template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_>
+void SecondOrderComputationKernel::Compute() {
+    switch (mpParameters->GetHalfLength()) {
+        case O_2:
+            Compute < KERNEL_MODE_, IS_2D_, O_2 > ();
+            break;
+        case O_4:
+            Compute < KERNEL_MODE_, IS_2D_, O_4 > ();
+            break;
+        case O_8:
+            Compute < KERNEL_MODE_, IS_2D_, O_8 > ();
+            break;
+        case O_12:
+            Compute < KERNEL_MODE_, IS_2D_, O_12 > ();
+            break;
+        case O_16:
+            Compute < KERNEL_MODE_, IS_2D_, O_16 > ();
+            break;
+    }
+}
+
+void SecondOrderComputationKernel::Step() {
+    // Take a step in time.
+    if (mpCoeffX == nullptr) {
+        InitializeVariables();
+    }
+    if (this->mMode == KERNEL_MODE::FORWARD) {
+        this->Compute<KERNEL_MODE::FORWARD>();
+    } else if (this->mMode == KERNEL_MODE::INVERSE) {
+        this->Compute<KERNEL_MODE::INVERSE>();
+    } else if (this->mMode == KERNEL_MODE::ADJOINT) {
+        this->Compute<KERNEL_MODE::ADJOINT>();
+    } else {
+        throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
     }
     // Swap pointers : Next to current, current to prev and unwanted prev to next
     // to be overwritten.
@@ -100,33 +118,29 @@ void SecondOrderComputationKernel::Step() {
         this->mpGridBox->Swap(WAVE | GB_PRSS | CURR | DIR_Z, WAVE | GB_PRSS | NEXT | DIR_Z);
     }
 
-    Timer *timer = Timer::GetInstance();
-    timer->StartTimer("BoundaryManager::ApplyBoundary");
-    if (this->mpBoundaryManager != nullptr) {
-        this->mpBoundaryManager->ApplyBoundary();
+    {
+        ScopeTimer t("BoundaryManager::ApplyBoundary");
+        if (this->mpBoundaryManager != nullptr) {
+            this->mpBoundaryManager->ApplyBoundary();
+        }
     }
-    timer->StopTimer("BoundaryManager::ApplyBoundary");
-
 }
 
 void SecondOrderComputationKernel::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 void SecondOrderComputationKernel::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        std::cerr << "No GridBox provided... Terminating..." << std::endl;
+        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
-    }
-
-    /* Does not support 3D. */
-    if (this->mpGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
     }
 }
 
@@ -135,33 +149,66 @@ MemoryHandler *SecondOrderComputationKernel::GetMemoryHandler() {
 }
 
 void SecondOrderComputationKernel::InitializeVariables() {
-    int wnx = this->mpGridBox->GetActualWindowSize(X_AXIS);
 
-    float dx2 = 1 / (this->mpGridBox->GetCellDimensions(X_AXIS) * this->mpGridBox->GetCellDimensions(X_AXIS));
-    float dz2 = 1 / (this->mpGridBox->GetCellDimensions(Z_AXIS) * this->mpGridBox->GetCellDimensions(Z_AXIS));
 
-    float *coeff = this->mpParameters->GetSecondDerivativeFDCoefficient();
+    int wnx = mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wny = mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    int wnz = mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
-    int hl = this->mpParameters->GetHalfLength();
+    float dx2 = 1 / (mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension() *
+                     mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension());
+    float dz2 = 1 / (mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension() *
+                     mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension());
+    float dy2 = 1;
+    float *coeff = mpParameters->GetSecondDerivativeFDCoefficient();
+    bool is_2D = wny == 1;
+
+
+    if (!is_2D) {
+        dy2 = 1 / (mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension() *
+                   mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension());
+    }
+
+    int hl = mpParameters->GetHalfLength();
     int array_length = hl;
     float coeff_x[hl];
+    float coeff_y[hl];
     float coeff_z[hl];
     int vertical[hl];
+    int front[hl];
 
     for (int i = 0; i < hl; i++) {
         coeff_x[i] = coeff[i + 1] * dx2;
         coeff_z[i] = coeff[i + 1] * dz2;
 
         vertical[i] = (i + 1) * (wnx);
+
+        if (!is_2D) {
+            coeff_y[i] = coeff[i + 1] * dy2;
+            front[i] = (i + 1) * wnx * wnz;
+        }
     }
 
-    this->mpCoeffX = new FrameBuffer<float>(array_length);
-    this->mpCoeffZ = new FrameBuffer<float>(array_length);
-    this->mpVerticalIdx = new FrameBuffer<int>(array_length);
+    mpCoeffX = new FrameBuffer<float>(array_length);
+    mpCoeffY = new FrameBuffer<float>(array_length);
+    mpCoeffZ = new FrameBuffer<float>(array_length);
+    mpFrontalIdx = new FrameBuffer<int>(array_length);
+    mpVerticalIdx = new FrameBuffer<int>(array_length);
 
-    this->mCoeffXYZ = coeff[0] * (dx2 + dz2);
+    if (is_2D) {
+        mCoeffXYZ = coeff[0] * (dx2 + dz2);
+    } else {
+        mCoeffXYZ = coeff[0] * (dx2 + dy2 + dz2);
+    }
 
-    Device::MemCpy(this->mpCoeffX->GetNativePointer(), coeff_x, array_length * sizeof(float));
-    Device::MemCpy(this->mpCoeffZ->GetNativePointer(), coeff_z, array_length * sizeof(float));
-    Device::MemCpy(this->mpVerticalIdx->GetNativePointer(), vertical, array_length * sizeof(int));
+    Device::MemCpy(mpCoeffX->GetNativePointer(), coeff_x, array_length * sizeof(float));
+    Device::MemCpy(mpCoeffZ->GetNativePointer(), coeff_z, array_length * sizeof(float));
+    Device::MemCpy(mpVerticalIdx->GetNativePointer(), vertical, array_length * sizeof(int));
+
+
+    if (!is_2D) {
+        Device::MemCpy(mpCoeffY->GetNativePointer(), coeff_y, array_length * sizeof(float));
+
+        Device::MemCpy(mpFrontalIdx->GetNativePointer(), front, array_length * sizeof(int));
+    }
 }

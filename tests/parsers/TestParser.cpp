@@ -1,17 +1,31 @@
-//
-// Created by marwan on 24/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include <stbx/parsers/Parser.h>
+#include <prerequisites/libraries/catch/catch.hpp>
 
+#include <stbx/parsers/Parser.hpp>
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
-
 using namespace std;
+using json = nlohmann::json;
 using namespace stbx::parsers;
 using namespace stbx::testutils;
-using json = nlohmann::json;
 
 
 void TEST_CASE_PARSER() {
@@ -124,8 +138,7 @@ void TEST_CASE_PARSER() {
     "cache-blocking": {
       "block-x": 5500,
       "block-y": 1,
-      "block-z": 55,
-      "cor-block": 256
+      "block-z": 55
     },
     "device": "none",
     "dt-relax": 0.9,
@@ -147,7 +160,7 @@ void TEST_CASE_PARSER() {
   "models": {
     "velocity": "data/iso/params/vel_z6.25m_x12.5m_exact.segy"
   },
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },
@@ -317,8 +330,7 @@ void TEST_CASE_PARSER() {
     "cache-blocking": {
       "block-x": 5500,
       "block-y": 1,
-      "block-z": 55,
-      "cor-block": 256
+      "block-z": 55
     },
     "device": "none",
     "dt-relax": 0.9,
@@ -340,7 +352,7 @@ void TEST_CASE_PARSER() {
   "models": {
     "velocity": "data/iso/params/vel_z6.25m_x12.5m_exact.segy"
   },
-  "pipeline": {
+  "system": {
     "agent": {
       "type": "normal"
     },

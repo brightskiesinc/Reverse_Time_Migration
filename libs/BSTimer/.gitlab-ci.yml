@@ -1,0 +1,99 @@
+---
+
+stages:
+  - compile
+  - check
+  - test
+
+
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+
+
+compile::cpp:
+  stage: compile
+  image: pp-openmp-bundle
+  artifacts:
+    when: on_success
+    expire_in: 1h
+    untracked: true
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh --examples --tests
+    - ./clean_build.sh
+
+compile:openmp:
+  stage: compile
+  image: pp-openmp-bundle
+  artifacts:
+    when: on_success
+    expire_in: 1h
+    untracked: true
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp --examples --tests
+    - ./clean_build.sh
+
+check::cpp:
+  stage: check
+  needs: [ "compile::cpp" ]
+  image: pp-openmp-bundle
+  allow_failure: true
+  tags:
+    - pp-runner
+  script:
+    - apt update && apt -y install cppcheck
+    - cppcheck --project=bin/compile_commands.json
+
+
+test:cpp:
+  stage: test
+  needs: [ "compile::cpp" ]
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - cd ./bin && ctest
+
+
+test:openmp:
+  stage: test
+  needs: [ "compile:openmp" ]
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - cd ./bin && ctest --verbose
+
+
+
+check:python:
+  stage: check
+  needs: [ ]
+  image: pp-python-numerical-bundle
+  script:
+    - python --version
+    - pip install -r python/requirements_piepline.txt
+    - pylint python/bs/timer --fail-under=8.5
+  allow_failure: true
+  tags:
+    - pp-runner
+
+
+test:python:
+  stage: test
+  needs: [ ]
+  image: pp-python-numerical-bundle
+  tags:
+    - pp-runner
+  script:
+    - python --version
+    - pip install -r python/requirements_piepline.txt
+    - pytest python/tests
+  artifacts:
+    when: always
+    reports:
+      junit: reports/test_results.xml
+      cobertura: reports/coverage.xml

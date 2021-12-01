@@ -1,24 +1,39 @@
-//
-// Created by marwan-elsafty on 18/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <string>
+
+#include <prerequisites/libraries/catch/catch.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
 
 #include  <stbx/generators/primitive/ComponentsGenerator.hpp>
 
 #include <stbx/test-utils/utils.h>
 
-#include <libraries/catch/catch.hpp>
-#include <libraries/nlohmann/json.hpp>
-
-#include <string>
+using namespace bs::base::exceptions;
+using namespace bs::base::configurations;
 
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
 using namespace operations::common;
-using namespace operations::configuration;
 using namespace operations::components;
-using namespace operations::exceptions;
-
 
 void TEST_CASE_COMPONENTS_GENERATOR() {
     nlohmann::json map = R"(
@@ -103,13 +118,6 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
         auto trace_manager = components_generator->GenerateTraceManager();
         REQUIRE(instanceof<TraceManager>(trace_manager));
         delete trace_manager;
-    }
-
-    SECTION("GenerateModellingConfigurationParser") {
-        auto modelling_configuration_parser =
-                components_generator->GenerateModellingConfigurationParser();
-        REQUIRE(instanceof<ModellingConfigurationParser>(modelling_configuration_parser));
-        delete modelling_configuration_parser;
     }
 
     SECTION("GenerateTraceWriter") {

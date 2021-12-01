@@ -1,0 +1,46 @@
+---
+
+stages:
+  - compile
+  - test
+
+
+compile:openmp:
+  stage: compile
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp --examples
+    - ./clean_build.sh
+
+
+compile:oneapi:
+  stage: compile
+  image: pp-oneapi-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b dpc --examples --tests
+    - ./clean_build.sh
+
+compile:openmp-offload:
+  stage: compile
+  image: pp-oneapi-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp-offload --examples --tests
+    - ./clean_build.sh
+
+
+test:openmp:
+  stage: test
+  needs: [ "compile:openmp" ]
+  image: pp-openmp-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp --tests
+    - ./clean_build.sh
+    - cd ./bin && ctest -v

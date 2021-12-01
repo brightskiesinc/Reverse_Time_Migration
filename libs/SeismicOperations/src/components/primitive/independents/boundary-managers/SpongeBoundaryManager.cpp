@@ -1,38 +1,58 @@
-//
-// Created by mirna-moawad on 11/21/19.
-//
-
-#include "operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp"
-
-#include "operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp"
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <iostream>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
+
 using namespace std;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
 
+
 /// Based on
 /// https://pubs.geoscienceworld.org/geophysics/article-abstract/50/4/705/71992/A-nonreflecting-boundary-condition-for-discrete?redirectedFrom=fulltext
 
-SpongeBoundaryManager::SpongeBoundaryManager(operations::configuration::ConfigurationMap *apConfigurationMap) {
+SpongeBoundaryManager::SpongeBoundaryManager(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mUseTopLayer = true;
 }
 
 void SpongeBoundaryManager::AcquireConfiguration() {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mUseTopLayer = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_USE_TOP_LAYER, this->mUseTopLayer);
     if (this->mUseTopLayer) {
-        cout
+        Logger->Info()
                 << "Using top boundary layer for forward modelling. To disable it set <boundary-manager.use-top-layer=false>"
-                << std::endl;
+                << '\n';
     } else {
-        cout
+        Logger->Info()
                 << "Not using top boundary layer for forward modelling. To enable it set <boundary-manager.use-top-layer=true>"
-                << std::endl;
+                << '\n';
     }
 }
 
@@ -70,25 +90,21 @@ SpongeBoundaryManager::~SpongeBoundaryManager() {
 }
 
 void SpongeBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        std::cerr << "No computation parameters provided... Terminating..." << std::endl;
+        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 void SpongeBoundaryManager::SetGridBox(GridBox *apGridBox) {
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        std::cerr << "No GridBox provided... Terminating..." << std::endl;
+        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-
-    /* Does not support 3D. */
-    if (this->mpGridBox->GetActualWindowSize(Y_AXIS) > 1) {
-        throw exceptions::NotImplementedException();
-    }
-
     InitializeExtensions();
 
     uint bound_length = this->mpParameters->GetBoundaryLength();

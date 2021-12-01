@@ -1,14 +1,27 @@
-//
-// Created by marwan-elsafty on 21/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef STBX_GENERATORS_CONFIGURATIONS_CONFIGURATIONS_GENERATOR_H
 #define STBX_GENERATORS_CONFIGURATIONS_CONFIGURATIONS_GENERATOR_H
 
-#include <operations/engine-configurations/concrete/RTMEngineConfigurations.hpp>
 #include <operations/common/DataTypes.h>
-
-#include <libraries/nlohmann/json.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
 
 #include <map>
 
@@ -36,14 +49,13 @@ namespace stbx {
             GetModelFiles();
 
             std::vector<std::string>
-            GetTraceFiles(operations::configuration::RTMEngineConfigurations *aConfiguration);
+            GetTraceFiles();
 
-            std::string
-            GetModellingFile();
+            uint GetTracesMin();
 
-            std::string
-            GetOutputFile();
+            uint GetTracesMax();
 
+            std::string GetTracesSortKey();
 
         private:
             /// Map that holds configurations key value pairs

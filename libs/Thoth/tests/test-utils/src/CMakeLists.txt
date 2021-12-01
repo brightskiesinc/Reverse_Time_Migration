@@ -1,5 +1,0 @@
-set(TESTFILES
-
-        ${TESTFILES}
-        PARENT_SCOPE
-        )

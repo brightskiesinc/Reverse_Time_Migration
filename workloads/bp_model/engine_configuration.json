@@ -1,7 +1,7 @@
 {
   "traces": {
     "min": 601,
-    "max": 610,
+    "max": 602,
     "sort-type": "CSR",
     "paths": [
       "data/iso/shots/shots0601_0800.segy"
@@ -19,9 +19,10 @@
   },
   "components": {
     "boundary-manager": {
-      "type": "none",
+      "type": "random",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": false,
+        "grain-side-length": 200
       }
     },
     "migration-accommodator": {
@@ -33,21 +34,26 @@
     "forward-collector": {
       "type": "three",
       "properties": {
-        "boundary-saving": false
+        "boundary-saving": true
       }
     },
     "trace-manager": {
-      "type": "segy",
       "properties": {
-        "shot-stride": 1,
+        "type": "segy",
+        "shot-stride": 2,
         "interpolation": "none"
       }
     },
     "source-injector": {
-      "type": "ricker"
+      "type": "ricker",
+      "properties": {
+        "max-freq-amplitude-percentage": 0.05
+      }
     },
     "model-handler": {
-      "type": "segy"
+      "properties": {
+        "type": "segy"
+      }
     }
   }
 }

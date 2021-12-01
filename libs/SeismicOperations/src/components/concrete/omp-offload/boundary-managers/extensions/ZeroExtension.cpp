@@ -1,14 +1,33 @@
-//
-// Created by amr-nasr on 18/11/2019.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp"
 #include <omp.h>
 
+#include <operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp>
+#include <operations/utils/checks/Checks.hpp>
+
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::dataunits;
+using namespace operations::utils::checks;
 
 
 void ZeroExtension::VelocityExtensionHelper(float *property_array,
@@ -21,11 +40,12 @@ void ZeroExtension::VelocityExtensionHelper(float *property_array,
      * zeros the start for x, y and z is at HALF_LENGTH and the end is at
      * (nx - HALF_LENGTH) or (ny - HALF_LENGTH) or (nz- HALF_LENGTH)
      */
+
+    //finding gpu device 
     int device_num = omp_get_default_device();
 
-    if (omp_get_num_devices() <= 0) {
-        printf(" ERROR: No device found.\n");
-        exit(1);
+    if (is_device_not_exist()) {
+        throw DEVICE_NOT_FOUND_EXCEPTION();
     }
 
 
@@ -41,8 +61,6 @@ void ZeroExtension::VelocityExtensionHelper(float *property_array,
          * Putting zero values for velocities at the boundaries for
          * y and with all x and z
         */
-        // #pragma omp target data map(start_y,start_z,start_x,end_x,end_y,end_z,nx,nz,ny,boundary_length,nz_nx)
-
 #pragma omp target is_device_ptr( property_array) device(device_num)
 #pragma omp  parallel for collapse(3)
         for (int depth = 0; depth < boundary_length; depth++) {

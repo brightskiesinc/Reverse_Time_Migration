@@ -1,9 +1,25 @@
-//
-// Created by ingy-mounir on 02/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <operations/components/independents/concrete/forward-collectors/TwoPropagation.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
@@ -12,13 +28,12 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <libraries/catch/catch.hpp>
 
 using namespace std;
+using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 using namespace operations::helpers;
 
@@ -40,6 +55,7 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     auto pressure_prev = new FrameBuffer<float>();
     auto velocity = new FrameBuffer<float>();
 
+
     auto memory_handler = new WaveFieldsMemoryHandler(apConfigurationMap);
 
     float nt = 300;
@@ -52,13 +68,13 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -66,6 +82,8 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     pressure_curr->Allocate(window_size);
     pressure_prev->Allocate(window_size);
     velocity->Allocate(size);
+
+    float fetch_pres[window_size];
 
     apGridBox->RegisterWaveField(WAVE | GB_PRSS | CURR | DIR_Z, pressure_curr);
     apGridBox->RegisterWaveField(WAVE | GB_PRSS | PREV | DIR_Z, pressure_prev);
@@ -159,9 +177,11 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     forward_collector->ResetGrid(false);
     auto init_grid_box = forward_collector->GetForwardGrid();
 
-    REQUIRE(init_grid_box->GetActualGridSize(X_AXIS) == nx);
-    REQUIRE(init_grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(init_grid_box->GetActualGridSize(Z_AXIS) == nz);
+
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -169,8 +189,6 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     auto pres_curr = grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     auto pres_prev = grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     auto pres_next = grid_box->Get(WAVE | GB_PRSS | NEXT | DIR_Z)->GetNativePointer();
-
-    forward_collector->ResetGrid(false);
 
     /*
      * Check that the pointers are swapped
@@ -198,7 +216,10 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
         forward_collector->SaveForward();
     }
 
-    auto fetch_pres = fetch_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer();
+
+    Device::MemCpy(fetch_pres, d_pressure, window_size * sizeof(float), Device::COPY_DEVICE_TO_HOST);
+
+
 
     /*
      * Check that there is a propagation
@@ -221,11 +242,14 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO(GridBox *apGridBox,
     }
 
     auto fetch_backup_grid_box = forward_collector->GetForwardGrid();
+
+
     auto fetch_pres_backup = fetch_backup_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer();
 
     /*
      * Check that the arrays is stored in a file , and the data from the file read is the same output of saving
      */
+
 
     misses = 0;
     for (int iy = 0; iy < wny; iy++) {
@@ -276,13 +300,13 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(GridBox *apGri
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -378,9 +402,10 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(GridBox *apGri
     forward_collector->ResetGrid(false);
     auto init_grid_box = forward_collector->GetForwardGrid();
 
-    REQUIRE(init_grid_box->GetActualGridSize(X_AXIS) == nx);
-    REQUIRE(init_grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(init_grid_box->GetActualGridSize(Z_AXIS) == nz);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -389,7 +414,6 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(GridBox *apGri
     auto pres_prev = grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     auto pres_next = grid_box->Get(WAVE | GB_PRSS | NEXT | DIR_Z)->GetNativePointer();
 
-    forward_collector->ResetGrid(false);
     auto swap_grid_box = forward_collector->GetForwardGrid();
 
     auto swap_pres_curr = swap_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
@@ -404,6 +428,7 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(GridBox *apGri
     int location = (wnx / 2) + (wnz / 2) * wnx + (wny / 2) * wnx * wnz;
     h_pressure[location] = 1;
 
+
     auto d_pressure = fetch_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     Device::MemCpy(d_pressure, h_pressure, window_size * sizeof(float), Device::COPY_HOST_TO_DEVICE);
 
@@ -411,7 +436,11 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(GridBox *apGri
         forward_collector->SaveForward();
     }
 
-    auto fetch_pres = fetch_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer();
+
+    float fetch_pres[window_size];
+
+    Device::MemCpy(fetch_pres, d_pressure, window_size * sizeof(float), Device::COPY_DEVICE_TO_HOST);
+
 
     for (int iy = 0; iy < wny; iy++) {
         for (int iz = 0; iz < wnz; iz++) {
@@ -497,13 +526,13 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(GridBox *apGrid
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -586,9 +615,11 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(GridBox *apGrid
     forward_collector->ResetGrid(false);
     auto init_grid_box = forward_collector->GetForwardGrid();
 
-    REQUIRE(init_grid_box->GetActualGridSize(X_AXIS) == nx);
-    REQUIRE(init_grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(init_grid_box->GetActualGridSize(Z_AXIS) == nz);
+
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -596,9 +627,6 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(GridBox *apGrid
     auto pres_curr = grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     auto pres_prev = grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     auto pres_next = grid_box->Get(WAVE | GB_PRSS | NEXT | DIR_Z)->GetNativePointer();
-
-
-    forward_collector->ResetGrid(false);
 
     auto swap_grid_box = forward_collector->GetForwardGrid();
 
@@ -621,7 +649,10 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(GridBox *apGrid
         forward_collector->SaveForward();
     }
 
-    auto fetch_pres = fetch_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer();
+
+    float fetch_pres[window_size];
+
+    Device::MemCpy(fetch_pres, d_pressure, window_size * sizeof(float), Device::COPY_DEVICE_TO_HOST);
 
     for (int iy = 0; iy < wny; iy++) {
         for (int iz = 0; iz < wnz; iz++) {
@@ -691,13 +722,13 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(GridBox *apGrid
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -794,9 +825,10 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(GridBox *apGrid
     forward_collector->ResetGrid(false);
     auto init_grid_box = forward_collector->GetForwardGrid();
 
-    REQUIRE(init_grid_box->GetActualGridSize(X_AXIS) == nx);
-    REQUIRE(init_grid_box->GetActualGridSize(Y_AXIS) == ny);
-    REQUIRE(init_grid_box->GetActualGridSize(Z_AXIS) == nz);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize() == nx);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize() == ny);
+    REQUIRE(init_grid_box->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize() == nz);
+
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer() != nullptr);
     REQUIRE(init_grid_box->Get(PARM | GB_VEL)->GetNativePointer() != nullptr);
@@ -804,8 +836,6 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(GridBox *apGrid
     auto pres_curr = grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     auto pres_prev = grid_box->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     auto pres_next = grid_box->Get(WAVE | GB_PRSS | NEXT | DIR_Z)->GetNativePointer();
-
-    forward_collector->ResetGrid(false);
 
     auto swap_grid_box = forward_collector->GetForwardGrid();
 
@@ -829,7 +859,10 @@ void TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(GridBox *apGrid
         forward_collector->SaveForward();
     }
 
-    auto fetch_pres = fetch_grid_box->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer();
+
+    float fetch_pres[window_size];
+
+    Device::MemCpy(fetch_pres, d_pressure, window_size * sizeof(float), Device::COPY_DEVICE_TO_HOST);
 
     for (int iy = 0; iy < wny; iy++) {
         for (int iz = 0; iz < wnz; iz++) {

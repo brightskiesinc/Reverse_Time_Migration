@@ -1,17 +1,32 @@
-//
-// Created by zeyad-osama on 14/08/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_SEISMIC_MODEL_HANDLER_HPP
 #define OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_SEISMIC_MODEL_HANDLER_HPP
 
+#include <map>
+
+#include <bs/base/memory/MemoryManager.hpp>
+
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/components/independents/primitive/ModelHandler.hpp>
 #include <operations/components/dependency/concrete/HasDependents.hpp>
-
-#include <memory-manager/MemoryManager.h>
-
-#include <map>
 
 namespace operations {
     namespace components {
@@ -19,11 +34,9 @@ namespace operations {
         class SeismicModelHandler : public ModelHandler, public dependency::HasDependents {
 
         public:
-            explicit SeismicModelHandler(operations::configuration::ConfigurationMap *apConfigurationMap);
+            explicit SeismicModelHandler(bs::base::configurations::ConfigurationMap *apConfigurationMap);
 
             ~SeismicModelHandler() override;
-
-            void PreprocessModel() override;
 
             void SetComputationParameters(common::ComputationParameters *apParameters) override;
 
@@ -37,6 +50,8 @@ namespace operations {
             void SetupWindow() override;
 
             void AcquireConfiguration() override;
+
+            void PostProcessMigration(dataunits::MigrationData *apMigrationData) override;
 
         private:
             float GetSuitableDT(float *coefficients, std::map<std::string, float> maximums,
@@ -64,6 +79,10 @@ namespace operations {
             std::vector<std::pair<dataunits::GridBox::Key, std::string>> PARAMS_NAMES;
 
             std::vector<dataunits::GridBox::Key> WAVE_FIELDS_NAMES;
+
+            std::string mReaderType;
+
+            float mDepthSamplingScaler;
         };
     }//namespace components
 }//namespace operations

@@ -1,6 +1,21 @@
-//
-// Created by marwan-elsafty on 08/02/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef STBX_GENERATORS_CALLBACKS_CALLBACKS_GENERATOR
 #define STBX_GENERATORS_CALLBACKS_CALLBACKS_GENERATOR
@@ -9,7 +24,7 @@
 #include <operations/common/DataTypes.h>
 #include <operations/components/Components.hpp>
 
-#include <libraries/nlohmann/json.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
 
 #include <vector>
 #include <string>
@@ -44,25 +59,13 @@ namespace stbx {
 
         private:
             CallbacksGenerator::WritersBooleans
-            GenerateWriters();
-
-            void
-            GetImageCallback();
-
-            void
-            GetCsvCallback();
+            GenerateWritersConfiguration();
 
             void
             GetNormCallback();
 
             void
-            GetSegyCallback();
-
-            void
-            GetSuCallback();
-
-            void
-            GetBinaryCallback();
+            GetWriterCallback();
 
         private:
             std::string mWritePath;

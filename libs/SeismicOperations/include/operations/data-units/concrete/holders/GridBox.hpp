@@ -1,20 +1,39 @@
-//
-// Created by zeyad-osama on 23/08/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef OPERATIONS_LIB_DATA_UNITS_GRID_BOX_HPP
 #define OPERATIONS_LIB_DATA_UNITS_GRID_BOX_HPP
-
-#include "operations/data-units/interface/DataUnit.hpp"
-#include "operations/common//DataTypes.h"
-#include "FrameBuffer.hpp"
-
-#include "operations/exceptions/Exceptions.h"
 
 #include <iostream>
 #include <map>
 #include <vector>
 #include <cstring>
+
+#include <bs/base/exceptions/Exceptions.hpp>
+#include <bs/io/data-units/concrete/Gather.hpp>
+
+#include <operations/data-units/concrete/holders/axis/concrete/Axis3D.hpp>
+#include <operations/data-units/interface/DataUnit.hpp>
+#include <operations/common//DataTypes.h>
+#include "FrameBuffer.hpp"
+
+using namespace operations::dataunits::axis;
 
 namespace operations {
     namespace dataunits {
@@ -95,6 +114,9 @@ namespace operations {
  * DENSITY              0  00  000  00  000111  00
  * PARTICLE VELOCITY    0  00  000  00  001000  00
  * PRESSURE             0  00  000  00  001001  00
+ * GB_VEL_RMS           0  00  000  00  001010  00
+ * GB_VEL_AVG           0  00  000  00  001011  00
+ * GB_TIME_AVG          0  00  000  00  001100  00
 */
 
 /**
@@ -102,23 +124,26 @@ namespace operations {
  * Never add definitions to your concrete implementations
  * with the same names.
  */
-#define WIND       0b1000000000000000
-#define WAVE       0b0010000000000000
-#define PARM       0b0100000000000000
-#define CURR       0b0000010000000000
-#define PREV       0b0000100000000000
-#define NEXT       0b0000110000000000
-#define DIR_Z      0b0000000000000000
-#define DIR_X      0b0000000100000000
-#define DIR_Y      0b0000001000000000
-#define GB_VEL     0b0000000000000100
-#define GB_DLT     0b0000000000001000
-#define GB_EPS     0b0000000000001100
-#define GB_THT     0b0000000000010000
-#define GB_PHI     0b0000000000010100
-#define GB_DEN     0b0000000000011100
-#define GB_PRTC    0b0000000000100000
-#define GB_PRSS    0b0000000000100100
+#define WIND            0b1000000000000000
+#define WAVE            0b0010000000000000
+#define PARM            0b0100000000000000
+#define CURR            0b0000010000000000
+#define PREV            0b0000100000000000
+#define NEXT            0b0000110000000000
+#define DIR_Z           0b0000000000000000
+#define DIR_X           0b0000000100000000
+#define DIR_Y           0b0000001000000000
+#define GB_VEL          0b0000000000000100
+#define GB_DLT          0b0000000000001000
+#define GB_EPS          0b0000000000001100
+#define GB_THT          0b0000000000010000
+#define GB_PHI          0b0000000000010100
+#define GB_DEN          0b0000000000011100
+#define GB_PRTC         0b0000000000100000
+#define GB_PRSS         0b0000000000100100
+#define GB_VEL_RMS      0b0000000000101000
+#define GB_VEL_AVG      0b0000000000101100
+#define GB_TIME_AVG     0b0000000000110000
 
         /**
          * @brief
@@ -148,7 +173,7 @@ namespace operations {
 
             /**
              * @brief DT setter.
-             * @throw IllogicalException()
+             * @throw ILLOGICAL_EXCEPTION()
              */
             void SetDT(float _dt);
 
@@ -161,7 +186,7 @@ namespace operations {
 
             /**
              * @brief NT setter.
-             * @throw IllogicalException()
+             * @throw ILLOGICAL_EXCEPTION()
              */
             void SetNT(float _nt);
 
@@ -171,91 +196,6 @@ namespace operations {
             inline uint GetNT() const {
                 return this->mNT;
             }
-
-            /**
-             * @brief Reference point per axe getter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
-             */
-            void SetReferencePoint(uint axis, float val);
-
-            /**
-             * @brief Reference point per axe setter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             * @throw IllogicalException()
-             */
-            float GetReferencePoint(uint axis);
-
-            /**
-             * @brief ReferencePoint struct getter.
-             * @return[out] FPoint3D   Value
-             */
-            inline FPoint3D *GetReferencePoint() {
-                return this->mpReferencePoint;
-            }
-
-            /**
-             * @brief Cell dimension per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
-             */
-            void SetCellDimensions(uint axis, float val);
-
-            /**
-             * @brief Cell dimension per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            float GetCellDimensions(uint axis);
-
-            /**
-             * @brief Initial Cell dimension per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
-             */
-            void SetInitialCellDimensions(uint axis, float val);
-
-            /**
-             * @brief Initial Cell dimension per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            float GetInitialCellDimensions(uint axis);
-
-            /**
-             * @brief CellDimensions struct getter.
-             * @return[out] CellDimensions   Value
-             */
-            inline CellDimensions *GetCellDimensions() {
-                return this->mpCellDimensions;
-            }
-
-            /**
-             * @brief CellDimensions struct getter for initial dimensions.
-             * @return[out] CellDimensions   Value
-             */
-            inline CellDimensions *GetInitialCellDimensions() {
-                return this->mpInitialCellDimensions;
-            }
-
-            /**
-             * @brief WindowProperties -> size per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
-             */
-            void SetActualWindowSize(uint axis, uint val);
-
-            /**
-             * @brief WindowProperties -> size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            uint GetActualWindowSize(uint axis);
 
             /**
              * @brief WindowProperties struct getter.
@@ -269,7 +209,7 @@ namespace operations {
              * @brief Window start per axe setter.
              * @param[in] axis      Axe direction
              * @param[in] val       Value to be set
-             * @throw IllogicalException()
+             * @throw ILLOGICAL_EXCEPTION()
              */
             void SetWindowStart(uint axis, uint val);
 
@@ -288,117 +228,51 @@ namespace operations {
             }
 
             /**
-             * @brief Grid size per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
+             * @brief Initial Size Setter
+             * @param[in] ptr_parameter_axis3D             Allocated parameter pointer
              */
-            void SetActualGridSize(uint axis, uint val);
-
-            /**
-             * @brief Grid size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            uint GetActualGridSize(uint axis);
-
-            /**
-             * @brief Grid size struct getter.
-             * @return[out] GridSize   Value
-             */
-            inline GridSize *GetActualGridSize() {
-                return this->mpActualGridSize;
+            inline void SetInitialAxis(Axis3D<unsigned int> *apInitialAxis) {
+                this->mpInitialAxis = apInitialAxis;
             }
 
             /**
-             * @brief Grid size per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
+             * @brief Initial Axis getter.
+             * @return[out] Axis3D   Value
              */
-            void SetLogicalGridSize(uint axis, uint val);
-
-            /**
-             * @brief Grid size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            uint GetLogicalGridSize(uint axis);
-
-            /**
-             * @brief Grid size struct getter.
-             * @return[out] GridSize   Value
-             */
-            inline GridSize *GetLogicalGridSize() {
-                return this->mpLogicalGridSize;
+            inline Axis3D<unsigned int> *GetInitialAxis() {
+                return this->mpInitialAxis;
             }
 
             /**
-             * @brief Grid size per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
+             * @brief After Sampling Axis Setter
+             * @param[in] ptr_parameter_axis3D             Allocated parameter pointer
              */
-            void SetComputationGridSize(uint axis, uint val);
-
-            /**
-             * @brief Grid size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            uint GetComputationGridSize(uint axis);
-
-            /**
-             * @brief Grid size struct getter.
-             * @return[out] GridSize   Value
-             */
-            inline GridSize *GetComputationGridSize() {
-                return this->mpComputationGridSize;
+            inline void SetAfterSamplingAxis(Axis3D<unsigned int> *apAfterSamplingAxis) {
+                this->mpAfterSamplingAxis = apAfterSamplingAxis;
             }
 
             /**
-             * @brief Logical Window size per axe setter.
-             * @param[in] axis      Axe direction
-             * @param[in] val       Value to be set
-             * @throw IllogicalException()
+             * @brief After Sampling Axis getter.
+             * @return[out] Axis3D   Value
              */
-            void SetLogicalWindowSize(uint axis, uint val);
-
-            /**
-             * @brief Logical Window size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
-             */
-            uint GetLogicalWindowSize(uint axis);
-
-            /**
-             * @brief Logical Window size struct getter.
-             * @return[out] GridSize   Value
-             */
-            inline GridSize *GetLogicalWindowSize() {
-                return this->mpLogicalWindowSize;
+            inline Axis3D<unsigned int> *GetAfterSamplingAxis() {
+                return this->mpAfterSamplingAxis;
             }
 
             /**
-             * @brief Initial Grid size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
+             * @brief Window Size Setter
+             * @param[in] ptr_parameter_axis3D             Allocated parameter pointer
              */
-            void SetInitialGridSize(uint axis, uint val);
+            inline void SetWindowAxis(Axis3D<unsigned int> *apWindowAxis) {
+                this->mpWindowAxis = apWindowAxis;
+            }
 
             /**
-             * @brief Initial Grid size per axe getter.
-             * @param[in] axis      Axe direction
-             * @return[out] value   Value
+             * @brief Window size getter.
+             * @return[out] Axis3D   Value
              */
-            uint GetInitialGridSize(uint axis);
-
-            /**
-             * @brief Initial Grid size struct getter.
-             * @return[out] GridSize   Value
-             */
-            inline GridSize *GetInitialGridSize() {
-                return this->mpInitialGridSize;
+            inline Axis3D<unsigned int> *GetWindowAxis() {
+                return this->mpWindowAxis;
             }
 
             /**
@@ -460,7 +334,7 @@ namespace operations {
              * @brief WaveField/Parameter/WindowParameter getter.
              * @param[in] key           Key
              * @return[out] float *      (Parameter | Wave field | Window Parameter) pointer
-             * @throw NotFoundException()
+             * @throw NO_KEY_FOUND_EXCEPTION()
              */
             FrameBuffer<float> *Get(u_int16_t key);
 
@@ -468,7 +342,7 @@ namespace operations {
              * @brief WaveField/Parameter/WindowParameter setter.
              * @param[in] key       Key
              * @param[in] val       FrameBuffer
-             * @throw NotFoundException()
+             * @throw NO_KEY_FOUND_EXCEPTION()
              */
             void Set(u_int16_t key, FrameBuffer<float> *val);
 
@@ -476,7 +350,7 @@ namespace operations {
              * @brief WaveField/Parameter/WindowParameter setter.
              * @param[in] key       Key
              * @param[in] val       float pointer
-             * @throw NotFoundException()
+             * @throw NO_KEY_FOUND_EXCEPTION()
              */
             void Set(u_int16_t key, float *val);
 
@@ -491,7 +365,7 @@ namespace operations {
              * @brief Swaps two pointers with respect to the provided keys.
              * @param[in] _src
              * @param[in] _dst
-             * @throw NotFoundException()
+             * @throw NO_KEY_FOUND_EXCEPTION()
              */
             void Swap(u_int16_t _src, u_int16_t _dst);
 
@@ -547,6 +421,31 @@ namespace operations {
              *
              */
             bool Has(u_int16_t key);
+
+            /**
+             * @brief
+             * Set the gather for the parameter header values, to an appropriate to
+             * utilize to get the appropriate headers.
+             *
+             * @param[in] apParameterHeaderGather
+             * A provided header gather.
+             */
+            void SetParameterGatherHeader(bs::io::dataunits::Gather *apParameterHeaderGather) {
+                this->mpParameterHeadersGather = apParameterHeaderGather;
+            }
+
+            /**
+             * @brief
+             * Return the gather containing the appropriate headers
+             * for any parameter field.
+             *
+             * @return
+             * Pointer to gather containing all the needed headers
+             * for a parameter field.
+             */
+            bs::io::dataunits::Gather *GetParameterGatherHeader() {
+                return this->mpParameterHeadersGather;
+            }
 
         public:
             /**
@@ -610,28 +509,22 @@ namespace operations {
             std::map<u_int16_t, FrameBuffer<float> *> mWindowParameters;
             /// Window Parameters map
             std::map<u_int16_t, FrameBuffer<float> *> mWaveFields;
-            /// Size of the logical grid.
-            GridSize *mpLogicalGridSize;
-            /// Size of the actual grid.
-            GridSize *mpActualGridSize;
-            /// Initial size of the grid according to the SEGY model.
-            GridSize *mpInitialGridSize;
-            /// Actual window size and window start.
+            /// Initial Size
+            Axis3D<unsigned int> *mpInitialAxis;
+            /// Size of the After Sampling
+            Axis3D<unsigned int> *mpAfterSamplingAxis;
+            /// Size of the Window
+            Axis3D<unsigned int> *mpWindowAxis;
+            /// WindowProperties
             WindowProperties *mpWindowProperties;
-            /// Size of the computation grid.
-            GridSize *mpComputationGridSize;
-            /// Logical window size.
-            GridSize *mpLogicalWindowSize;
-            /// Step sizes of the grid.
-            CellDimensions *mpCellDimensions;
-            /// Initial step sizes of the grid according to the SEGY model.
-            CellDimensions *mpInitialCellDimensions;
+
             /// Time-step size.
             float mDT;
             /// Number of time steps.
             uint mNT;
-            /// Reference point of the model in real coordinate distance.
-            FPoint3D *mpReferencePoint;
+
+            /// Parameter headers(Used to restate the headers of any parameter field).
+            bs::io::dataunits::Gather *mpParameterHeadersGather;
         };
     } //namespace dataunits
 } //namespace operations

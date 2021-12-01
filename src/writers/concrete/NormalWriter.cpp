@@ -1,36 +1,35 @@
-//
-// Created by zeyad-osama on 02/09/2020.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <stbx/writers/concrete/NormalWriter.hpp>
-
-#define EPSILON 1e-20 // very small number to protect from division by zero
 
 using namespace std;
 using namespace stbx::writers;
 using namespace operations::utils::filters;
 using namespace operations::utils::io;
 
-void NormalWriter::SpecifyRawMigration() {
-
+void
+NormalWriter::SpecifyRawMigration() {
     mRawMigration = mpMigrationData->GetResultAt(0)->GetData();
 }
 
-void NormalWriter::PostProcess() {
-    auto migration_results = this->mpMigrationData->GetResults();
+void
+NormalWriter::PostProcess() {
 
-    if (migration_results.size() != 1) { // combined compensation
-
-        int model_size = mpMigrationData->GetGridSize(X_AXIS) *
-                         mpMigrationData->GetGridSize(Y_AXIS) *
-                         mpMigrationData->GetGridSize(Z_AXIS);
-
-        float *source_illumination = mpMigrationData->GetResultAt(1)->GetData();
-        float *receiver_illumination = mpMigrationData->GetResultAt(2)->GetData();
-
-
-        for (int idx = 0; idx < model_size; idx++) {
-            mRawMigration[idx] = mRawMigration[idx] / (source_illumination[idx] * receiver_illumination[idx] + EPSILON);
-        }
-    }
 }

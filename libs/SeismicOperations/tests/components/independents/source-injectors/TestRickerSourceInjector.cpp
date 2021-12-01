@@ -1,9 +1,25 @@
-//
-// Created by marwan-elsafty on 25/01/2021.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
@@ -12,14 +28,12 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <libraries/catch/catch.hpp>
 
 using namespace std;
-using namespace operations;
+using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 
 
@@ -46,14 +60,13 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_TI(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
-
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
 
@@ -104,20 +117,20 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_TI(GridBox *apGridBox,
     ricker_source_injector->SetSourcePoint(source_point);
 
     SECTION("GetCutOffTimeStep") {
-        uint cut_off_frequency = (2.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
+        uint cut_off_frequency = (1.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
         REQUIRE(ricker_source_injector->GetCutOffTimeStep() == Approx(cut_off_frequency));
     }
 
     SECTION("ApplySource") {
         // Calculated by hand with time step=1 & dt=1 & source frequency=20
-        float ricker = 9.692515862e-4;
+        float ricker = 1;
         ricker = ricker * velocity->GetHostPointer()[location];
         float ground_truth_horizontal =
                 pressure_curr_horizontal->GetHostPointer()[location] + ricker;
         float ground_truth_vertical =
                 pressure_curr_vertical->GetHostPointer()[location] + ricker;
 
-        uint time_step = 1;
+        uint time_step = 0;
         ricker_source_injector->ApplySource(time_step);
 
         float pressure_after_ricker_horizontal = apGridBox->Get(
@@ -149,14 +162,14 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(GridBox *apGridBox,
     int nx, ny, nz;
     int wnx, wnz, wny;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
 
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
 
@@ -189,30 +202,22 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(GridBox *apGridBox,
     auto source_point = new Point3D(0, 0, 0);
     uint location = 0;
 
-#if defined(USING_CUDA)
-    uint x = source_point->x;
-    uint y = source_point->y;
-    uint z = source_point->z;
-
-    location = y * wnx * wnz + z * wnx + x;
-#endif
-
     ricker_source_injector->SetGridBox(apGridBox);
     ricker_source_injector->SetComputationParameters(apParameters);
     ricker_source_injector->SetSourcePoint(source_point);
 
     SECTION("GetCutOffTimeStep") {
-        uint cut_off_frequency = (2.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
+        uint cut_off_frequency = (1.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
         REQUIRE(ricker_source_injector->GetCutOffTimeStep() == Approx(cut_off_frequency));
     }
 
     SECTION("ApplySource") {
         // Calculated by hand with time step=1 & dt=1 & source frequency=20
-        float ricker = 9.692515862e-4;
+        float ricker = 1;
         ricker = ricker * velocity->GetHostPointer()[location];
         float ground_truth = pressure_curr->GetHostPointer()[location] + ricker;
 
-        uint time_step = 1;
+        uint time_step = 0;
         ricker_source_injector->ApplySource(time_step);
         float pressure_after_ricker =
                 apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetHostPointer()[location];
@@ -231,12 +236,7 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR(GridBox *apGridBox,
 
     if (apParameters->GetApproximation() == ISOTROPIC) {
         TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(apGridBox, apParameters, apConfigurationMap);
-    } else if (apParameters->GetApproximation() == VTI ||
-               apParameters->GetApproximation() == TTI) {
-#ifdef USING_OMP
-        TEST_CASE_RICKER_SOURCE_INJECTOR_TI(apGridBox, apParameters, apConfigurationMap);
-#endif
-    }
+    } 
 }
 
 /*

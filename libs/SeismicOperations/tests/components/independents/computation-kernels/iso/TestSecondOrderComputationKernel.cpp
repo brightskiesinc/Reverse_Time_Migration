@@ -1,9 +1,29 @@
-//
-// Created by ingy on 1/31/21.
-//
+/**
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of SeismicToolbox.
+ *
+ * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SeismicToolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <limits>
+
+#include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/api/cpp/BSBase.hpp>
 
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
@@ -11,18 +31,12 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <memory-manager/MemoryManager.h>
-
-#include <libraries/catch/catch.hpp>
-
-#include <limits>
-
 using namespace std;
-using namespace operations;
+using namespace bs::base::configurations;
+using namespace bs::base::memory;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace operations::configuration;
 using namespace operations::testutils;
 
 
@@ -51,14 +65,13 @@ void TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(GridBox *apGridBox,
     int wnx, wnz, wny;
     int start_y, end_y;
 
-    nx = apGridBox->GetActualGridSize(X_AXIS);
-    ny = apGridBox->GetActualGridSize(Y_AXIS);
-    nz = apGridBox->GetActualGridSize(Z_AXIS);
+    nx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    ny = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
+    nz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-
-    wnx = apGridBox->GetActualWindowSize(X_AXIS);
-    wny = apGridBox->GetActualWindowSize(Y_AXIS);
-    wnz = apGridBox->GetActualWindowSize(Z_AXIS);
+    wnx = apGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    wny = apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+    wnz = apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
@@ -95,6 +108,7 @@ void TEST_CASE_SECOND_ORDER_COMPUTATION_KERNEL(GridBox *apGridBox,
     auto computation_kernel = new SecondOrderComputationKernel(apConfigurationMap);
     computation_kernel->SetGridBox(apGridBox);
     computation_kernel->SetComputationParameters(apParameters);
+    computation_kernel->SetMode(operations::components::KERNEL_MODE::FORWARD);
 
     /*
      * Source injection.

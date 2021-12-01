@@ -1,5 +1,27 @@
 #!/bin/bash
 
+#==============================================================================
+echo \
+ "
+ * Copyright (C) 2021 by Brightskies inc
+ *
+ * This file is part of Seismic Toolbox.
+ *
+ * Seismic Toolbox is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Seismic Toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
+ "
+#==============================================================================
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -111,9 +133,9 @@ while getopts ":c:d:w:C:b:ghvimrtex" opt; do
     elif [ "$TECH" == "DPC" ] || [ "$TECH" == "dpc" ]; then
       echo -e "${GREEN}Using DPC++ technology for backend"
       TECH="dpc"
-    elif [ "$TECH" == "OMP_OFFLOAD" ] || [ "$TECH" == "omp_offload" ]; then
+    elif [ "$TECH" == "OMP_OFFLOAD" ] || [ "$TECH" == "omp-offload" ]; then
       echo -e "${GREEN}Using omp offload technology"
-      TECH="omp_offload"
+      TECH="omp-offload"
 
     else
       echo -e "${RED}Invalid technology argument for backend"
@@ -144,7 +166,7 @@ while getopts ":c:d:w:C:b:ghvimrtex" opt; do
     echo ""
     printf "%20s %s\n" "-v | --verbose :" "to print the output of make with details (if not set it will build without details)"
     echo ""
-    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | cuda"
+    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | omp-offload"
     printf "%20s %s\n" "" "default tech = omp"
     echo ""
     printf "%20s %s\n" "-t | --test :" "Enables building tests."
@@ -226,19 +248,19 @@ fi
 
 if [ "$TECH" == "omp" ]; then
   USE_DPC="OFF"
-  USE_OpenMp="ON"
-  USE_OMP_Offload="OFF"
+  USE_OMP="ON"
+  USE_OMP_OFFLOAD="OFF"
 elif [ "$TECH" == "dpc" ]; then
   USE_DPC="ON"
-  USE_OpenMp="OFF"
-  USE_OMP_Offload="OFF"
-elif [ "$TECH" == "omp_offload" ]; then
+  USE_OMP="OFF"
+  USE_OMP_OFFLOAD="OFF"
+elif [ "$TECH" == "omp-offload" ]; then
   USE_DPC="OFF"
-  USE_OpenMp="OFF"
-  USE_OMP_Offload="ON"
+  USE_OMP="OFF"
+  USE_OMP_OFFLOAD="ON"
 fi
 
-if [ "$USE_OpenMp" == "ON" ]; then
+if [ "$USE_OMP" == "ON" ]; then
   if [ -z "$BUILD_TYPE" ]; then
     BUILD_TYPE="DEBUG"
     echo -e "${GREEN}Building in $BUILD_TYPE mode${NC}"
@@ -264,34 +286,14 @@ elif [ "$USE_DPC" == "ON" ]; then
   echo -e "${YELLOW}Overriding--Building in NOMODE mode${NC}"
   echo -e "${YELLOW}Overriding--Using dpcpp compiler${NC}"
   BUILD_TYPE="NOMODE"
-  CXX_FLAGS="-O3 -std=c++17"
-elif [ "$USE_CUDA" == "ON" ]; then
-  if [ -z "$BUILD_TYPE" ]; then
-    BUILD_TYPE="DEBUG"
-    echo -e "${GREEN}Building in $BUILD_TYPE mode${NC}"
-  fi
-  if [ -z "$USE_INTEL" ]; then
-    echo -e "${GREEN}Using icc/icpc compilers${NC}"
-    USE_INTEL="YES"
-  fi
-  if [ "$BUILD_TYPE" == "DEBUG" ]; then
-    if [ "$USE_INTEL" == "YES" ]; then
-      CXX_FLAGS="-std=c++17 -xHost -g -debug -O3 -fp-model fast=2 -no-prec-div -fma -qopt-assume-safe-padding -qopt-report=4"
-    else
-      CXX_FLAGS="-g -ftree-vectorize -O3 -fopt-info-vec-optimized"
-    fi
-  else
-    if [ "$USE_INTEL" == "YES" ]; then
-      CXX_FLAGS="-std=c++17 -xHost -O3 -fp-model fast=2 -no-prec-div -fma -qopt-assume-safe-padding -qopt-report=4"
-    else
-      CXX_FLAGS="-ftree-vectorize -O3 -fopt-info-vec-optimized"
-    fi
-  fi
-elif [ "$USE_OMP_Offload" == "ON" ]; then
+  CXX_FLAGS="-O3 -fsycl -std=c++17"
+elif [ "$USE_OMP_OFFLOAD" == "ON" ]; then
+  echo -e "${YELLOW}Overriding--Building in NOMODE mode${NC}"
   echo -e "${YELLOW}Overriding--Using Omp_offload compiler${NC}"
   BUILD_TYPE="NOMODE"
   CXX_FLAGS="-fiopenmp -std=c++17 -fopenmp-targets=spir64 -O3 -D__STRICT_ANSI__"
 else
+
   echo -e "${RED}No technology selected...${NC}"
 fi
 
@@ -305,9 +307,9 @@ cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DBUILD_TESTS=$BUILD_TESTS \
   -DBUILD_EXAMPLES=$BUILD_EXAMPLES \
   -DBUILD_TOOLS=$BUILD_TOOLS \
-  -DUSE_OpenMp=$USE_OpenMp \
+  -DUSE_OMP=$USE_OMP \
   -DUSE_DPC=$USE_DPC \
-  -DUSE_OMP_Offload=$USE_OMP_Offload \
+  -DUSE_OMP_OFFLOAD=$USE_OMP_OFFLOAD\
   -DUSE_OpenCV=$USE_OpenCV \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=$VERBOSE \
   -DDATA_PATH=$DATA_PATH \
