@@ -32,18 +32,18 @@ namespace operations {
              * @brief generates a random value based on the values of bound_l and x between 0 and 1
              * 
              */
-            #define GET_RANDOM_VALUE(bound_l, x) ((float) rand() / RAND_MAX) * ((float) (bound_l - (x)) / bound_l)
+#define GET_RANDOM_VALUE(bound_l, x) ((float) rand() / RAND_MAX) * ((float) (bound_l - (x)) / bound_l)
             /**
              * @brief generates a random float number between 0 and 1
              * 
              */
-            #define RANDOM_VALUE (float) rand() / RAND_MAX
+#define RANDOM_VALUE (float) rand() / RAND_MAX
 
             class RandomExtension : public Extension {
 
             public:
                 RandomExtension(int aGrainSideLength) :
-                    mGrainSideLength(aGrainSideLength) {}
+                        mGrainSideLength(aGrainSideLength) {}
 
             private:
                 void VelocityExtensionHelper(float *apPropertyArray,

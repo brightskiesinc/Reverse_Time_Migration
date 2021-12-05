@@ -124,7 +124,7 @@ void RandomizeV(float *apRandom, Point3D *apSeedsV, int aStrideX, int aStrideZ, 
  * @param aBoundaryLength   length of the boundaries
  */
 void SetRandom(float *apArrayX, float *apArrayZ, int aStartX, int aEndX, int aStartZ, int aEndZ, int aNx, int aNz,
-                int aBoundaryLength) {
+               int aBoundaryLength) {
 
     int index = 0;
 
@@ -190,7 +190,6 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
     // finding the gpu device 
     int device_num = omp_get_default_device();
     int host_num = omp_get_initial_device();
-
 
 
     if (is_device_not_exist()) {
@@ -391,7 +390,7 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
 
 
     RandomizeV(random, seeds_v_h, stride_x, stride_z, aStartX, aEndX, aStartZ, aEndZ, aNx, aBoundaryLength,
-                max_velocity);
+               max_velocity);
     SetRandomV(arr_x_h, arr_z_h, aStartX, aEndX, aStartZ, aEndZ, aNx, aNz, aBoundaryLength);
 
     omp_target_memcpy(seeds_v, seeds_v_h, v_allocated_bytes, 0, 0, device_num, host_num);

@@ -263,7 +263,8 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(computationParameters->GetBlockY() == 1);
         REQUIRE(computationParameters->GetBlockZ() == 16);
 
-    }SECTION("GenerateRTMConfiguration Function Testing") {
+    }
+    SECTION("GenerateRTMConfiguration Function Testing") {
         RTMEngineConfigurations *configuration = generator->GenerateRTMConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ComputationKernel>(configuration->GetComputationKernel()));

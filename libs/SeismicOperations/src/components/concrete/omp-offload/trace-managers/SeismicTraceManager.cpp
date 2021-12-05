@@ -78,6 +78,6 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
         int offset = pos_y[i] * wnz_wnx + std_offset + pos_x[i];
 
         ApplyOnPressure(offset, trace_offset, pressure, velocity, traces);
-        
+
     }
 }

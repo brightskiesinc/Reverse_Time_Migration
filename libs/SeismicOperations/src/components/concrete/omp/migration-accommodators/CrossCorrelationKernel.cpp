@@ -48,9 +48,8 @@ template void CrossCorrelationKernel::Stack<true, COMBINED_COMPENSATION>();
 
 template void CrossCorrelationKernel::Stack<false, COMBINED_COMPENSATION>();
 
-template <bool _IS_2D, COMPENSATION_TYPE _COMPENSATION_TYPE>
-void CrossCorrelationKernel::Correlation(GridBox *apGridBox)
-{
+template<bool _IS_2D, COMPENSATION_TYPE _COMPENSATION_TYPE>
+void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
 
     GridBox *source_gridbox = apGridBox;
     GridBox *receiver_gridbox = this->mpGridBox;
@@ -80,8 +79,7 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox)
     int size = (wnx - 2 * offset) * (wnz - 2 * offset);
     int flops_per_second = 3 * offset;
 
-    if (_COMPENSATION_TYPE == COMBINED_COMPENSATION)
-    {
+    if (_COMPENSATION_TYPE == COMBINED_COMPENSATION) {
         flops_per_second = 9 * offset;
     }
 
@@ -96,16 +94,13 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox)
         const uint block_z = mpParameters->GetBlockZ();
 
 #pragma omp for schedule(static, 1) collapse(2)
-        for (int bz = offset; bz < nzEnd; bz += block_z)
-        {
-            for (int bx = offset; bx < nxEnd; bx += block_x)
-            {
+        for (int bz = offset; bz < nzEnd; bz += block_z) {
+            for (int bx = offset; bx < nxEnd; bx += block_x) {
 
                 int izEnd = fmin(bz + block_z, nzEnd);
                 int ixEnd = fmin(block_x, nxEnd - bx);
 
-                for (int iz = bz; iz < izEnd; ++iz)
-                {
+                for (int iz = bz; iz < izEnd; ++iz) {
                     uint b_offset = iz * wnx + bx;
                     src_ptr = source_base + b_offset;
                     rec_ptr = receiver_base + b_offset;
@@ -115,14 +110,12 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox)
 
 #pragma vector aligned
 #pragma ivdep
-                    for (int ix = 0; ix < ixEnd; ix++)
-                    {
+                    for (int ix = 0; ix < ixEnd; ix++) {
                         float value;
 
                         value = src_ptr[ix] * rec_ptr[ix];
                         correlation_output[ix] += value;
-                        if (_COMPENSATION_TYPE == COMBINED_COMPENSATION)
-                        {
+                        if (_COMPENSATION_TYPE == COMBINED_COMPENSATION) {
                             source_i[ix] += src_ptr[ix] * src_ptr[ix];
                             receive_i[ix] += rec_ptr[ix] * rec_ptr[ix];
                         }
@@ -134,9 +127,8 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox)
     timer.Stop();
 }
 
-template <bool _IS_2D, COMPENSATION_TYPE _COMPENSATION_TYPE>
-void CrossCorrelationKernel::Stack()
-{
+template<bool _IS_2D, COMPENSATION_TYPE _COMPENSATION_TYPE>
+void CrossCorrelationKernel::Stack() {
 
     int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
@@ -164,8 +156,7 @@ void CrossCorrelationKernel::Stack()
 
     int size = (wnx - 2 * offset) * (wnz - 2 * offset);
     int flops_per_second = 2 * offset;
-    if (_COMPENSATION_TYPE == COMBINED_COMPENSATION)
-    {
+    if (_COMPENSATION_TYPE == COMBINED_COMPENSATION) {
         flops_per_second = 6 * offset;
     }
 
@@ -177,16 +168,13 @@ void CrossCorrelationKernel::Stack()
     timer.Start();
 #pragma omp parallel for schedule(static, 1) collapse(2)
 
-    for (int bz = offset; bz < z_end; bz += block_z)
-    {
-        for (int bx = offset; bx < x_end; bx += block_x)
-        {
+    for (int bz = offset; bz < z_end; bz += block_z) {
+        for (int bx = offset; bx < x_end; bx += block_x) {
 
             int izEnd = fmin(bz + block_z, z_end);
             int ixEnd = fmin(bx + block_x, x_end);
 
-            for (int iz = bz; iz < izEnd; iz++)
-            {
+            for (int iz = bz; iz < izEnd; iz++) {
                 uint offset_window = iz * wnx;
                 uint offset = iz * nx;
 
@@ -198,14 +186,10 @@ void CrossCorrelationKernel::Stack()
                 input_rcv = in_rcv + offset_window;
 #pragma ivdep
 #pragma vector aligned
-                for (int ix = bx; ix < ixEnd; ix++)
-                {
-                    if constexpr (_COMPENSATION_TYPE == COMBINED_COMPENSATION)
-                    {
+                for (int ix = bx; ix < ixEnd; ix++) {
+                    if constexpr (_COMPENSATION_TYPE == COMBINED_COMPENSATION) {
                         output[ix] += (input[ix] / (sqrtf(input_src[ix] * input_rcv[ix]) + EPSILON));
-                    }
-                    else
-                    {
+                    } else {
                         output[ix] += input[ix];
                     }
                 }

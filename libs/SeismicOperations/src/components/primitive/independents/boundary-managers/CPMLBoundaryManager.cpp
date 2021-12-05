@@ -167,9 +167,9 @@ void CPMLBoundaryManager::FillCPMLCoefficients() {
 
 template<int HALF_LENGTH_>
 void CPMLBoundaryManager::ApplyAllCPML() {
-    
+
     int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
-    
+
     CalculateFirstAuxiliary<X_AXIS, true, HALF_LENGTH_>();
     CalculateFirstAuxiliary<Z_AXIS, true, HALF_LENGTH_>();
     CalculateFirstAuxiliary<X_AXIS, false, HALF_LENGTH_>();

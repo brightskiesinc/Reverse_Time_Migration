@@ -102,7 +102,6 @@ generate_parameters(json &map) {
     use_window = w.use_window;
 
 
-
     if (order == -1) {
         Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';
         Logger->Info() << "Using default stencil order of 8" << '\n';
@@ -190,8 +189,8 @@ generate_parameters(json &map) {
     parameters->SetApproximation(configurationsGenerator->GetApproximation());
     parameters->SetPhysics(configurationsGenerator->GetPhysics());
 
-        /// OMP
-  //  parameters->SetThreadCount(n_threads);
+    /// OMP
+    //  parameters->SetThreadCount(n_threads);
     parameters->SetBlockX(block_x);
     parameters->SetBlockZ(block_z);
     parameters->SetBlockY(block_y);

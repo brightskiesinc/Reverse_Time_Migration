@@ -263,7 +263,7 @@ StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue() {
     float *parameter_base;
 
     parameter_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
-    
+
     // Compute.
     int device_num = omp_get_device_num();
 
@@ -516,7 +516,7 @@ StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue() {
 
     float *parameter_base;
     parameter_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-    
+
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
 
     int device_num = omp_get_device_num();

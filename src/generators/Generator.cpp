@@ -182,9 +182,9 @@ Generator::GenerateWriter() {
     // use normal one (i.e. Should make it smarter by supporting stacking
     // option inside the writer if we have an output with gathers).
     if (!migration_accommodator_map.empty()) {
-            writer = new NormalWriter();
+        writer = new NormalWriter();
     } else if (!writer_map.empty()) {
-            writer = new NormalWriter();
+        writer = new NormalWriter();
     } else {
         writer = new NormalWriter();
     }

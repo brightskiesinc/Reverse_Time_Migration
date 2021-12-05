@@ -236,7 +236,7 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR(GridBox *apGridBox,
 
     if (apParameters->GetApproximation() == ISOTROPIC) {
         TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(apGridBox, apParameters, apConfigurationMap);
-    } 
+    }
 }
 
 /*

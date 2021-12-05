@@ -332,8 +332,6 @@ ComputationParameters *generate_parameters(json &map) {
     device_pattern = d.device_pattern;
 
 
-
-
     if (order == -1) {
         Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';
         Logger->Info() << "Using default stencil order of 8" << '\n';
@@ -430,7 +428,7 @@ ComputationParameters *generate_parameters(json &map) {
     parameters->SetEquationOrder(configurationsGenerator->GetEquationOrder());
     parameters->SetApproximation(configurationsGenerator->GetApproximation());
     parameters->SetPhysics(configurationsGenerator->GetPhysics());
-   
+
 
     /// OneAPI
     parameters->SetBlockX(block_x);

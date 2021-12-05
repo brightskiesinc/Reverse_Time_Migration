@@ -64,7 +64,6 @@ namespace stbx {
             int GetIsotropicCircle();
 
 
-
         private:
             nlohmann::json mMap;
         };

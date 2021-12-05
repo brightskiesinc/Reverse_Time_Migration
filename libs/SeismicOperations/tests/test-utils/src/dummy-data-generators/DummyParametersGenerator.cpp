@@ -66,7 +66,7 @@ generate_computation_parameters_no_wind(APPROXIMATION aApproximation) {
 
     int use_window = 0;
 
-    int grain_side_length = 10 ;
+    int grain_side_length = 10;
 
     auto computation_parameters = new ComputationParameters(half_length);
 
@@ -116,7 +116,7 @@ generate_computation_parameters_inc_wind(APPROXIMATION aApproximation) {
     int block_z = 1;
     int block_y = 1;
 
-    int grain_side_length = 10 ;
+    int grain_side_length = 10;
 
     int use_window = 1;
 
@@ -166,7 +166,7 @@ ComputationParameters *generate_average_case_parameters() {
 
     int use_window = 0;
 
-    int grain_side_length = 10 ;
+    int grain_side_length = 10;
 
 
     auto computation_parameters = new ComputationParameters(half_length);

@@ -222,19 +222,16 @@ RTMEngine::MigrateShots(uint shot_id, GridBox *apGridBox) {
     {
         ScopeTimer timer("ForwardCollector::ResetGrid(Backward)");
         this->mpConfiguration->GetForwardCollector()->ResetGrid(false);
-        cout << "bp0" << std::endl;
     }
     {
         ScopeTimer timer("BoundaryManager::AdjustModelForBackward");
         this->mpConfiguration->GetBoundaryManager()->AdjustModelForBackward();
-        cout << "bp1" << std::endl;
     }
 
 #ifndef NDEBUG
     this->mpCallbacks->BeforeBackwardPropagation(apGridBox);
 #endif
 
-    cout << "bp2" << std::endl;
     this->Backward(apGridBox);
 
 #ifndef NDEBUG
@@ -330,35 +327,30 @@ RTMEngine::Backward(GridBox *apGridBox) {
     auto logger = LoggerSystem::GetInstance();
     this->mpConfiguration->GetComputationKernel()->SetMode(
             components::KERNEL_MODE::ADJOINT);
-    //cerr << "bp3-0" << std::endl;
+
     uint onePercent = apGridBox->GetNT() / 100 + 1;
     for (uint it = apGridBox->GetNT() - 1; it > 0; it--) {
         {
             ScopeTimer timer("TraceManager::ApplyTraces");
             this->mpConfiguration->GetTraceManager()->ApplyTraces(it);
-            //cerr << "bp3-1" << std::endl;
         }
         {
             ScopeTimer timer("Backward::ComputationKernel::Step");
             this->mpConfiguration->GetComputationKernel()->Step();
-            //cerr << "bp3-2" << std::endl;
         }
         {
             ScopeTimer timer("ForwardCollector::FetchForward");
             this->mpConfiguration->GetForwardCollector()->FetchForward();
-            //cerr << "bp3-3" << std::endl;
         }
 #ifndef NDEBUG
         this->mpCallbacks->AfterFetchStep(
                 this->mpConfiguration->GetForwardCollector()->GetForwardGrid(), it);
         this->mpCallbacks->AfterBackwardStep(apGridBox, it);
-            //cerr << "bp3-4" << std::endl;
 #endif
         {
             ScopeTimer timer("Correlation::Correlate");
             this->mpConfiguration->GetMigrationAccommodator()->Correlate(
                     this->mpConfiguration->GetForwardCollector()->GetForwardGrid());
-            //cerr << "bp3-5" << std::endl;
         }
         if ((it % onePercent) == 0) {
             print_progress(((float) (apGridBox->GetNT() - it)) / apGridBox->GetNT(), "Backward Propagation");

@@ -247,7 +247,7 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue() {
     float *parameter_base;
 
     parameter_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
-    
+
 
     Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(x_end - x_start,
@@ -494,7 +494,7 @@ void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue() {
     float *parameter_base;
 
     parameter_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-    
+
 
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {

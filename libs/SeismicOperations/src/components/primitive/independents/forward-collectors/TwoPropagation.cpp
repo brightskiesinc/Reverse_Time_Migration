@@ -37,7 +37,7 @@ using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::compressors;
 
-static float* initial_internalGridbox_curr = nullptr;
+static float *initial_internalGridbox_curr = nullptr;
 
 TwoPropagation::TwoPropagation(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;

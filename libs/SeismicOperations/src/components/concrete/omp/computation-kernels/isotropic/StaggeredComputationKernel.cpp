@@ -35,9 +35,8 @@ FORWARD_DECLARE_COMPUTE_TEMPLATE(StaggeredComputationKernel, ComputePressure)
 
 FORWARD_DECLARE_COMPUTE_TEMPLATE(StaggeredComputationKernel, ComputeVelocity)
 
-template <KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
-void StaggeredComputationKernel::ComputeVelocity()
-{
+template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
+void StaggeredComputationKernel::ComputeVelocity() {
     /*
      * Read parameters into local variables to be shared.
      */
@@ -98,8 +97,7 @@ void StaggeredComputationKernel::ComputeVelocity()
 
     int vertical[HALF_LENGTH_];
 
-    for (int i = 0; i < HALF_LENGTH_; i++)
-    {
+    for (int i = 0; i < HALF_LENGTH_; i++) {
         coefficients_x[i] = coefficients[i + 1];
         coefficients_z[i] = coefficients[i + 1];
         vertical[i] = (i + 1) * wnx;
@@ -121,18 +119,15 @@ void StaggeredComputationKernel::ComputeVelocity()
 /// Three loops for cache blocking.
 /// Utilizing the cache to the maximum to speed up computation.
 #pragma omp for schedule(static, 1) collapse(1)
-        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z)
-        {
-            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x)
-            {
+        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z) {
+            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x) {
                 /// Calculate the endings appropriately
                 /// (Handle remainder of the cache blocking loops).
                 int ixEnd = min(block_x, nx_end - bx);
                 int izEnd = min(bz + block_z, nz_end);
 
                 /// Loop on the elements in the block.
-                for (int iz = bz; iz < izEnd; ++iz)
-                {
+                for (int iz = bz; iz < izEnd; ++iz) {
 
                     // Pre-compute in advance the pointer to the start of the current
                     // start point of the processing.
@@ -149,23 +144,19 @@ void StaggeredComputationKernel::ComputeVelocity()
 #pragma vector vecremainder
 #pragma omp simd
 #pragma ivdep
-                    for (int ix = 0; ix < ixEnd; ++ix)
-                    {
+                    for (int ix = 0; ix < ixEnd; ++ix) {
                         float value_x = 0;
                         float value_z = 0;
 
                         DERIVE_SEQ_AXIS(ix, 1, 0, -, prev, coefficients_x, value_x)
                         DERIVE_JUMP_AXIS(ix, wnx, 1, 0, -, prev, coefficients_z, value_z)
 
-                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE)
-                        {
+                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE) {
                             // 3 floating point operations
                             vel_x[ix] = vel_x[ix] - (den[ix] / dx) * value_x;
                             // 3 floating point operations
                             vel_z[ix] = vel_z[ix] - (den[ix] / dz) * value_z;
-                        }
-                        else
-                        {
+                        } else {
                             vel_x[ix] = vel_x[ix] + (den[ix] / dx) * value_x;
 
                             vel_z[ix] = vel_z[ix] + (den[ix] / dz) * value_z;
@@ -180,9 +171,8 @@ void StaggeredComputationKernel::ComputeVelocity()
     timer.Stop();
 }
 
-template <KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
-void StaggeredComputationKernel::ComputePressure()
-{
+template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
+void StaggeredComputationKernel::ComputePressure() {
     /*
      * Read parameters into local variables to be shared.
      */
@@ -233,8 +223,7 @@ void StaggeredComputationKernel::ComputePressure()
     float coefficients_z[HALF_LENGTH_];
 
     int vertical[HALF_LENGTH_];
-    for (int i = 0; i < HALF_LENGTH_; i++)
-    {
+    for (int i = 0; i < HALF_LENGTH_; i++) {
         coefficients_x[i] = coefficients[i + 1];
         coefficients_z[i] = coefficients[i + 1];
         vertical[i] = (i + 1) * wnx;
@@ -253,17 +242,14 @@ void StaggeredComputationKernel::ComputePressure()
         float *curr, *next, *den, *vel, *vel_x, *vel_z;
         // Pressure Calculation
 #pragma omp for schedule(static, 1) collapse(2)
-        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z)
-        {
-            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x)
-            {
+        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z) {
+            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x) {
                 // Calculate the endings appropriately (Handle remainder of the cache
                 // blocking loops).
                 int ixEnd = min(block_x, nx_end - bx);
                 int izEnd = min(bz + block_z, nz_end);
                 // Loop on the elements in the block.
-                for (int iz = bz; iz < izEnd; ++iz)
-                {
+                for (int iz = bz; iz < izEnd; ++iz) {
                     // Pre-compute in advance the pointer to the start of the current
                     // start point of the processing.
                     int offset = iz * wnx + bx;
@@ -278,24 +264,20 @@ void StaggeredComputationKernel::ComputePressure()
 #pragma vector vecremainder
 #pragma omp simd
 #pragma ivdep
-                    for (int ix = 0; ix < ixEnd; ++ix)
-                    {
+                    for (int ix = 0; ix < ixEnd; ++ix) {
                         float value_x = 0;
                         float value_z = 0;
 
                         DERIVE_SEQ_AXIS(ix, 0, 1, -, vel_x, coefficients_x, value_x)
                         DERIVE_JUMP_AXIS(ix, nx, 0, 1, -, vel_z, coefficients_z, value_z)
 
-                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE)
-                        {
+                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE) {
                             // 5 floating point operations
                             next[ix] =
-                                curr[ix] - vel[ix] * ((value_x / dx) + (value_z / dz));
-                        }
-                        else
-                        {
+                                    curr[ix] - vel[ix] * ((value_x / dx) + (value_z / dz));
+                        } else {
                             next[ix] =
-                                curr[ix] + vel[ix] * ((value_x / dx) + (value_z / dz));
+                                    curr[ix] + vel[ix] * ((value_x / dx) + (value_z / dz));
                         }
                     }
                 }
@@ -305,8 +287,7 @@ void StaggeredComputationKernel::ComputePressure()
     timer.Stop();
 }
 
-void StaggeredComputationKernel::PreprocessModel()
-{
+void StaggeredComputationKernel::PreprocessModel() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
@@ -322,16 +303,13 @@ void StaggeredComputationKernel::PreprocessModel()
 #pragma omp parallel default(shared)
     {
 #pragma omp for schedule(static) collapse(2)
-        for (int z = 0; z < nz; ++z)
-        {
-            for (int x = 0; x < nx; ++x)
-            {
+        for (int z = 0; z < nz; ++z) {
+            for (int x = 0; x < nx; ++x) {
                 float value = velocity_values[z * full_nx + x];
                 int offset = z * full_nx + x;
                 velocity_values[offset] =
-                    value * value * dt * density_values[offset];
-                if (density_values[offset] != 0)
-                {
+                        value * value * dt * density_values[offset];
+                if (density_values[offset] != 0) {
                     density_values[offset] = dt / density_values[offset];
                 }
             }

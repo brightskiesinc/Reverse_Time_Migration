@@ -27,16 +27,16 @@ using namespace operations::components::addons;
 using namespace operations::dataunits;
 using namespace bs::base::backend;
 
-void RandomExtension::VelocityExtensionHelper(float *apPropertyArray, 
-                                              int aStartX, int aStartY, int aStartZ, 
+void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
+                                              int aStartX, int aStartY, int aStartZ,
                                               int aEndX, int aEndY, int aEndZ,
-                                              int aNx, int aNy, int aNz, 
+                                              int aNx, int aNy, int aNz,
                                               uint aBoundaryLength) {
 
     /*
      * initialize values required for grain computing
      */
-    int dx = mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension(); 
+    int dx = mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
     int dy = mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension();
     int dz = mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
 
@@ -47,17 +47,17 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
 
     int stride_y = 0;
 
-    if(aNy != 1){
+    if (aNy != 1) {
         stride_y = grain_sidelength / dy;
     }
 
-	/**
-	 * copy to host memory
-	 */
-	int allocated_memory = aNx * aNy * aNz * sizeof(float);
-	float * property_array_host = (float *) malloc(allocated_memory);
+    /**
+     * copy to host memory
+     */
+    int allocated_memory = aNx * aNy * aNz * sizeof(float);
+    float *property_array_host = (float *) malloc(allocated_memory);
 
-	Device::MemCpy(property_array_host, apPropertyArray, allocated_memory);
+    Device::MemCpy(property_array_host, apPropertyArray, allocated_memory);
 
     /*
      * compute maximum value of the property
@@ -77,14 +77,14 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
 
     float temp = 0;
     for (int row = aStartZ + aBoundaryLength; row < aEndZ - aBoundaryLength; row += stride_z) {
-        for (int column = 0; column < aBoundaryLength ; column += stride_x) {
+        for (int column = 0; column < aBoundaryLength; column += stride_x) {
 
             int index = row * aNx + column + aStartX;
             temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
             property_array_host[index] = abs(property_array_host[row * aNx + aBoundaryLength + aStartX] - temp);
 
             seeds.push_back(Point3D(column + aStartX, 1, row));
-            
+
             index = row * aNx + (aEndX - column - 1);
             temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
             property_array_host[index] = abs(property_array_host[row * aNx + (aEndX - 1 - aBoundaryLength)] - temp);
@@ -108,34 +108,34 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
              * same check works for both left and right points
              */
             bool is_seed = false;
-            for(auto seed:seeds){
-                if(left_point == seed){
+            for (auto seed:seeds) {
+                if (left_point == seed) {
                     is_seed = true;
                     break;
                 }
             }
-            if(is_seed){
+            if (is_seed) {
                 continue; // this is a seed point, don't fill
             }
 
-            Point3D left_point_seed(0,0,0);
-            Point3D right_point_seed(0,0,0);
+            Point3D left_point_seed(0, 0, 0);
+            Point3D right_point_seed(0, 0, 0);
             /*
              * Get nearest seed
              */
 
-            for(auto seed:seeds){
-                if(
+            for (auto seed:seeds) {
+                if (
                         (seed.x <= left_point.x) && (seed.x + stride_x > left_point.x) &&
                         (seed.z <= left_point.z) && (seed.z + stride_z > left_point.z)
-                ){
+                        ) {
                     left_point_seed = seed;
                 }
 
-                if(
+                if (
                         (seed.x >= right_point.x) && (seed.x - stride_x < right_point.x) &&
                         (seed.z <= right_point.z) && (seed.z + stride_z > right_point.z)
-                ){
+                        ) {
                     right_point_seed = seed;
                 }
             }
@@ -149,16 +149,16 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
             float px = RANDOM_VALUE;
             float pz = RANDOM_VALUE;
 
-            float denom_x = (float)(left_point.x - left_point_seed.x)  / stride_x;
-            float denom_z = (float)(left_point.z - left_point_seed.z) / stride_z;
+            float denom_x = (float) (left_point.x - left_point_seed.x) / stride_x;
+            float denom_z = (float) (left_point.z - left_point_seed.z) / stride_z;
 
-            if((px <= denom_x) && (pz <= denom_z)){
+            if ((px <= denom_x) && (pz <= denom_z)) {
                 id_x = left_point_seed.x + stride_x;
                 id_z = left_point_seed.z + stride_z;
-            } else if ((px <= denom_x) && (pz > denom_z)){
+            } else if ((px <= denom_x) && (pz > denom_z)) {
                 id_x = left_point_seed.x + stride_x;
                 id_z = left_point_seed.z;
-            } else if ((px > denom_x) && (pz <= denom_z)){
+            } else if ((px > denom_x) && (pz <= denom_z)) {
                 id_x = left_point_seed.x;
                 id_z = left_point_seed.z + stride_z;
             } else {
@@ -178,19 +178,19 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
             px = RANDOM_VALUE;
             pz = RANDOM_VALUE;
 
-            denom_x = (float)(right_point_seed.x - right_point.x) / stride_x;
-            denom_z = (float)(right_point.z - right_point_seed.z) / stride_z;
+            denom_x = (float) (right_point_seed.x - right_point.x) / stride_x;
+            denom_z = (float) (right_point.z - right_point_seed.z) / stride_z;
 
-            if((px >= denom_x) && (pz <= denom_z)){
+            if ((px >= denom_x) && (pz <= denom_z)) {
                 id_x = right_point_seed.x;
                 id_z = right_point_seed.z + stride_z;
-            } else if ((px >= denom_x) && (pz > denom_z)){
+            } else if ((px >= denom_x) && (pz > denom_z)) {
                 id_x = right_point_seed.x;
                 id_z = right_point_seed.z;
-            } else if ((px < denom_x) && (pz <= denom_z)){
+            } else if ((px < denom_x) && (pz <= denom_z)) {
                 id_x = right_point_seed.x - stride_x;
                 id_z = right_point_seed.z + stride_z;
-            } else if ((px < denom_x) && (pz > denom_z)){
+            } else if ((px < denom_x) && (pz > denom_z)) {
                 id_x = right_point_seed.x - stride_x;
                 id_z = right_point_seed.z;
             }
@@ -230,8 +230,8 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
     /*
      * fill empty points
      */
-    for (int row = 0; row < aBoundaryLength; row ++) {
-        for (int column = aStartX; column < aEndX; column ++)  {
+    for (int row = 0; row < aBoundaryLength; row++) {
+        for (int column = aStartX; column < aEndX; column++) {
 
             Point3D bottom_point(column, 1, (aEndZ - row - 1));
 
@@ -239,26 +239,26 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
              * check if this point is a seed point
              */
             bool is_seed = false;
-            for(auto seed:seeds){
-                if(bottom_point == seed){
+            for (auto seed:seeds) {
+                if (bottom_point == seed) {
                     is_seed = true;
                     break;
                 }
             }
-            if(is_seed){
+            if (is_seed) {
                 continue; // this is a seed point, don't fill
             }
 
-            Point3D bottom_point_seed(0,0,0);
+            Point3D bottom_point_seed(0, 0, 0);
             /*
              * Get nearest seed
              */
 
-            for(auto seed:seeds){
-                if(
+            for (auto seed:seeds) {
+                if (
                         (seed.x <= bottom_point.x) && (seed.x + stride_x > bottom_point.x) &&
                         (seed.z >= bottom_point.z) && (seed.z - stride_z < bottom_point.z)
-                ){
+                        ) {
                     bottom_point_seed = seed;
                 }
             }
@@ -272,19 +272,19 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
             float px = RANDOM_VALUE;
             float pz = RANDOM_VALUE;
 
-            float denom_x = (float)(bottom_point.x - bottom_point_seed.x)  / stride_x;
-            float denom_z = (float)(bottom_point_seed.z - bottom_point.z) / stride_z;
+            float denom_x = (float) (bottom_point.x - bottom_point_seed.x) / stride_x;
+            float denom_z = (float) (bottom_point_seed.z - bottom_point.z) / stride_z;
 
-            if((px <= denom_x) && (pz >= denom_z)){
+            if ((px <= denom_x) && (pz >= denom_z)) {
                 id_x = bottom_point_seed.x + stride_x;
                 id_z = bottom_point_seed.z;
-            } else if ((px <= denom_x) && (pz < denom_z)){
+            } else if ((px <= denom_x) && (pz < denom_z)) {
                 id_x = bottom_point_seed.x + stride_x;
                 id_z = bottom_point_seed.z - stride_z;
-            } else if ((px > denom_x) && (pz >= denom_z)){
+            } else if ((px > denom_x) && (pz >= denom_z)) {
                 id_x = bottom_point_seed.x;
                 id_z = bottom_point_seed.z;
-            } else if ((px > denom_x) && (pz < denom_z)){
+            } else if ((px > denom_x) && (pz < denom_z)) {
                 id_x = bottom_point_seed.x;
                 id_z = bottom_point_seed.z - stride_z;
             }
@@ -296,15 +296,15 @@ void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
         }
     }
 
-	seeds.clear();
+    seeds.clear();
 
-	/**
-	 * reflect to device memory
-	 */
-	Device::MemCpy(apPropertyArray, property_array_host, allocated_memory);
+    /**
+     * reflect to device memory
+     */
+    Device::MemCpy(apPropertyArray, property_array_host, allocated_memory);
 }
 
-void 
+void
 RandomExtension::TopLayerExtensionHelper(float *apPropertyArray,
                                          int aStartX, int aStartY, int aStartZ,
                                          int aEndX, int aEndY, int aEndZ,
@@ -313,7 +313,7 @@ RandomExtension::TopLayerExtensionHelper(float *apPropertyArray,
     // Do nothing, no top layer to remove in random boundaries.
 }
 
-void 
+void
 RandomExtension::TopLayerRemoverHelper(float *apPropertyArray,
                                        int aStartX, int aStartY, int aStartZ,
                                        int aEndX, int aEndY, int aEndZ,

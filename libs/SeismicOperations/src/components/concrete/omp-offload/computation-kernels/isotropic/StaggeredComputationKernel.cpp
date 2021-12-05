@@ -110,7 +110,7 @@ StaggeredComputationKernel::ComputeVelocity() {
                             particle_vel_x[gid] = particle_vel_x[gid] + (den_base[gid] / dx) * value_x;
                             particle_vel_z[gid] = particle_vel_z[gid] + (den_base[gid] / dz) * value_z;
 
-                        }           
+                        }
 
                         gid += wnx;
                     }
@@ -130,7 +130,7 @@ StaggeredComputationKernel::ComputePressure() {
     */
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     float *next_base = this->mpGridBox->Get(WAVE | GB_PRSS | NEXT | DIR_Z)->GetNativePointer();
-    
+
     float *particle_vel_x = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
     float *particle_vel_z = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
 
@@ -198,7 +198,7 @@ StaggeredComputationKernel::ComputePressure() {
                         } else {
                             next_base[gid] = curr_base[gid] + vel_base[gid] * ((value_x / dx) + (value_z / dz));
                         }
-                        
+
                         gid += wnx;
                     }
                 }
@@ -215,7 +215,7 @@ StaggeredComputationKernel::PreprocessModel() {
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
     float dt = this->mpGridBox->GetDT();
-    
+
     float *velocity_values = this->mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
     float *density_values = this->mpGridBox->Get(PARM | GB_DEN)->GetNativePointer();
 

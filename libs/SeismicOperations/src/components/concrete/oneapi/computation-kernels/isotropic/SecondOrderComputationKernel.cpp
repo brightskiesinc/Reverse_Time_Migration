@@ -56,9 +56,6 @@ void SecondOrderComputationKernel::Compute() {
     int flops_per_second = 6 * HALF_LENGTH_ + 5;
     int size = (nx - 2 * HALF_LENGTH_) * (nz - 2 * HALF_LENGTH_);
 
-    ofstream myfile;
-    myfile.open ("example.txt", fstream::app);
-
     ElasticTimer timer("ComputationKernel::Kernel", size, 4, true,
                        flops_per_second);
 
@@ -357,11 +354,7 @@ void SecondOrderComputationKernel::Compute() {
 
     auto t_end = std::chrono::high_resolution_clock::now();
 
-    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-
-
-    myfile << elapsed_time_ms << "\n";
-    myfile.close();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
 }
 
 void SecondOrderComputationKernel::PreprocessModel() {

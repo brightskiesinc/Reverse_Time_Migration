@@ -35,8 +35,7 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
                                            int start_x, int start_y, int start_z,
                                            int end_x, int end_y, int end_z,
                                            int nx, int ny, int nz,
-                                           uint boundary_length)
-{
+                                           uint boundary_length) {
     /*!
      * change the values of velocities at boundaries (HALF_LENGTH excluded) to
      * zeros the start for x , y and z is at HALF_LENGTH and the end is at (nx -
@@ -46,14 +45,13 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
     // finding the gpu device
     int device_num = omp_get_default_device();
 
-    if (is_device_not_exist())
-    {
+    if (is_device_not_exist()) {
         throw DEVICE_NOT_FOUND_EXCEPTION();
     }
 
     int nz_nx = nx * nz;
 
-    float *deviceMinValue = (float *)omp_target_alloc(1 * sizeof(float), device_num);
+    float *deviceMinValue = (float *) omp_target_alloc(1 * sizeof(float), device_num);
 
     float maxFloat = 100000.0f;
     Device::MemCpy(deviceMinValue, &maxFloat, sizeof(float), Device::COPY_HOST_TO_DEVICE);
@@ -61,13 +59,11 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
     // Get maximum property_array value in 2D domain.
 #pragma omp target is_device_ptr(property_array, deviceMinValue) device(device_num)
     for (int row = start_z + boundary_length; row < end_z - boundary_length;
-         row++)
-    {
+         row++) {
         for (int column = start_x + boundary_length;
-             column < end_x - boundary_length; column++)
-        {
+             column < end_x - boundary_length; column++) {
             deviceMinValue[0] =
-                min(deviceMinValue[0], property_array[row * nx + column]);
+                    min(deviceMinValue[0], property_array[row * nx + column]);
         }
     }
 
@@ -75,17 +71,15 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
      * and Z */
 #pragma omp target is_device_ptr(property_array, deviceMinValue) device(device_num)
 #pragma omp parallel for collapse(2)
-    for (int row = start_z; row < end_z; row++)
-    {
-        for (int column = 0; column < boundary_length; column++)
-        {
+    for (int row = start_z; row < end_z; row++) {
+        for (int column = 0; column < boundary_length; column++) {
             /*!for values from x = HALF_LENGTH TO x= HALF_LENGTH +BOUND_LENGTH*/
             property_array[row * nx + column + start_x] =
-                deviceMinValue[0];
+                    deviceMinValue[0];
             /*!for values from x = nx-HALF_LENGTH TO x =
                 * nx-HALF_LENGTH-BOUND_LENGTH*/
             property_array[row * nx + (end_x - 1 - column)] =
-                deviceMinValue[0];
+                    deviceMinValue[0];
         }
     }
 
@@ -93,10 +87,8 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
      * and y */
 #pragma omp target is_device_ptr(property_array, deviceMinValue) device(device_num)
 #pragma omp parallel for collapse(2)
-    for (int row = 0; row < boundary_length; row++)
-    {
-        for (int column = start_x; column < end_x; column++)
-        {
+    for (int row = 0; row < boundary_length; row++) {
+        for (int column = start_x; column < end_x; column++) {
             /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
             // Remove top layer boundary : give value as zero since having top layer
             // random boundaries will introduce too much noise.
@@ -107,7 +99,7 @@ void MinExtension::VelocityExtensionHelper(float *property_array,
             /*!for values from z = nz-HALF_LENGTH TO z =
                  * nz-HALF_LENGTH-BOUND_LENGTH*/
             property_array[(end_z - 1 - row) * nx + column] =
-                deviceMinValue[0];
+                    deviceMinValue[0];
         }
     }
 }
@@ -116,8 +108,7 @@ void MinExtension::TopLayerExtensionHelper(float *property_array,
                                            int start_x, int start_z,
                                            int start_y, int end_x, int end_y,
                                            int end_z, int nx, int nz, int ny,
-                                           uint boundary_length)
-{
+                                           uint boundary_length) {
     // Do nothing, no top layer to extend in random boundaries.
 }
 
@@ -125,7 +116,6 @@ void MinExtension::TopLayerRemoverHelper(float *property_array, int start_x,
                                          int start_z, int start_y, int end_x,
                                          int end_y, int end_z, int nx,
                                          int nz, int ny,
-                                         uint boundary_length)
-{
+                                         uint boundary_length) {
     // Do nothing, no top layer to remove in random boundaries.
 }

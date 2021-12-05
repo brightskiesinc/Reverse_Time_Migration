@@ -156,6 +156,7 @@ press [here](https://gitlab.brightskiesinc.com/parallel-programming/reversetimem
   maximum workgroup size(256 for Gen9).
 
 ---
+
 ## OpenMP Offload
 
 ### Building OpenMP Offload Version

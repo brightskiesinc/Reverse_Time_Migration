@@ -152,7 +152,7 @@ float NormWriter::Solve(const float *apMatrix, uint nx, uint nz, uint ny) {
     int start_y = 0;
     int end_y = 1;
 
-    if(ny > 1){
+    if (ny > 1) {
         start_y = this->offset;
         end_y = ny - this->offset;
     }

@@ -53,27 +53,32 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(GridBox *apGridBox,
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetLogicalAxisSize() == 23);
 
-    }SECTION("CellDimensions") {
+    }
+    SECTION("CellDimensions") {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension() == Approx(10));
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension() == Approx(10));
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension() == Approx(10));
-    }SECTION("ReferencePoint") {
+    }
+    SECTION("ReferencePoint") {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetReferencePoint() == 0);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetReferencePoint() == 0);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetZAxis().GetReferencePoint() == 0);
-    }SECTION("WindowStart") {
+    }
+    SECTION("WindowStart") {
         REQUIRE(apGridBox->GetWindowStart(X_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Y_AXIS) == 0);
         REQUIRE(apGridBox->GetWindowStart(Z_AXIS) == 0);
-    }SECTION("LogicalWindowSize") {
+    }
+    SECTION("LogicalWindowSize") {
 
         REQUIRE(apGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() == 23);
 
-    }SECTION("ActualGridSize") {
+    }
+    SECTION("ActualGridSize") {
 #if defined(USING_DPCPP)
 
         if (apParameters->IsUsingWindow()) {
@@ -104,7 +109,8 @@ void TEST_CASE_SEISMIC_MODEL_HANDLER_CORE(GridBox *apGridBox,
         REQUIRE(apGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() == 23);
         REQUIRE(apGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize() == 23);
 
-    }SECTION("ComputationGridSize") {
+    }
+    SECTION("ComputationGridSize") {
 
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetXAxis().GetComputationAxisSize() == 15);
         REQUIRE(apGridBox->GetAfterSamplingAxis()->GetYAxis().GetComputationAxisSize() == 15);

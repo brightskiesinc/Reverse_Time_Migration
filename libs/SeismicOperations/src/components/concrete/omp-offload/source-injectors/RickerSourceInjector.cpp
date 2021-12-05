@@ -76,6 +76,6 @@ void RickerSourceInjector::ApplySource(int time_step) {
         float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer();
 #pragma omp target is_device_ptr(pressure, vel) device(device_num)
         ApplySourceOnPressure(temp, location, pressure, vel);
-    
+
     }
 }

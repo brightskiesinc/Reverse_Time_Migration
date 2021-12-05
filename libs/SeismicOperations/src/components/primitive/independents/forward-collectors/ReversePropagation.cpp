@@ -113,7 +113,7 @@ void ReversePropagation::ResetGrid(bool is_forward_run) {
                 this->mpInternalGridBox->Set(WAVE | GB_PRSS | NEXT | DIR_Z,
                                              this->mpInternalGridBox->Get(WAVE | GB_PRSS | PREV | DIR_Z));
             }
-        } 
+        }
 
     } else {
         if (this->mInjectionEnabled) {

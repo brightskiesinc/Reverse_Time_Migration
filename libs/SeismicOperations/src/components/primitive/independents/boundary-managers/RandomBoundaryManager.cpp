@@ -34,7 +34,6 @@ using namespace operations::dataunits;
 using namespace bs::base::logger;
 
 
-
 RandomBoundaryManager::RandomBoundaryManager(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     srand(time(NULL));
     this->mpConfigurationMap = apConfigurationMap;
@@ -51,7 +50,8 @@ void RandomBoundaryManager::AcquireConfiguration() {
         Logger->Info() << "Using default value for grain_side_length 0f 200" << '\n';
         this->mGrainSideLength = 200;
     } else {
-        Logger->Info() << "Random Boundary manager will use grains of side length = " << this->mGrainSideLength  << " meters." << '\n';
+        Logger->Info() << "Random Boundary manager will use grains of side length = " << this->mGrainSideLength
+                       << " meters." << '\n';
     }
 
 

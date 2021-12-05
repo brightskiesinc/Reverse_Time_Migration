@@ -200,56 +200,56 @@ void TEST_CASE_RANDOM(GridBox *apGridBox,
     int id_x;
     int id_z;
 
-    int horizontal_seeds = ((end_z -bl- start_z - bl) /stride_z + 1) *(bl / stride_x ) ;
-   
-    int vertical_seeds = (bl / stride_z + 1 ) * ((end_x - start_x ) / stride_x  );
+    int horizontal_seeds = ((end_z - bl - start_z - bl) / stride_z + 1) * (bl / stride_x);
+
+    int vertical_seeds = (bl / stride_z + 1) * ((end_x - start_x) / stride_x);
 
 
-   int index = 0;
+    int index = 0;
 
     for (int row = 0; row < bl; row++) {
         for (int column = start_x; column < end_x; column++) {
 
-            index = ( end_z - row - 1) * nx + column;
-          
-           if ( find(seeds.begin(), seeds.end(), v[index]) == seeds.end() ){
-               seeds.emplace_back(v[index]);
-              
-           }
-            
+            index = (end_z - row - 1) * nx + column;
+
+            if (find(seeds.begin(), seeds.end(), v[index]) == seeds.end()) {
+                seeds.emplace_back(v[index]);
+
+            }
+
         }
     }
 
     REQUIRE(seeds.size() >= vertical_seeds);
 
 
-  seeds.clear();
+    seeds.clear();
 
-  int index_l = 0;
-  int index_r = 0;
+    int index_l = 0;
+    int index_r = 0;
 
     for (int row = start_z + bl; row < end_z - bl; row++) {
         for (int column = 0; column < bl; column++) {
-            
+
             index_l = row * nx + column;
-            index_r = row * nx + ( end_x - 1 - column);
+            index_r = row * nx + (end_x - 1 - column);
 
-            if ( find(seeds_l.begin(), seeds_l.end(), v[index_l]) == seeds_l.end() ){
-               seeds_l.emplace_back(v[index_l]);
-              
-           }
+            if (find(seeds_l.begin(), seeds_l.end(), v[index_l]) == seeds_l.end()) {
+                seeds_l.emplace_back(v[index_l]);
 
-           if ( find(seeds_r.begin(), seeds_r.end(), v[index_r]) == seeds_r.end() ){
-               seeds_r.emplace_back(v[index_r]);
-              
-           }
+            }
+
+            if (find(seeds_r.begin(), seeds_r.end(), v[index_r]) == seeds_r.end()) {
+                seeds_r.emplace_back(v[index_r]);
+
+            }
 
         }
     }
 
 
-   REQUIRE(seeds_l.size() >= horizontal_seeds);
-   REQUIRE(seeds_r.size() >= horizontal_seeds);
+    REQUIRE(seeds_l.size() >= horizontal_seeds);
+    REQUIRE(seeds_r.size() >= horizontal_seeds);
 
 
     seeds.clear();

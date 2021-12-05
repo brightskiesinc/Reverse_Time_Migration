@@ -32,9 +32,8 @@ using namespace operations::common;
 
 FORWARD_DECLARE_COMPUTE_TEMPLATE(SecondOrderComputationKernel, Compute)
 
-template <KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
-void SecondOrderComputationKernel::Compute()
-{
+template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
+void SecondOrderComputationKernel::Compute() {
     /*
      * Read parameters into local variables to be shared.
      */
@@ -84,18 +83,15 @@ void SecondOrderComputationKernel::Compute()
 /// Three loops for cache blocking.
 /// Utilizing the cache to the maximum to speed up computation.
 #pragma omp for schedule(static, 1) collapse(2)
-        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z)
-        {
-            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x)
-            {
+        for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z) {
+            for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x) {
                 /// Calculate the endings appropriately
                 /// (Handle remainder of the cache blocking loops).
                 int ixEnd = min(block_x, nx_end - bx);
                 int izEnd = min(bz + block_z, nz_end);
 
                 /// Loop on the elements in the block.
-                for (int iz = bz; iz < izEnd; ++iz)
-                {
+                for (int iz = bz; iz < izEnd; ++iz) {
                     // Pre-compute and advance the pointer to the start of the current
                     // start point of the processing.
                     int offset = iz * wnx + bx;
@@ -111,8 +107,7 @@ void SecondOrderComputationKernel::Compute()
 #pragma vector vecremainder
 #pragma omp simd
 #pragma ivdep
-                    for (int ix = 0; ix < ixEnd; ++ix)
-                    {
+                    for (int ix = 0; ix < ixEnd; ++ix) {
                         /// Calculate the finite difference using sequence of fma
                         /// instructions.
                         float value = 0;
@@ -139,8 +134,7 @@ void SecondOrderComputationKernel::Compute()
     timer.Stop();
 }
 
-void SecondOrderComputationKernel::PreprocessModel()
-{
+void SecondOrderComputationKernel::PreprocessModel() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
@@ -155,13 +149,11 @@ void SecondOrderComputationKernel::PreprocessModel()
 #pragma omp parallel default(shared)
     {
 #pragma omp for schedule(static) collapse(2)
-        for (int z = 0; z < nz; ++z)
-        {
-            for (int x = 0; x < nx; ++x)
-            {
+        for (int z = 0; z < nz; ++z) {
+            for (int x = 0; x < nx; ++x) {
                 float value = velocity_values[z * full_nx + x];
                 velocity_values[z * full_nx + x] =
-                    value * value * dt2;
+                        value * value * dt2;
             }
         }
     }

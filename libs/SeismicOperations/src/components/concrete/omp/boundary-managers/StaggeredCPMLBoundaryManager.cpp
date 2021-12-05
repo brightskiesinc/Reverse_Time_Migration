@@ -32,9 +32,8 @@ FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculatePressureFi
 
 FORWARD_DECLARE_BOUND_TEMPLATE(StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue)
 
-template <bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary()
-{
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary() {
     // Setup needed meta-information.
 
     float dh;
@@ -68,71 +67,57 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary()
     int aux_nx;
     int aux_nz;
     int jump;
-    switch (DIRECTION_)
-    {
-    case X_AXIS:
-        x_end = HALF_LENGTH_ + b_l; //hl + bl
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_vel_x_right->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_vel_x_left->GetNativePointer();
-        }
-        particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
-        mpSmall_a = this->mpSmall_a_x->GetNativePointer();
-        mpSmall_b = this->mpSmall_b_x->GetNativePointer();
-        jump = 1;
-        aux_nx = b_l;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    case Z_AXIS:
-        z_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_vel_z_down->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_vel_z_up->GetNativePointer();
-        }
-        particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
-        mpSmall_a = this->mpSmall_a_z->GetNativePointer();
-        mpSmall_b = this->mpSmall_b_z->GetNativePointer();
-        jump = wnx;
-        aux_nx = lnx - 2 * HALF_LENGTH_;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    default:
-        throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
-        break;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l; //hl + bl
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_vel_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_vel_x_left->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
+            mpSmall_a = this->mpSmall_a_x->GetNativePointer();
+            mpSmall_b = this->mpSmall_b_x->GetNativePointer();
+            jump = 1;
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_vel_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_vel_z_up->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
+            mpSmall_a = this->mpSmall_a_z->GetNativePointer();
+            mpSmall_b = this->mpSmall_b_z->GetNativePointer();
+            jump = wnx;
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
     }
 
     // Compute.
 #pragma omp parallel for collapse(2)
-    for (int j = z_start; j < z_end; ++j)
-    {
-        for (int i = x_start; i < x_end; ++i)
-        {
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
             int active_bound_index;
             int real_x = i;
             int real_z = j;
             float value = 0.0f;
             // Setup indices for access.
-            if constexpr (DIRECTION_ == X_AXIS)
-            {
+            if constexpr (DIRECTION_ == X_AXIS) {
                 active_bound_index = i;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_x = lnx - 1 - i;
                 }
-            }
-            else if constexpr (DIRECTION_ == Z_AXIS)
-            {
+            } else if constexpr (DIRECTION_ == Z_AXIS) {
                 active_bound_index = j;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_z = lnz - 1 - j;
                 }
             }
@@ -144,17 +129,16 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityFirstAuxiliary()
             int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
 
             aux_variable[aux_offset] =
-                mpSmall_a[offset3] *
+                    mpSmall_a[offset3] *
                     aux_variable[aux_offset] +
-                mpSmall_b[offset3] * inv_dh *
+                    mpSmall_b[offset3] * inv_dh *
                     value;
         }
     }
 }
 
-template <bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue()
-{
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue() {
     // Setup needed meta-information.
 
     float dh;
@@ -185,39 +169,32 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue()
     float *particle_velocity;
     int aux_nx;
     int aux_nz;
-    switch (DIRECTION_)
-    {
-    case X_AXIS:
-        x_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_ptr_x_right->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_ptr_x_left->GetNativePointer();
-        }
-        particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
-        aux_nx = b_l;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    case Z_AXIS:
-        z_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_ptr_z_down->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_ptr_z_up->GetNativePointer();
-        }
-        particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
-        aux_nx = lnx - 2 * HALF_LENGTH_;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    default:
-        throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
-        break;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_ptr_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_ptr_x_left->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_X)->GetNativePointer();
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_ptr_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_ptr_z_up->GetNativePointer();
+            }
+            particle_velocity = this->mpGridBox->Get(WAVE | GB_PRTC | CURR | DIR_Z)->GetNativePointer();
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
     }
 
     float *parameter_base;
@@ -226,28 +203,21 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue()
 
     // Compute.
 #pragma omp parallel for collapse(2)
-    for (int j = z_start; j < z_end; ++j)
-    {
-        for (int i = x_start; i < x_end; ++i)
-        {
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
             int active_bound_index;
             int real_x = i;
             int real_z = j;
             float value = 0.0f;
             // Setup indices for access.
-            if constexpr (DIRECTION_ == X_AXIS)
-            {
+            if constexpr (DIRECTION_ == X_AXIS) {
                 active_bound_index = i;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_x = lnx - 1 - i;
                 }
-            }
-            else if constexpr (DIRECTION_ == Z_AXIS)
-            {
+            } else if constexpr (DIRECTION_ == Z_AXIS) {
                 active_bound_index = j;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_z = lnz - 1 - j;
                 }
             }
@@ -257,15 +227,14 @@ void StaggeredCPMLBoundaryManager::CalculateVelocityCPMLValue()
             int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
 
             particle_velocity[offset] =
-                particle_velocity[offset] -
-                parameter_base[offset] * aux_variable[aux_offset];
+                    particle_velocity[offset] -
+                    parameter_base[offset] * aux_variable[aux_offset];
         }
     }
 }
 
-template <bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary()
-{
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary() {
 
     // Setup needed meta-information.
 
@@ -301,69 +270,55 @@ void StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary()
     int aux_nx;
     int aux_nz;
     int jump;
-    switch (DIRECTION_)
-    {
-    case X_AXIS:
-        x_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_ptr_x_right->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_ptr_x_left->GetNativePointer();
-        }
-        mpSmall_a = this->mpSmall_a_x->GetNativePointer();
-        mpSmall_b = this->mpSmall_b_x->GetNativePointer();
-        jump = 1;
-        aux_nx = b_l;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    case Z_AXIS:
-        z_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_ptr_z_down->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_ptr_z_up->GetNativePointer();
-        }
-        mpSmall_a = this->mpSmall_a_z->GetNativePointer();
-        mpSmall_b = this->mpSmall_b_z->GetNativePointer();
-        jump = wnx;
-        aux_nx = lnx - 2 * HALF_LENGTH_;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    default:
-        throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
-        break;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_ptr_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_ptr_x_left->GetNativePointer();
+            }
+            mpSmall_a = this->mpSmall_a_x->GetNativePointer();
+            mpSmall_b = this->mpSmall_b_x->GetNativePointer();
+            jump = 1;
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_ptr_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_ptr_z_up->GetNativePointer();
+            }
+            mpSmall_a = this->mpSmall_a_z->GetNativePointer();
+            mpSmall_b = this->mpSmall_b_z->GetNativePointer();
+            jump = wnx;
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
     }
 
     // Compute.
 #pragma omp parallel for collapse(2)
-    for (int j = z_start; j < z_end; ++j)
-    {
-        for (int i = x_start; i < x_end; ++i)
-        {
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
             int active_bound_index;
             int real_x = i;
             int real_z = j;
             float value = 0.0f;
             // Setup indices for access.
-            if constexpr (DIRECTION_ == X_AXIS)
-            {
+            if constexpr (DIRECTION_ == X_AXIS) {
                 active_bound_index = i;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_x = lnx - 1 - i;
                 }
-            }
-            else if constexpr (DIRECTION_ == Z_AXIS)
-            {
+            } else if constexpr (DIRECTION_ == Z_AXIS) {
                 active_bound_index = j;
-                if constexpr (OPPOSITE_)
-                {
+                if constexpr (OPPOSITE_) {
                     real_z = lnz - 1 - j;
                 }
             }
@@ -375,17 +330,16 @@ void StaggeredCPMLBoundaryManager::CalculatePressureFirstAuxiliary()
             int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
 
             aux_variable[aux_offset] =
-                mpSmall_a[offset3] *
+                    mpSmall_a[offset3] *
                     aux_variable[aux_offset] +
-                mpSmall_b[offset3] * inv_dh *
+                    mpSmall_b[offset3] * inv_dh *
                     value;
         }
     }
 }
 
-template <bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue()
-{
+template<bool ADJOINT_, int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
+void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue() {
 
     // Setup needed meta-information.
     int z_start = HALF_LENGTH_;
@@ -405,39 +359,32 @@ void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue()
     float *aux_variable;
     int aux_nx;
     int aux_nz;
-    switch (DIRECTION_)
-    {
-    case X_AXIS:
-        x_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_vel_x_right->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_vel_x_left->GetNativePointer();
-        }
-        aux_nx = b_l;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    case Y_AXIS:
-        throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
-    case Z_AXIS:
-        z_end = HALF_LENGTH_ + b_l;
-        if (OPPOSITE_)
-        {
-            aux_variable = this->mpAuxiliary_vel_z_down->GetNativePointer();
-        }
-        else
-        {
-            aux_variable = this->mpAuxiliary_vel_z_up->GetNativePointer();
-        }
-        aux_nx = lnx - 2 * HALF_LENGTH_;
-        aux_nz = lnz - 2 * HALF_LENGTH_;
-        break;
-    default:
-        throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
-        break;
+    switch (DIRECTION_) {
+        case X_AXIS:
+            x_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_vel_x_right->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_vel_x_left->GetNativePointer();
+            }
+            aux_nx = b_l;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        case Y_AXIS:
+            throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
+        case Z_AXIS:
+            z_end = HALF_LENGTH_ + b_l;
+            if (OPPOSITE_) {
+                aux_variable = this->mpAuxiliary_vel_z_down->GetNativePointer();
+            } else {
+                aux_variable = this->mpAuxiliary_vel_z_up->GetNativePointer();
+            }
+            aux_nx = lnx - 2 * HALF_LENGTH_;
+            aux_nz = lnz - 2 * HALF_LENGTH_;
+            break;
+        default:
+            throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
+            break;
     }
 
     float *parameter_base;
@@ -447,24 +394,17 @@ void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue()
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     // Compute.
 #pragma omp parallel for collapse(2)
-    for (int j = z_start; j < z_end; ++j)
-    {
-        for (int i = x_start; i < x_end; ++i)
-        {
+    for (int j = z_start; j < z_end; ++j) {
+        for (int i = x_start; i < x_end; ++i) {
             int real_x = i;
             int real_z = j;
             // Setup indices for access.
-            if constexpr (DIRECTION_ == X_AXIS)
-            {
-                if constexpr (OPPOSITE_)
-                {
+            if constexpr (DIRECTION_ == X_AXIS) {
+                if constexpr (OPPOSITE_) {
                     real_x = lnx - 1 - i;
                 }
-            }
-            else if constexpr (DIRECTION_ == Z_AXIS)
-            {
-                if constexpr (OPPOSITE_)
-                {
+            } else if constexpr (DIRECTION_ == Z_AXIS) {
+                if constexpr (OPPOSITE_) {
                     real_z = lnz - 1 - j;
                 }
             }
@@ -472,8 +412,8 @@ void StaggeredCPMLBoundaryManager::CalculatePressureCPMLValue()
             int offset = real_x + wnx * real_z;
             int aux_offset = (i - HALF_LENGTH_) + (j - HALF_LENGTH_) * aux_nx;
             curr_base[offset] =
-                curr_base[offset] -
-                parameter_base[offset] * aux_variable[aux_offset];
+                    curr_base[offset] -
+                    parameter_base[offset] * aux_variable[aux_offset];
         }
     }
 }
