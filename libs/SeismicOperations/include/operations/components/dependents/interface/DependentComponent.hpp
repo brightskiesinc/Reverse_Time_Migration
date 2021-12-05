@@ -20,9 +20,9 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_DEPENDENT_COMPONENT_HPP
 #define OPERATIONS_LIB_COMPONENTS_DEPENDENT_COMPONENT_HPP
 
-#include <operations/common/ComputationParameters.hpp>
-
 #include <bs/base/configurations/interface/Configurable.hpp>
+
+#include <operations/common/ComputationParameters.hpp>
 
 namespace operations {
     namespace components {

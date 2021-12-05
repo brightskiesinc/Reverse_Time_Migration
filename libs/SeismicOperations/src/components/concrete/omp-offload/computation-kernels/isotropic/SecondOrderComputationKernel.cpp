@@ -17,22 +17,20 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+#include <omp.h>
 
 #include <bs/timer/api/cpp/BSTimer.hpp>
 
-#include <omp.h>
-
+#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
 using namespace std;
+using namespace bs::base::exceptions;
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace bs::base::exceptions;
-using namespace bs::timer;
-
 
 FORWARD_DECLARE_COMPUTE_TEMPLATE(SecondOrderComputationKernel, Compute)
 
@@ -43,8 +41,6 @@ SecondOrderComputationKernel::Compute() {
     /*
      * Read parameters into local variables to be shared.
      */
-
-
 
     float *prev_base = this->mpGridBox->Get(WAVE | GB_PRSS | PREV | DIR_Z)->GetNativePointer();
     float *curr_base = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
@@ -80,8 +76,6 @@ SecondOrderComputationKernel::Compute() {
     /// half_length 5 floating point operations outside the half_length loop Total
     /// = 6*K+5 =6*K+5
     int flops_per_second = 6 * HALF_LENGTH_ + 5;
-
-    // Operate on the window velocity (numa consistency ensured).
 
     ElasticTimer timer("ComputationKernel::Kernel",
                        size, 4, true,

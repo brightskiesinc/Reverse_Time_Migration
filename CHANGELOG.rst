@@ -2,12 +2,43 @@
 Seismic Toolbox Release Notes
 ==============================================
 
+
+v4.1.0
+=======
+
+**Added**:
+
+* Added ``BSTimer`` package.
+* Do a full ``BSTimer`` library integration with the Seismic Toolbox, updating the timing utilities to be fully dependent on ``BSTimer`` and remove old library dependency.
+* Added new random boundary approach (OpenMP backend only).
+* Added support to staggered first order computation kernel for DPC++.
+* Added support to staggered first order CPML boundary manager for DPC++.
+* Added support to staggered first order computation kernel for OpenMP Offload.
+* Added support to second order and staggered first order CPML boundary manager for OpenMP Offload.
+* Added backend unification module for easing development process for different backend.
+* Updated BS IO submodule's HEAD, and change codebase accordingly.
+* Added ``BSBase`` package.
+* Completely deprecated ``Helpers`` submodule.
+* Added new Random Boundaries approach to all three technologies (OpenMP, OpenMP Offload and OneAPI).
+
+
+v4.0.0
+=======
+
+**Added**:
+
+* Added Two propagation features to OneAPI.
+* Added CFL condition to OpenMP Offload.
+* Added Two propagation features to OpenMP Offload.
+* Added support to none, sponge, and second order CPML boundary manager for OpenMP Offload.
+* Added ZFP compression feature to OpenMP Offload and OneAPI.
+
 v3.0.2
 =======
 
 **Added**:
 
-* Do a full I/O (Thoth) library integration with the seismic toolbox, updating the read/write utilities to be fully dependent on Thoth and remove old library dependency.
+* Do a full I/O (Thoth) library integration with the Seismic Toolbox, updating the read/write utilities to be fully dependent on Thoth and remove old library dependency.
 * Update modelling to depend on the I/O (Thoth) library as well.
 * Added source maximum frequency resampling and user specified maximum frequency amplitude percentage.
 * Added dip angle applying before stacking in correlation kernel.
@@ -51,7 +82,6 @@ v3.0.0
 * Fixed MPI in OneAPI.
 * Fixed bugs in `CorrelationKernel`.
 * Fixed bugs in `TraceManager`.
-* Fixed 3D support to OpenMP kernels.
 * Fixed `CrossCorrelation`'s compensation.
 * Fixed `TwoPropagation`.
 * Fixed `TwoPropagation` w/Compression.
@@ -62,8 +92,6 @@ v2.2.2
 
 **Added**:
 
-* Added 3D support to kernels.
-* Added 3D support to I/O.
 * Added shots stride for trace reading.
 
 
@@ -123,11 +151,8 @@ v2.0.0
 * Wave Approximations
     * Isotropic First Order
     * Isotropic Second Order
-    * VTI First Order
-    * TTI First Order
 * Migration Accommodators
     * Cross Correlation
-    * ADCIG
 * Boundary Conditions
     * CPML (*Isotropic First Order / Isotropic Second Order*)
     * Sponge (*All*)
@@ -150,7 +175,3 @@ v2.0.0
 
 
 .. _`Google C++ Style Guide`: https://google.github.io/styleguide/cppguide.html#Run-Time_Type_Information__RTTI_).
-.. _#2: https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox/-/issues/2
-.. _#3: https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox/-/issues/3
-.. _#5: https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox/-/issues/5
-.. _#7: https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox/-/issues/7

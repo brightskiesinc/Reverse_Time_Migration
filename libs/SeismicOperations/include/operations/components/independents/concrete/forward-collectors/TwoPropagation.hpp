@@ -20,18 +20,19 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTORS_TWO_PROPAGATION_HPP
 #define OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTORS_TWO_PROPAGATION_HPP
 
-#include <operations/components/independents/concrete/forward-collectors/file-handler/file_handler.h>
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-#include <operations/components/independents/primitive/ForwardCollector.hpp>
-#include <operations/components/dependency/concrete/HasDependents.hpp>
-
-#include <bs/base/memory/MemoryManager.hpp>
-
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
+
+#include <bs/base/memory/MemoryManager.hpp>
+
+#include <operations/components/independents/concrete/forward-collectors/file-handler/file_handler.h>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+#include <operations/components/independents/primitive/ForwardCollector.hpp>
+#include <operations/components/dependency/concrete/HasDependents.hpp>
+
 
 namespace operations {
     namespace components {

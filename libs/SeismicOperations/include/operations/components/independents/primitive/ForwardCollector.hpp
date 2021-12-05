@@ -20,9 +20,9 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTOR_HPP
 #define OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTOR_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
+#include <operations/components/independents/interface/Component.hpp>
 
-#include "operations/common/DataTypes.h"
+#include <operations/common/DataTypes.h>
 
 namespace operations {
     namespace components {

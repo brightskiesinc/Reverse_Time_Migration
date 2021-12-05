@@ -17,11 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/common/ComputationParameters.hpp>
-
-#include <operations/test-utils/EnvironmentHandler.hpp>
-
 #include <prerequisites/libraries/catch/catch.hpp>
+
+#include <operations/common/ComputationParameters.hpp>
+#include <operations/test-utils/EnvironmentHandler.hpp>
 
 using namespace std;
 using namespace operations::common;
@@ -312,15 +311,11 @@ void TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(HALF_LENGTH aHalfLength) {
 TEST_CASE("Computation Parameters - Class",
           "[ComputationParameters],[Class]") {
     TEST_CASE_COMPUTATION_PARAMETERS();
-
 }
 
 TEST_CASE("Computation Parameters - FD Coefficients",
           "[ComputationParameters],[FDCoefficients]") {
-    for (
-        auto hl
-            : {
-            O_2, O_4, O_8, O_12, O_16}) {
+    for (auto hl : {O_2, O_4, O_8, O_12, O_16}) {
         TEST_CASE_COMPUTATION_PARAMETERS_FD_COEFFICIENTS(hl);
     }
 }

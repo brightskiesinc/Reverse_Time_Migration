@@ -20,15 +20,15 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTORS_REVERSE_PROPAGATION_HPP
 #define OPERATIONS_LIB_COMPONENTS_FORWARD_COLLECTORS_REVERSE_PROPAGATION_HPP
 
+#include <cstdlib>
+#include <cstring>
+
+#include <bs/base/memory/MemoryManager.hpp>
+
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/components/independents/primitive/ForwardCollector.hpp>
 #include <operations/components/dependency/concrete/HasDependents.hpp>
-
 #include <operations/components/independents/primitive/ComputationKernel.hpp>
-#include <bs/base/memory/MemoryManager.hpp>
-
-#include <cstdlib>
-#include <cstring>
 #include <operations/components/independents/concrete/forward-collectors/boundary-saver/BoundarySaver.h>
 
 namespace operations {

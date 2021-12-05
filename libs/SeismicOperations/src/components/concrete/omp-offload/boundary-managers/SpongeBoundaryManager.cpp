@@ -17,20 +17,19 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
-
-#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
-#include <operations/utils/checks/Checks.hpp>
-
 #include <iostream>
 #include <cmath>
 
+#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
+#include <operations/utils/checks/Checks.hpp>
+
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 
 /* Implementation based on
  * https://pubs.geoscienceworld.org/geophysics/article-abstract/50/4/705/71992/A-nonreflecting-boundary-condition-for-discrete?redirectedFrom=fulltext

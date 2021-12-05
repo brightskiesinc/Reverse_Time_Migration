@@ -17,18 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp"
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/base/memory/MemoryManager.hpp>
-
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+
+using namespace bs::base::logger;
+using namespace bs::base::memory;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
-using namespace bs::base::memory;
-
 
 WaveFieldsMemoryHandler::WaveFieldsMemoryHandler(
         bs::base::configurations::ConfigurationMap *apConfigurationMap) {

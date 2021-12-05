@@ -17,20 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/utils/io/read_utils.h>
-
-#include <bs/base/memory/MemoryManager.hpp>
-
 #include <cmath>
 #include <unordered_set>
 #include <algorithm>
 
+#include <bs/base/memory/MemoryManager.hpp>
+
+#include <operations/utils/io/read_utils.h>
+
 using namespace std;
+using namespace bs::base::memory;
+using namespace bs::io::dataunits;
 using namespace operations::utils::io;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace bs::base::memory;
-using namespace bs::io::dataunits;
+
 
 Gather *operations::utils::io::CombineGather(std::vector<Gather *> &aGatherVector) {
     int gather_count = aGatherVector.size();

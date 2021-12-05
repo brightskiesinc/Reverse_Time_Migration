@@ -17,20 +17,20 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
+#include <omp.h>
 
+#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
 #include <operations/utils/interpolation/Interpolator.hpp>
 #include <operations/utils/io/read_utils.h>
 #include <operations/utils/checks/Checks.hpp>
 
-#include <omp.h>
 
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 using namespace operations::utils::io;
 
 
@@ -79,15 +79,5 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
 
         ApplyOnPressure(offset, trace_offset, pressure, velocity, traces);
 
-// for future purpose , will be used after implementing vti and tti
-/* 
-        if (this->mpParameters->GetApproximation() == VTI ||
-            this->mpParameters->GetApproximation() == TTI) {
-
-            float *horizontal_pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_X)->GetNativePointer();
-            ApplyOnPressure(std_offset, trace_offset,wnz_wnx  ,horizontal_pressure, velocity,traces,pos_y,pos_x,i);
-
-        }
-*/
     }
 }

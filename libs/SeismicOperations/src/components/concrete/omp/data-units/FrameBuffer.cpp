@@ -17,15 +17,15 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/common/DataTypes.h>
-#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
+#include <cstring>
 
 #include <bs/base/memory/MemoryManager.hpp>
 
-#include <cstring>
+#include <operations/common/DataTypes.h>
+#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 
-using namespace operations::dataunits;
 using namespace bs::base::memory;
+using namespace operations::dataunits;
 
 template
 class operations::dataunits::FrameBuffer<float>;
@@ -89,14 +89,19 @@ T *FrameBuffer<T>::GetNativePointer() {
 }
 
 template<typename T>
+void FrameBuffer<T>::SetNativePointer(T *pT) {
+    this->mpDataPointer = pT;
+}
+
+template<typename T>
 T *FrameBuffer<T>::GetHostPointer() {
     this->mpHostDataPointer = this->mpDataPointer;
     return this->mpHostDataPointer;
 }
 
 template<typename T>
-void FrameBuffer<T>::SetNativePointer(T *pT) {
-    this->mpDataPointer = pT;
+T *FrameBuffer<T>::GetDiskFlushPointer() {
+    return this->GetHostPointer();
 }
 
 template<typename T>

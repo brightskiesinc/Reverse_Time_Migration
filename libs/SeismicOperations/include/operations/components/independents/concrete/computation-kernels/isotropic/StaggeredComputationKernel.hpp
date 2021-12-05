@@ -73,6 +73,8 @@ namespace operations {
 
             /// Dataframe for the staggered finite difference coefficients.
             dataunits::FrameBuffer<float> *mpCoeff = nullptr;
+
+            dataunits::FrameBuffer<int> *mpVerticalIdx = nullptr;
         };
     }//namespace components
 }//namespace operations

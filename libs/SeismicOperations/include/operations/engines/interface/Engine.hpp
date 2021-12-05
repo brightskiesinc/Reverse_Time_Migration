@@ -20,11 +20,10 @@
 #ifndef OPERATIONS_LIB_ENGINES_ENGINE_HPP
 #define OPERATIONS_LIB_ENGINES_ENGINE_HPP
 
-#include "operations/helpers/callbacks/primitive/CallbackCollection.hpp"
-#include "operations/data-units/concrete/migration/MigrationData.hpp"
-
-
 #include <vector>
+
+#include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
+#include <operations/data-units/concrete/migration/MigrationData.hpp>
 
 namespace operations {
     namespace engines {

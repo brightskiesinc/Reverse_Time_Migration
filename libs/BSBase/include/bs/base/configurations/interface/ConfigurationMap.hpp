@@ -95,6 +95,10 @@ namespace bs {
                 GetValue(const std::string &aPropertyKey,
                          const std::string &aDefaultValue) = 0;
 
+                virtual std::string
+                GetKeyValue(const std::string &aPropertyKey,
+                            const std::string &aDefaultValue) = 0;
+
                 /**
                  * @brief Check if a section entry exists in the object.
                  *
@@ -142,16 +146,32 @@ namespace bs {
 
                 /**
                  * @brief
-                 * Operator [] overloading, to retrieve submap by a map key.
+                 * This function retrieves the submaps residing in an array in
+                 * the configuration map.
                  *
                  * @param
-                 * aMapKey
+                 * aSectionKey
                  *
                  * @return
-                 * Submap identified by provided key.
+                 * Submaps identified by provided key.
                  */
                 virtual std::vector<bs::base::configurations::ConfigurationMap *>
-                GetConfigurationArray(std::string &aMapKey) = 0;
+                GetConfigurationArray(std::string &aSectionKey) = 0;
+
+                /**
+                 * @brief
+                 * This function retrieves the submaps residing in an array in
+                 * the configuration map.
+                 *
+                 * @param
+                 * aPropertyKey, aSectionKey
+                 *
+                 * @return
+                 * Submaps identified by provided keys.
+                 */
+                virtual std::vector<bs::base::configurations::ConfigurationMap *>
+                GetConfigurationArray(std::string &aPropertyKey,
+                                      std::string &aSectionKey) = 0;
 
 
             };

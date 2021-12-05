@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,8 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/io/streams/concrete/readers/SegyReader.hpp>
+#include <bs/base/common/ExitCodes.hpp>
+#include <bs/base/exceptions/Exceptions.hpp>
 
+#include <bs/io/streams/concrete/readers/SegyReader.hpp>
 #include <bs/io/streams/helpers/InStreamHelper.hpp>
 #include <bs/io/data-units/helpers/TraceHelper.hpp>
 #include <bs/io/lookups/tables/TextHeaderLookup.hpp>
@@ -28,17 +30,10 @@
 #include <bs/io/utils/convertors/StringsConvertor.hpp>
 #include <bs/io/utils/convertors/FloatingPointFormatter.hpp>
 #include <bs/io/configurations/MapKeys.h>
-#include <bs/base/common/ExitCodes.hpp>
 
 #define IO_K_FIRST_OCCURRENCE   0   /* First occurrence position */
 
-/// @todo To be removed
-/// {
-#include <bs/base/exceptions/Exceptions.hpp>
-
 using namespace bs::base::exceptions;
-/// }
-
 using namespace bs::io::streams;
 using namespace bs::io::streams::helpers;
 using namespace bs::io::lookups;

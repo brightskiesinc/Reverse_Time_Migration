@@ -17,10 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BS_BASE_MEMORY_MEMORY_MANAGER_HPP
-#define BS_BASE_MEMORY_MEMORY_MANAGER_HPP
+#ifndef BS_BASE_MEMORY_MODULE_HEADER_HPP
+#define BS_BASE_MEMORY_MODULE_HEADER_HPP
 
 #include <bs/base/memory/managers/memory_allocator.h>
 #include <bs/base/memory/managers/memory_tracker.h>
 
-#endif //BS_BASE_MEMORY_MEMORY_MANAGER_HPP
+#endif //BS_BASE_MEMORY_MODULE_HEADER_HPP

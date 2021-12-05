@@ -17,15 +17,64 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/data-units/ChannelStats.hpp>
-
 #include <iostream>
 
-#define GIGA 1024 * 1024 * 1024
+#include <bs/timer/data-units/ChannelStats.hpp>
+
+#define BS_TIMER_DU_GIGA    (1024 * 1024 * 1024)        /* Giga definition. */
 
 using namespace std;
 using namespace bs::timer::dataunits;
 
+
+ChannelStats::ChannelStats() :
+        mGridSize(-1),
+        mDataSize(-1),
+        mFLOPS(-1),
+        mNumberOfCalls(0) {}
+
+ChannelStats::~ChannelStats() {
+    this->mSnapshots.clear();
+}
+
+void
+ChannelStats::AddRuntime(double aRuntime) {
+    this->mRuntimes.push_back(aRuntime);
+    if (this->mDataSize > 0) {
+        this->mBandwidths.push_back(this->mDataSize / aRuntime);
+    }
+    this->mNumberOfCalls++;
+}
+
+void
+ChannelStats::AddSnapshot(core::snapshots::Snapshot *apSnapshot) {
+    this->mSnapshots.push_back(apSnapshot);
+}
+
+void
+ChannelStats::Resolve() {
+    if (!mResolved) {
+        mResolved = true;
+        for (auto it : this->mSnapshots) {
+            this->AddRuntime(it->Resolve());
+        }
+    }
+}
+
+void
+ChannelStats::SetGridSize(int aGridSize) {
+    this->mGridSize = aGridSize;
+}
+
+void
+ChannelStats::SetDataSize(int aDataSize) {
+    this->mDataSize = aDataSize;
+}
+
+void
+ChannelStats::SetFLOPS(int aFLOPS) {
+    this->mFLOPS = aFLOPS;
+}
 
 map<string, double>
 ChannelStats::GetMap() {
@@ -82,15 +131,6 @@ ChannelStats::GetDeviation() {
     return utils::stats::StatisticsHelper::GetDeviation(this->mRuntimes);
 }
 
-void
-ChannelStats::AddRuntime(double aRuntime) {
-    this->mRuntimes.push_back(aRuntime);
-    if (this->mDataSize > 0) {
-        this->mBandwidths.push_back(this->mDataSize / aRuntime);
-    }
-    this->mNumberOfCalls++;
-}
-
 vector<double>
 ChannelStats::GetRuntimes() {
     return this->mRuntimes;
@@ -99,31 +139,6 @@ ChannelStats::GetRuntimes() {
 unsigned int
 ChannelStats::GetNumberOfCalls() const {
     return this->mNumberOfCalls;
-}
-
-void
-ChannelStats::AddSnapshot(core::snapshot::Snapshot *apSnapshot) {
-    this->mSnapshots.push_back(apSnapshot);
-}
-
-void
-ChannelStats::Resolve() {
-    if (!mResolved) {
-        mResolved = true;
-        for (auto it : this->mSnapshots) {
-            this->AddRuntime(it->Resolve());
-        }
-    }
-}
-
-void
-ChannelStats::SetGridSize(int aGridSize) {
-    this->mGridSize = aGridSize;
-}
-
-void
-ChannelStats::SetDataSize(int aDataSize) {
-    this->mDataSize = aDataSize;
 }
 
 int
@@ -166,36 +181,27 @@ ChannelStats::GetAverageThroughput() {
     return this->mGridSize / this->mStatisticsMap[BS_TIMER_K_AVERAGE_RUNTIME];
 }
 
-void
-ChannelStats::SetFLOPS(int aFLOPS) {
-    this->mFLOPS = aFLOPS;
-}
-
-double
-ChannelStats::GetMinGFLOPS() {
-    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_MAX_RUNTIME] / GIGA;
-}
-
 int
 ChannelStats::GetNumberOfOperations() const {
     return this->mGridSize * this->mFLOPS;
 }
 
 double
+ChannelStats::GetMinGFLOPS() {
+    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_MAX_RUNTIME] / BS_TIMER_DU_GIGA;
+}
+
+double
 ChannelStats::GetMaxGFLOPS() {
-    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_MIN_RUNTIME] / GIGA;
+    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_MIN_RUNTIME] / BS_TIMER_DU_GIGA;
 }
 
 double
 ChannelStats::GetAverageGFLOPS() {
-    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_AVERAGE_RUNTIME] / GIGA;
+    return (this->mGridSize * this->mFLOPS) / mStatisticsMap[BS_TIMER_K_AVERAGE_RUNTIME] / BS_TIMER_DU_GIGA;
 }
 
 vector<double>
 ChannelStats::GetBandwidths() {
     return this->mBandwidths;
-}
-
-ChannelStats::~ChannelStats() {
-    this->mSnapshots.clear();
 }

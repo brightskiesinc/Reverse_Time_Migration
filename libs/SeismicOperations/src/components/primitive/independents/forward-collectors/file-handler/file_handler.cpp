@@ -17,7 +17,7 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/forward-collectors/file-handler/file_handler.h"
+#include <operations/components/independents/concrete/forward-collectors/file-handler/file_handler.h>
 
 void operations::components::helpers::bin_file_save(
         const char *file_name, const float *data, const size_t &size) {

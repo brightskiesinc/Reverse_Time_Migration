@@ -20,11 +20,12 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_RANDOM_BOUNDARY_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_RANDOM_BOUNDARY_MANAGER_HPP
 
+#include <vector>
+
 #include <operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp>
 #include <operations/components/independents/primitive/BoundaryManager.hpp>
 #include <operations/components/dependency/concrete/HasNoDependents.hpp>
 
-#include <vector>
 
 namespace operations {
     namespace components {
@@ -64,7 +65,10 @@ namespace operations {
             dataunits::GridBox *mpGridBox = nullptr;
 
             std::vector<addons::Extension *> mvExtensions;
+
+            int mGrainSideLength;
         };
+
     }//namespace components
 }//namespace operations
 

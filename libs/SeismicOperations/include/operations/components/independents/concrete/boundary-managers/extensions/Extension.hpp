@@ -42,7 +42,7 @@ namespace operations {
                 /**
                  * @brief Destructor
                  */
-                ~Extension();
+                virtual ~Extension();
 
                 /**
                  * @brief  Extend the velocities at boundaries.
@@ -119,10 +119,11 @@ namespace operations {
                                                    int nx, int ny, int nz,
                                                    uint boundary_length) = 0;
 
-
-            private:
+            protected:
                 /// Grid to extend its velocities/properties.
                 dataunits::GridBox *mpGridBox = nullptr;
+
+            private:
                 /// Property to be extended by an extensions object.
                 float *mProperties = nullptr;
                 /// Window property array to be used if provided for moving window.

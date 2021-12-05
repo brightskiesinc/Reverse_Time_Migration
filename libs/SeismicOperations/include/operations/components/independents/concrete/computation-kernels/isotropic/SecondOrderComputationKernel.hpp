@@ -68,6 +68,7 @@ namespace operations {
             dataunits::GridBox *mpGridBox = nullptr;
 
             dataunits::FrameBuffer<float> *mpCoeffX = nullptr;
+            dataunits::FrameBuffer<float> *mpCoeffY = nullptr;
             dataunits::FrameBuffer<float> *mpCoeffZ = nullptr;
 
             dataunits::FrameBuffer<int> *mpFrontalIdx = nullptr;

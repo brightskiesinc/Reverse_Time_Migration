@@ -20,10 +20,10 @@
 #ifndef OPERATIONS_LIB_DATA_UNITS_FRAMEBUFFER_HPP
 #define OPERATIONS_LIB_DATA_UNITS_FRAMEBUFFER_HPP
 
-#include <operations/data-units/interface/DataUnit.hpp>
-
-#include <operations/common/DataTypes.h>
 #include <string>
+
+#include <operations/data-units/interface/DataUnit.hpp>
+#include <operations/common/DataTypes.h>
 
 namespace operations {
     namespace dataunits {
@@ -51,6 +51,9 @@ namespace operations {
 
             T *
             GetHostPointer();
+
+            T *
+            GetDiskFlushPointer();
 
             void
             SetNativePointer(T *pT);

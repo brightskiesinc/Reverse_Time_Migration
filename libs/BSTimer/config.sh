@@ -84,7 +84,7 @@ while getopts ":b:ghvte" opt; do
     echo ""
     printf "%20s %s\n" "-v | --verbose :" "to print the output of make with details (if not set it will build without details)"
     echo ""
-    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | cuda"
+    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | omp-offload"
     printf "%20s %s\n" "" "default tech = omp"
     echo ""
     printf "%20s %s\n" "-t | --test :" "Enables building tests."

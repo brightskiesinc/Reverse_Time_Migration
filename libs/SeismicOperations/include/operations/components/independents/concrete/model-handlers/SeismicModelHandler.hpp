@@ -20,13 +20,13 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_SEISMIC_MODEL_HANDLER_HPP
 #define OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_SEISMIC_MODEL_HANDLER_HPP
 
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-#include <operations/components/independents/primitive/ModelHandler.hpp>
-#include <operations/components/dependency/concrete/HasDependents.hpp>
+#include <map>
 
 #include <bs/base/memory/MemoryManager.hpp>
 
-#include <map>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+#include <operations/components/independents/primitive/ModelHandler.hpp>
+#include <operations/components/dependency/concrete/HasDependents.hpp>
 
 namespace operations {
     namespace components {

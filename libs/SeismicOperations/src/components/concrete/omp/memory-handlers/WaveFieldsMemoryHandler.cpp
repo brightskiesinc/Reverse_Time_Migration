@@ -17,11 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+#include <cmath>
 
 #include <bs/timer/api/cpp/BSTimer.hpp>
-
-#include <cmath>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
 using namespace std;
 using namespace bs::timer;

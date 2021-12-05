@@ -17,26 +17,22 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-
-#include <bs/base/exceptions/concrete/IllogicalException.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
 #include <iostream>
 #include <cmath>
-#include <cstring>
 
-#define fma(a, b, c) (a) * (b) + (c)
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
 using namespace std;
 using namespace bs::timer;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
+
 
 SecondOrderComputationKernel::SecondOrderComputationKernel(
         bs::base::configurations::ConfigurationMap *apConfigurationMap) {
@@ -153,7 +149,10 @@ MemoryHandler *SecondOrderComputationKernel::GetMemoryHandler() {
 }
 
 void SecondOrderComputationKernel::InitializeVariables() {
+
+
     int wnx = mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    int wny = mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
     int wnz = mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     float dx2 = 1 / (mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension() *
@@ -162,6 +161,13 @@ void SecondOrderComputationKernel::InitializeVariables() {
                      mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension());
     float dy2 = 1;
     float *coeff = mpParameters->GetSecondDerivativeFDCoefficient();
+    bool is_2D = wny == 1;
+
+
+    if (!is_2D) {
+        dy2 = 1 / (mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension() *
+                   mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension());
+    }
 
     int hl = mpParameters->GetHalfLength();
     int array_length = hl;
@@ -176,16 +182,33 @@ void SecondOrderComputationKernel::InitializeVariables() {
         coeff_z[i] = coeff[i + 1] * dz2;
 
         vertical[i] = (i + 1) * (wnx);
+
+        if (!is_2D) {
+            coeff_y[i] = coeff[i + 1] * dy2;
+            front[i] = (i + 1) * wnx * wnz;
+        }
     }
 
     mpCoeffX = new FrameBuffer<float>(array_length);
+    mpCoeffY = new FrameBuffer<float>(array_length);
     mpCoeffZ = new FrameBuffer<float>(array_length);
     mpFrontalIdx = new FrameBuffer<int>(array_length);
     mpVerticalIdx = new FrameBuffer<int>(array_length);
 
-    mCoeffXYZ = coeff[0] * (dx2 + dz2);
+    if (is_2D) {
+        mCoeffXYZ = coeff[0] * (dx2 + dz2);
+    } else {
+        mCoeffXYZ = coeff[0] * (dx2 + dy2 + dz2);
+    }
 
     Device::MemCpy(mpCoeffX->GetNativePointer(), coeff_x, array_length * sizeof(float));
     Device::MemCpy(mpCoeffZ->GetNativePointer(), coeff_z, array_length * sizeof(float));
     Device::MemCpy(mpVerticalIdx->GetNativePointer(), vertical, array_length * sizeof(int));
+
+
+    if (!is_2D) {
+        Device::MemCpy(mpCoeffY->GetNativePointer(), coeff_y, array_length * sizeof(float));
+
+        Device::MemCpy(mpFrontalIdx->GetNativePointer(), front, array_length * sizeof(int));
+    }
 }

@@ -17,16 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <bs/base/backend/Backend.hpp>
+
 #include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
-#include <operations/backend/OneAPIBackend.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
 
 using namespace cl::sycl;
+using namespace bs::base::backend;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
 
 FORWARD_DECLARE_SINGLE_BOUND_TEMPLATE(CPMLBoundaryManager::CalculateFirstAuxiliary)
 
@@ -116,7 +117,7 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
     first_coeff_h_1 = &first_coeff_h[1];
     distance_1 = &distance[1];
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(nxEnd - x_start,
                                   nyEnd - y_start,
                                   nzEnd - z_start),
@@ -160,7 +161,7 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
                                      coeff_a[coeff_ind] * aux[index] + coeff_b[coeff_ind] * value;
                          });
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }
 
 template<int DIRECTION_, bool OPPOSITE_, int HALF_LENGTH_>
@@ -257,7 +258,7 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
     auto coeff_first_h_1 = &coeff_first_h[1];
 
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(nxEnd - x_start,
                                   nyEnd - y_start,
                                   nzEnd - z_start),
@@ -319,6 +320,6 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
 
                          });
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 
 }

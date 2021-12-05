@@ -20,10 +20,10 @@
 #include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
+using namespace std;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace std;
 
 FORWARD_DECLARE_SINGLE_BOUND_TEMPLATE(CPMLBoundaryManager::CalculateFirstAuxiliary)
 
@@ -47,8 +47,6 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
 
     int nxEnd = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
     int nzEnd = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
-
-    int wnxnz = wnx * wnz;
 
     float *aux, *coeff_a, *coeff_b;
     int z_start = HALF_LENGTH_;
@@ -88,13 +86,16 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
             nzEnd = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
             aux = this->mpAux1zdown->GetNativePointer();
         }
+    } else {
+        throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
     }
+
     first_coeff_h_1 = &first_coeff_h[1];
     distance_1 = &distance[1];
 
 #pragma omp parallel default(shared)
     {
-#pragma omp for schedule(static, 1) collapse(2)
+#pragma omp for schedule(static, 1) collapse(1)
         for (int bz = z_start; bz < nzEnd; bz += block_z) {
             for (int bx = x_start; bx < nxEnd; bx += block_x) {
                 // Calculate the endings appropriately (Handle remainder of the cache
@@ -114,8 +115,7 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
                         if (DIRECTION_ == X_AXIS) { // case x
                             if (OPPOSITE_) {
                                 coeff_ind = ix - x_start;
-                                index =
-                                        iz * WIDTH + (ix - x_start + HALF_LENGTH_);
+                                index = iz * WIDTH + (ix - x_start + HALF_LENGTH_);
                             } else {
                                 coeff_ind = bound_length - ix + HALF_LENGTH_ - 1;
                                 index = iz * WIDTH + ix;
@@ -129,8 +129,6 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
                                 index = iz * wnx + ix;
                             }
                         }
-                        aux[index] =
-                                coeff_a[coeff_ind] * aux[index] + coeff_b[coeff_ind] * value;
                     }
                 }
             }
@@ -154,7 +152,6 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-
     int block_x = this->mpParameters->GetBlockX();
     int block_z = this->mpParameters->GetBlockZ();
 
@@ -162,9 +159,6 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
 
     int nxEnd = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - half_length;
     int nzEnd = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - half_length;
-
-    int wnxnz = wnx * wnz;
-    int nxnz = nx * nz;
 
     float *aux_first, *aux_second, *coeff_a, *coeff_b;
 
@@ -212,6 +206,8 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
             aux_first = this->mpAux1zdown->GetNativePointer();
             aux_second = this->mpAux2zdown->GetNativePointer();
         }
+    } else {
+        throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
     }
 
     auto distance_1 = &distance[1];
@@ -220,7 +216,7 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
 
 #pragma omp parallel default(shared)
     {
-#pragma omp for schedule(static, 1) collapse(2)
+#pragma omp for schedule(static, 1) collapse(1)
         for (int bz = z_start; bz < nzEnd; bz += block_z) {
             for (int bx = x_start; bx < nxEnd; bx += block_x) {
                 // Calculate the endings appropriately (Handle remainder of the cache
@@ -259,6 +255,7 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
                                 index = iz * wnx + ix;
                             }
                         }
+
                         pressure_value = fma(curr[ix], coeff_h[0], pressure_value);
                         DERIVE_ARRAY_AXIS_EQ_OFF(ix, distance_1, +, curr, coeff_h_1, pressure_value)
 

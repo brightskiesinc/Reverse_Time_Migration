@@ -17,21 +17,19 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/parsers/Parser.hpp>
-
-#include <stbx/test-utils/utils.h>
-
 #include <prerequisites/libraries/catch/catch.hpp>
 
+#include <stbx/parsers/Parser.hpp>
+#include <stbx/test-utils/utils.h>
+
 using namespace std;
+using json = nlohmann::json;
 using namespace stbx::parsers;
 using namespace stbx::testutils;
-using json = nlohmann::json;
 
 
 void TEST_CASE_PARSER() {
-    SECTION("Register Files Function Test")
-    {
+    SECTION("Register Files Function Test") {
         auto *parser = Parser::GetInstance();
 
         string parameter_file =
@@ -188,13 +186,11 @@ void TEST_CASE_PARSER() {
 )"_json;
 
 
-        SECTION("GetInstance Function Test")
-        {
+        SECTION("GetInstance Function Test") {
             REQUIRE(instanceof<Parser>(parser));
         }
 
-        SECTION("RegisterFile & GetFiles Functions Test")
-        {
+        SECTION("RegisterFile & GetFiles Functions Test") {
             parser->RegisterFile(parameter_file);
             parser->RegisterFile(configuration_file);
             parser->RegisterFile(callback_file);
@@ -208,26 +204,22 @@ void TEST_CASE_PARSER() {
             REQUIRE(std::find(files.begin(), files.end(), pipeline) != files.end());
         }
 
-        SECTION("BuildMap Function Test")
-        {
+        SECTION("BuildMap Function Test") {
             json map = parser->BuildMap();
 
             REQUIRE(map == ground_truth_map);
         }
 
-        SECTION("GetMap Function Test")
-        {
+        SECTION("GetMap Function Test") {
             REQUIRE(parser->GetMap() == ground_truth_map);
         }
 
-        SECTION("Parser Class Kill Function Test")
-        {
+        SECTION("Parser Class Kill Function Test") {
             REQUIRE(Parser::Kill() == nullptr);
         }
     }
 
-    SECTION("Register Folder Function Test")
-    {
+    SECTION("Register Folder Function Test") {
         auto *parser = Parser::GetInstance();
 
         string workloads =
@@ -385,13 +377,11 @@ void TEST_CASE_PARSER() {
 }
 )"_json;
 
-        SECTION("GetInstance Function Test")
-        {
+        SECTION("GetInstance Function Test") {
             REQUIRE(instanceof<Parser>(parser));
         }
 
-        SECTION("RegisterFolder Function Test")
-        {
+        SECTION("RegisterFolder Function Test") {
             parser->RegisterFolder(workloads);
             vector<std::string> files = parser->GetFiles();
 
@@ -401,20 +391,17 @@ void TEST_CASE_PARSER() {
             REQUIRE(std::find(files.begin(), files.end(), pipeline) != files.end());
         }
 
-        SECTION("BuildMap Function Test")
-        {
+        SECTION("BuildMap Function Test") {
             json map = parser->BuildMap();
 
             REQUIRE(map == ground_truth_map);
         }
 
-        SECTION("GetMap Function Test")
-        {
+        SECTION("GetMap Function Test") {
             REQUIRE(parser->GetMap() == ground_truth_map);
         }
 
-        SECTION("Parser Class Kill Function Test")
-        {
+        SECTION("Parser Class Kill Function Test") {
             REQUIRE(Parser::Kill() == nullptr);
         }
     }
@@ -422,5 +409,4 @@ void TEST_CASE_PARSER() {
 
 TEST_CASE("Parser Class Tess", "[Parser]") {
     TEST_CASE_PARSER();
-
 }

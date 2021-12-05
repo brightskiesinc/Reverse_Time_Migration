@@ -19,8 +19,8 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_WRITER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_WRITER_HPP
 
-#include "operations/data-units/concrete/holders/TracesHolder.hpp"
-#include "operations/components/independents/interface/Component.hpp"
+#include <operations/data-units/concrete/holders/TracesHolder.hpp>
+#include <operations/components/independents/interface/Component.hpp>
 
 namespace operations {
     namespace components {

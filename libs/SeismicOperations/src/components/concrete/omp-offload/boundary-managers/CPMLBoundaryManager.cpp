@@ -17,19 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
+#include <omp.h>
 
+#include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 #include <operations/utils/checks/Checks.hpp>
 
-#include <omp.h>
-
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 
 FORWARD_DECLARE_SINGLE_BOUND_TEMPLATE(CPMLBoundaryManager::CalculateFirstAuxiliary)
 
@@ -132,7 +131,7 @@ void CPMLBoundaryManager::CalculateFirstAuxiliary() {
     distance_1 = &distance[1];
 
 #pragma omp target is_device_ptr( coeff_a, coeff_b, aux, curr_base, first_coeff_h, first_coeff_h_1, distance_1 ) device(device_num)
-#pragma omp  parallel for collapse(3)
+#pragma omp teams distribute parallel for collapse(3)
     for (int by = y_start; by < nyEnd; by += block_y) {
         for (int bz = z_start; bz < nzEnd; bz += block_z) {
             for (int bx = x_start; bx < nxEnd; bx += block_x) {
@@ -302,7 +301,7 @@ void CPMLBoundaryManager::CalculateCPMLValue() {
     auto coeff_first_h_1 = &coeff_first_h[1];
 
 #pragma omp target is_device_ptr(curr_base, vel_base, next_base, coeff_h, coeff_h_1, distance_1, aux_first, aux_second, coeff_a, coeff_b ) device(device_num)
-#pragma omp  parallel for collapse(3)
+#pragma omp teams distribute parallel for collapse(3)
     for (int by = y_start; by < nyEnd; by += block_y) {
         for (int bz = z_start; bz < nzEnd; bz += block_z) {
             for (int bx = x_start; bx < nxEnd; bx += block_x) {

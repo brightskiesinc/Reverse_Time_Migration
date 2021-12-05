@@ -17,19 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/parsers/Parser.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <iostream>
 #include <dirent.h>
 #include <string>
 #include <fstream>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <stbx/parsers/Parser.hpp>
+
 #define JSON_EXTENSION ".json"
 
 using namespace std;
-using namespace stbx::parsers;
-using namespace bs::base::logger;
 using json = nlohmann::json;
+using namespace bs::base::logger;
+using namespace stbx::parsers;
 
 
 void Parser::RegisterFile(const std::string &file) {

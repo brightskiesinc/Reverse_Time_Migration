@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -18,27 +18,24 @@
  */
 
 #include <bs/io/streams/concrete/writers/SeismicWriter.hpp>
-
 #include <bs/io/streams/concrete/writers/CSVWriter.hpp>
 #include <bs/io/streams/concrete/writers/SUWriter.hpp>
 #include <bs/io/streams/concrete/writers/BinaryWriter.hpp>
 #include <bs/io/streams/concrete/writers/ImageWriter.hpp>
 #include <bs/io/streams/concrete/writers/SegyWriter.hpp>
 
-#include <bs/base/exceptions/Exceptions.hpp>
 
-using namespace std;
 using namespace bs::io::streams;
-using namespace bs::io::dataunits;
 using namespace bs::base::configurations;
-using namespace bs::base::exceptions;
+using namespace bs::io::dataunits;
+using namespace std;
 
 std::unordered_map<std::string, WriterType> SeismicWriter::mWriterMap = {
-        {"segy",   WriterType::SEGY},
+        {"segy", WriterType::SEGY},
         {"binary", WriterType::BINARY},
-        {"csv",    WriterType::CSV},
-        {"su",     WriterType::SU},
-        {"image",  WriterType::IMAGE}
+        {"csv", WriterType::CSV},
+        {"su", WriterType::SU},
+        {"image", WriterType::IMAGE},
 };
 
 SeismicWriter::SeismicWriter(WriterType aType, ConfigurationMap *apConfigurationMap) {
@@ -58,8 +55,6 @@ SeismicWriter::SeismicWriter(WriterType aType, ConfigurationMap *apConfiguration
         case WriterType::IMAGE:
             this->mpWriter = new ImageWriter(apConfigurationMap);
             break;
-        default:
-            throw UNSUPPORTED_FEATURE_EXCEPTION();
     }
 }
 

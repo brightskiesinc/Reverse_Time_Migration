@@ -17,19 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/CallbacksGenerator.hpp>
-
-#include <stbx/generators/common/Keys.hpp>
-#include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
-#include <operations/helpers/callbacks/concrete/WriterCallback.h>
-#include <operations/helpers/callbacks/concrete/NormWriter.h>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <iostream>
 #include <string>
 
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
+#include <stbx/generators/primitive/CallbacksGenerator.hpp>
+#include <stbx/generators/common/Keys.hpp>
+
+#include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
+#include <operations/helpers/callbacks/concrete/WriterCallback.h>
+#include <operations/helpers/callbacks/concrete/NormWriter.h>
+
+using namespace bs::base::logger;
 using namespace stbx::generators;
 using namespace operations::helpers::callbacks;
-using namespace bs::base::logger;
 
 
 CallbacksGenerator::CallbacksGenerator(const std::string &aWritePath, nlohmann::json &aMap) {

@@ -17,22 +17,20 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-
-#include <operations/backend/OneAPIBackend.hpp>
-
+#include <bs/base/api/cpp/BSBase.hpp>
 #include <bs/timer/api/cpp/BSTimer.hpp>
 
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
+
 using namespace cl::sycl;
+using namespace bs::base::backend;
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
-using namespace bs::timer;
-
 
 void WaveFieldsMemoryHandler::FirstTouch(float *ptr, GridBox *apGridBox, bool enable_window) {
-    if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+    if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
         int nx, ny, nz, compute_nx, compute_nz;
 
         if (enable_window) {
@@ -54,33 +52,32 @@ void WaveFieldsMemoryHandler::FirstTouch(float *ptr, GridBox *apGridBox, bool en
         }
         ElasticTimer timer("ComputationKernel::FirstTouch");
         timer.Start();
-        if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-                size_t num_groups = OneAPIBackend::GetInstance()->GetWorkgroupNumber();
-                size_t wgsize = OneAPIBackend::GetInstance()->GetWorkgroupSize();
+        if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+            Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+                size_t num_groups = Backend::GetInstance()->GetWorkgroupNumber();
+                size_t wgsize = Backend::GetInstance()->GetWorkgroupSize();
                 size_t z_stride = compute_nz / num_groups;
                 auto global_range = range<1>(num_groups);
                 auto local_range = range<1>(wgsize);
                 const size_t wnx = nx;
                 const int hl = mpParameters->GetHalfLength();
                 float *curr_base = ptr;
-                cgh.parallel_for_work_group(
-                        global_range, local_range, [=](group<1> grp) {
-                            size_t z_id = grp.get_id(0) * z_stride + hl;
-                            size_t end_z =
-                                    (z_id + z_stride) < (compute_nz + hl) ? (z_id + z_stride) : (compute_nz + hl);
-                            grp.parallel_for_work_item([&](h_item<1> it) {
-                                for (size_t iz = z_id; iz < end_z; iz++) {
-                                    size_t offset = iz * wnx + it.get_local_id(0);
-                                    for (size_t ix = hl; ix < hl + compute_nx; ix += wgsize) {
-                                        size_t idx = offset + ix;
-                                        curr_base[idx] = 0;
-                                    }
-                                }
-                            });
-                        });
+                cgh.parallel_for_work_group(global_range, local_range, [=](group<1> grp) {
+                    size_t z_id = grp.get_id(0) * z_stride + hl;
+                    size_t end_z =
+                            (z_id + z_stride) < (compute_nz + hl) ? (z_id + z_stride) : (compute_nz + hl);
+                    grp.parallel_for_work_item([&](h_item<1> it) {
+                        for (size_t iz = z_id; iz < end_z; iz++) {
+                            size_t offset = iz * wnx + it.get_local_id(0);
+                            for (size_t ix = hl; ix < compute_nx; ix += wgsize) {
+                                size_t idx = offset + ix;
+                                curr_base[idx] = 0;
+                            }
+                        }
+                    });
+                });
             });
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+            Backend::GetInstance()->GetDeviceQueue()->wait();
         }
         Device::MemSet(ptr, 0, nx * nz * ny * sizeof(float));
         timer.Stop();

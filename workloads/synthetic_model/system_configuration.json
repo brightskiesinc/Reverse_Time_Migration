@@ -8,6 +8,11 @@
     },
     "writer": {
       "type": "normal"
+    },
+    "timer": {
+      "properties": {
+        "precision": "milli"
+      }
     }
   }
 }

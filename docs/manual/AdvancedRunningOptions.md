@@ -29,7 +29,7 @@ Optional flags :
 	Default is "./results"
 	
 	-h
-	Print the options for this command
+	Print the options for this command,
 ```
 
 ## Configuration Files
@@ -42,7 +42,7 @@ All configuration files are ```*.json``` files which has a generic structure for
 {
   "<BLOCK>": {
     "<ATTRIBUTE>": "<VALUE>"
-  }
+    }
 }
 ```
 
@@ -150,13 +150,13 @@ file is available in **```'workloads/bp_model/engine_configuration.json'```**.
     "max": "602",
     "sort-type": "CSR",
     "paths": [
-      "data/shots0001_0200.segy",
-      "data/shots0201_0400.segy",
-      "data/shots0401_0600.segy",
-      "data/shots0601_0800.segy",
-      "data/shots0801_1000.segy",
-      "data/shots1001_1200.segy",
-      "data/shots1201_1348.segy"
+        "data/shots0001_0200.segy",
+        "data/shots0201_0400.segy",
+        "data/shots0401_0600.segy",
+        "data/shots0601_0800.segy",
+        "data/shots0801_1000.segy",
+        "data/shots1001_1200.segy",
+        "data/shots1201_1348.segy"
     ]
   },
   "models": {
@@ -171,44 +171,31 @@ file is available in **```'workloads/bp_model/engine_configuration.json'```**.
   },
   "components": {
     "boundary-manager": {
-      "type": "none",
+      "type": "random",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": false,
+        "grain-side-length": 200
       }
     },
     "migration-accommodator": {
       "type": "cross-correlation",
-      "properties": {
-        "compensation": "none"
-      }
+      "compensation": "combined"
     },
     "forward-collector": {
-      "type": "three",
-      "properties": {
-        "boundary-saving": false
-      }
+      "type": "three"
     },
     "trace-manager": {
-      "properties": {
-        "type": "segy",
-        "shot-stride": 2,
-        "interpolation": "none"
-      }
+      "type": "segy",
+      "interpolation": "none"
     },
     "source-injector": {
-      "type": "ricker",
-      "properties": {
-        "max-freq-amplitude-percentage": 0.05
-      }
+      "type": "ricker"
     },
     "model-handler": {
-      "properties": {
-        "type": "segy"
-      }
+      "type": "segy"
     }
   }
 }
-
 ```
 
 #### Models Block
@@ -222,9 +209,9 @@ Models file as indicated in the engine configuration. It goes with the following
     "max": "<value>",
     "sort-type": "<type>",
     "paths": [
-      "<file-path>",
-      "<file-path>",
-      "<file-path>"
+        "<file-path>",
+        "<file-path>",
+        "<file-path>"
     ]
   }
 }
@@ -237,7 +224,7 @@ Traces file as indicated in the engine configuration. It goes with the following
 ```json
 {
   "models": {
-    "<parameter-name>": "<file-path>"
+    "<parameter-name>" : "<file-path>"
   }
 }
 ```
@@ -259,91 +246,66 @@ Traces file as indicated in the engine configuration. It goes with the following
 ```json
 {
   "callbacks": {
-    "writer": {
-      "active-types": [
-        {
-          "su": {
-            "properties": {
-              "write-little-endian": false
-            }
-          }
-        },
-        {
-          "csv": {
-            "properties": {
-            }
-          }
-        },
-        {
-          "image": {
-            "properties": {
-              "percentile": 98.5
-            }
-          }
-        },
-        {
-          "binary": {
-            "properties": {
-            }
-          }
-        },
-        {
-          "segy": {
-            "properties": {
-            }
-          }
-        }
-      ],
-      "enable": false,
-      "show-each": 200
+    "su": {
+      "enable": "yes",
+      "show_each": "200",
+      "write-in-little-endian": "no"
+    },
+    "csv": {
+      "enable": "yes",
+      "show_each": "200"
+    },
+    "image": {
+      "enable": "yes",
+      "show-each": "200",
+      "percentile": "98.5"
     },
     "norm": {
-      "enable": false,
-      "show-each": 200
+      "enable": "no",
+      "show-each": "100"
     },
-    "writers-configuration": {
+    "binary": {
+      "enable": "no",
+      "show-each": "200"
+    },
+    "segy": {
+      "enable": "yes",
+      "show-each": "200"
+    },
+    "writers": {
       "migration": {
-        "enable": true
+        "enable": "yes"
       },
-      "parameters": {
-        "enable": true,
-        "output": [
-          "velocity",
-          "density"
-        ]
+      "velocity": {
+        "enable": "yes"
       },
       "traces-raw": {
-        "enable": true
+        "enable": "yes"
       },
       "traces-preprocessed": {
-        "enable": true
+        "enable": "no"
       },
-      "re-extended-parameters": {
-        "enable": true,
-        "output": [
-          "velocity",
-          "density"
-        ]
+      "re-extended-velocity": {
+        "enable": "yes"
       },
       "each-stacked-shot": {
-        "enable": true
+        "enable": "no"
       },
       "single-shot-correlation": {
-        "enable": true
+        "enable": "no"
       },
       "backward": {
-        "enable": true
+        "enable": "yes"
       },
       "forward": {
-        "enable": true
+        "enable": "yes"
       },
       "reverse": {
-        "enable": true
+        "enable": "yes"
       }
     }
   }
 }
-
 ```
 
 * For visualization of the **```.segy```** / **```.su```** files, seismic unix can be used.

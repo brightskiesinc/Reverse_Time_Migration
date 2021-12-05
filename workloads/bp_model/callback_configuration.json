@@ -35,11 +35,11 @@
           }
         }
       ],
-      "enable": false,
+      "enable": true,
       "show-each": 200
     },
     "norm": {
-      "enable": false,
+      "enable": true,
       "show-each": 200
     },
     "writers-configuration": {

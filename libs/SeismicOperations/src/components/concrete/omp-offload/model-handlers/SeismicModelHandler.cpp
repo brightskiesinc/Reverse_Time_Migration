@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
-
 #include <omp.h>
+
+#include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
 
 using namespace operations::components;
 using namespace operations::dataunits;

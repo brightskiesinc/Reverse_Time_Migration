@@ -20,10 +20,10 @@
 #ifndef OPERATIONS_LIB_HELPERS_CALLBACKS_NORM_WRITER_H
 #define OPERATIONS_LIB_HELPERS_CALLBACKS_NORM_WRITER_H
 
-#include <operations/helpers/callbacks/interface/Callback.hpp>
-
 #include <fstream>
 #include <string>
+
+#include <operations/helpers/callbacks/interface/Callback.hpp>
 
 namespace operations {
     namespace helpers {
@@ -83,13 +83,14 @@ namespace operations {
                 std::string GetExtension();
 
             public:
-                static float Solve(const float *apMatrix, uint nx, uint nz, uint ny);
+                float Solve(const float *apMatrix, uint nx, uint nz, uint ny);
 
             private:
                 uint show_each;
                 bool write_forward;
                 bool write_backward;
                 bool write_reverse;
+                uint offset;
                 std::string write_path;
 
                 std::ofstream *forward_norm_stream;

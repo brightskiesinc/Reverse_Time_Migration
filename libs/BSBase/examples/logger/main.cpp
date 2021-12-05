@@ -3,12 +3,12 @@
  *
  * This file is part of BS Base Package.
  *
- * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * BS Base Package is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SeismicToolbox is distributed in the hope that it will be useful,
+ * BS Base Package is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -19,9 +19,7 @@
 
 #include <iostream>
 
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/base/logger/concrete/ConsoleLogger.hpp>
-#include <bs/base/logger/concrete/FileLogger.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
 
 using namespace bs::base::logger;
 
@@ -69,4 +67,6 @@ int main() {
     ls->Critical() << "Hello I'm the Console critical statement , it appears in Console format only"
                    << '\n';
     ls->Debug() << "Hello I'm the Console Debug statement , it appears in Console format only" << '\n';
+
+    return EXIT_SUCCESS;
 }

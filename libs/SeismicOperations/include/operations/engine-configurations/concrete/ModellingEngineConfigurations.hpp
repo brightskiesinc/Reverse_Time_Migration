@@ -20,8 +20,9 @@
 #ifndef OPERATIONS_LIB_MODELLING_ENGINE_CONFIGURATION_HPP
 #define OPERATIONS_LIB_MODELLING_ENGINE_CONFIGURATION_HPP
 
-#include <operations/engine-configurations/interface/EngineConfigurations.hpp>
+#include <map>
 
+#include <operations/engine-configurations/interface/EngineConfigurations.hpp>
 #include <operations/components/independents/primitive/BoundaryManager.hpp>
 #include <operations/components/independents/primitive/ComputationKernel.hpp>
 #include <operations/components/independents/primitive/ModelHandler.hpp>
@@ -29,7 +30,6 @@
 #include <operations/components/independents/primitive/SourceInjector.hpp>
 #include <operations/components/independents/primitive/TraceManager.hpp>
 
-#include <map>
 
 namespace operations {
     namespace configurations {

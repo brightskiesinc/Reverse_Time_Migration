@@ -17,13 +17,16 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/parsers/ArgumentsParser.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <getopt.h>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <stbx/parsers/ArgumentsParser.hpp>
+
+
 using namespace std;
-using namespace stbx::parsers;
 using namespace bs::base::logger;
+using namespace stbx::parsers;
 
 void ArgumentsParser::Parse(std::string &aParameterFile,
                             std::string &aConfigurationFile,

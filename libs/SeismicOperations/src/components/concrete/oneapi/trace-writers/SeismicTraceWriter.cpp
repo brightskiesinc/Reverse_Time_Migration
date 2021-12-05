@@ -17,17 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/trace-writers/SeismicTraceWriter.hpp"
-#include <operations/backend/OneAPIBackend.hpp>
-
 #include <iostream>
 
-using namespace cl::sycl;
+#include <operations/components/independents/concrete/trace-writers/SeismicTraceWriter.hpp>
+#include <bs/base/backend/Backend.hpp>
+
 using namespace std;
+using namespace cl::sycl;
+using namespace bs::base::backend;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
 
 void SeismicTraceWriter::RecordTrace(uint time_step) {
 
@@ -52,7 +52,7 @@ void SeismicTraceWriter::RecordTrace(uint time_step) {
     auto positions_x = this->mpDPositionsX.GetNativePointer();
     auto values = this->mpDTraces.GetNativePointer();
     float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         auto global_range = range<1>(trace_size);
         auto local_range = range<1>(1);
         auto global_nd_range = nd_range<1>(global_range, local_range);
@@ -63,5 +63,5 @@ void SeismicTraceWriter::RecordTrace(uint time_step) {
             values[(trace_step) * trace_size + i] = pressure[offset];
         });
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }

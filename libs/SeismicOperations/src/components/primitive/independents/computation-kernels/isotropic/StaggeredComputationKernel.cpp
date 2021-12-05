@@ -4,7 +4,8 @@
  * This file is part of SeismicToolbox.
  *
  * SeismicToolbox is free software: you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published
+ * under the terms            out<<x_end - x_start<<" " <<y_end - y_start <<" "<< z_end - z_start<<sycl::endl;
+ of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -17,22 +18,22 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <cmath>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
 #include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
 
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
-#include <iostream>
-#include <cmath>
-
 using namespace std;
+using namespace bs::base::logger;
 using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 StaggeredComputationKernel::StaggeredComputationKernel(
         bs::base::configurations::ConfigurationMap *apConfigurationMap) {
@@ -61,8 +62,13 @@ ComputationKernel *StaggeredComputationKernel::Clone() {
 
 template<KERNEL_MODE KERNEL_MODE_>
 void StaggeredComputationKernel::ComputeAll() {
-    this->ComputeAll<KERNEL_MODE_, true>();
+    int logical_ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
 
+    if (logical_ny == 1) {
+        this->ComputeAll<KERNEL_MODE_, true>();
+    } else {
+        this->ComputeAll<KERNEL_MODE_, false>();
+    }
 }
 
 template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_>
@@ -147,14 +153,25 @@ MemoryHandler *StaggeredComputationKernel::GetMemoryHandler() {
 }
 
 void StaggeredComputationKernel::InitializeVariables() {
+
+    int wnx = mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     float *coeff = mpParameters->GetFirstDerivativeStaggeredFDCoefficient();
+
     int hl = mpParameters->GetHalfLength();
     int array_length = hl;
     float coeff_local[hl];
+    int vertical[hl];
+
     for (int i = 0; i < hl; i++) {
         coeff_local[i] = coeff[i + 1];
+        vertical[i] = (i + 1) * (wnx);
+
     }
     mpCoeff = new FrameBuffer<float>(array_length);
+    mpVerticalIdx = new FrameBuffer<int>(array_length);
+
     Device::MemCpy(mpCoeff->GetNativePointer(), coeff_local,
                    array_length * sizeof(float));
+    Device::MemCpy(mpVerticalIdx->GetNativePointer(), vertical, array_length * sizeof(int));
+
 }

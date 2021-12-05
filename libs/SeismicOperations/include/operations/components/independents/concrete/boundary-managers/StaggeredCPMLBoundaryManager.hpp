@@ -20,13 +20,13 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_STAGGERED_CPML_BOUNDARY_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_BOUNDARY_MANAGERS_STAGGERED_CPML_BOUNDARY_MANAGER_HPP
 
-#include <operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp>
-#include <operations/components/independents/primitive/BoundaryManager.hpp>
-#include <operations/components/dependency/concrete/HasNoDependents.hpp>
+#include <vector>
 
 #include <bs/base/memory/MemoryManager.hpp>
 
-#include <vector>
+#include <operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp>
+#include <operations/components/independents/primitive/BoundaryManager.hpp>
+#include <operations/components/dependency/concrete/HasNoDependents.hpp>
 
 namespace operations {
     namespace components {
@@ -55,9 +55,10 @@ namespace operations {
         private:
             void InitializeExtensions();
 
-            void FillCPMLCoefficients(float *coeff_a, float *coeff_b, int boundary_length,
-                                      float dh, float dt, float max_vel, float shift_ratio,
-                                      float reflect_coeff, float relax_cp);
+            void
+            FillCPMLCoefficients(float *apCoeff_a, float *apCoeff_b, int aBoundaryLength, int aHalfLength, float aDh,
+                                 float aDt,
+                                 float aMaxVel, float aShiftRatio, float aReflectCoeff, float aRelaxCp);
 
             void ZeroAuxiliaryVariables();
 
@@ -100,30 +101,33 @@ namespace operations {
             float mShiftRatio = 0.1;
             float mRelaxCoefficient = 1;
 
-            dataunits::FrameBuffer<float> *small_a_x = nullptr;
-            dataunits::FrameBuffer<float> *small_a_y = nullptr;
-            dataunits::FrameBuffer<float> *small_a_z = nullptr;
-            dataunits::FrameBuffer<float> *small_b_x = nullptr;
-            dataunits::FrameBuffer<float> *small_b_y = nullptr;
-            dataunits::FrameBuffer<float> *small_b_z = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_a_x = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_a_y = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_a_z = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_b_x = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_b_y = nullptr;
+            dataunits::FrameBuffer<float> *mpSmall_b_z = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_vel_x_left = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_vel_x_right = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_x_left = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_x_right = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_vel_y_up = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_vel_y_down = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_y_up = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_y_down = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_vel_z_up = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_vel_z_down = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_z_up = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_vel_z_down = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_ptr_x_left = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_ptr_x_right = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_x_left = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_x_right = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_ptr_y_up = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_ptr_y_down = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_y_up = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_y_down = nullptr;
 
-            dataunits::FrameBuffer<float> *auxiliary_ptr_z_up = nullptr;
-            dataunits::FrameBuffer<float> *auxiliary_ptr_z_down = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_z_up = nullptr;
+            dataunits::FrameBuffer<float> *mpAuxiliary_ptr_z_down = nullptr;
+
+            dataunits::FrameBuffer<float> *mpCoeff = nullptr;
+
         };
     }//namespace components
 }//namespace operations

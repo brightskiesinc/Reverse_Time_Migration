@@ -17,20 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 #include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyParametersGenerator.hpp>
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
-
-#include <prerequisites/libraries/catch/catch.hpp>
-
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -104,7 +102,7 @@ void TEST_CASE_SPONGE(GridBox *apGridBox,
                         "equation-order": "second",
                         "grid-sampling": "uniform"
                     },
-                            "type": "cpml",
+                            "type": "sponge",
                             "properties": {
                                 "use-top-layer": true,
                                 "reflect-coeff": 0.03,
@@ -155,30 +153,12 @@ TEST_CASE("Sponge Boundary Manager - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_SPONGE(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Sponge Boundary Manager - 2D - Window", "[Window],[2D]") {
     TEST_CASE_SPONGE(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Sponge Boundary Manager - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_SPONGE(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Sponge Boundary Manager - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_SPONGE(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }

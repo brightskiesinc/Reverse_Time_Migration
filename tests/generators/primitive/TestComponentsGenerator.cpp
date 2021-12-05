@@ -17,23 +17,23 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include  <stbx/generators/primitive/ComponentsGenerator.hpp>
-
-#include <stbx/test-utils/utils.h>
+#include <string>
 
 #include <prerequisites/libraries/catch/catch.hpp>
 #include <prerequisites/libraries/nlohmann/json.hpp>
 
-#include <string>
+#include  <stbx/generators/primitive/ComponentsGenerator.hpp>
+
+#include <stbx/test-utils/utils.h>
+
+using namespace bs::base::exceptions;
+using namespace bs::base::configurations;
 
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
-using namespace bs::base::configurations;
 using namespace operations::common;
 using namespace operations::components;
-using namespace bs::base::exceptions;
-
 
 void TEST_CASE_COMPONENTS_GENERATOR() {
     nlohmann::json map = R"(
@@ -80,55 +80,47 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
 
     auto components_generator = new ComponentsGenerator(map, order, sampling, approximation);
 
-    SECTION("GenerateComputationKernel")
-    {
+    SECTION("GenerateComputationKernel") {
         auto computation_kernel = components_generator->GenerateComputationKernel();
         REQUIRE(instanceof<ComputationKernel>(computation_kernel));
         delete computation_kernel;
     }
 
-    SECTION("GenerateModelHandler")
-    {
+    SECTION("GenerateModelHandler") {
         auto model_handler = components_generator->GenerateModelHandler();
         REQUIRE(instanceof<ModelHandler>(model_handler));
         delete model_handler;
     }
 
-    SECTION("GenerateSourceInjector")
-    {
+    SECTION("GenerateSourceInjector") {
         auto source_injector = components_generator->GenerateSourceInjector();
         REQUIRE(instanceof<SourceInjector>(source_injector));
         delete source_injector;
     }
 
-    SECTION("GenerateBoundaryManager")
-    {
+    SECTION("GenerateBoundaryManager") {
         auto boundary_manager = components_generator->GenerateBoundaryManager();
         REQUIRE(instanceof<BoundaryManager>(boundary_manager));
         delete boundary_manager;
     }
 
-    SECTION("GenerateForwardCollector")
-    {
+    SECTION("GenerateForwardCollector") {
         auto forward_collector = components_generator->GenerateForwardCollector(WRITE_PATH);
         REQUIRE(instanceof<ForwardCollector>(forward_collector));
     }
 
-    SECTION("GenerateMigrationAccommodator")
-    {
+    SECTION("GenerateMigrationAccommodator") {
         auto migration_accommodator = components_generator->GenerateMigrationAccommodator();
         REQUIRE(instanceof<MigrationAccommodator>(migration_accommodator));
     }
 
-    SECTION("GenerateTraceManager")
-    {
+    SECTION("GenerateTraceManager") {
         auto trace_manager = components_generator->GenerateTraceManager();
         REQUIRE(instanceof<TraceManager>(trace_manager));
         delete trace_manager;
     }
 
-    SECTION("GenerateTraceWriter")
-    {
+    SECTION("GenerateTraceWriter") {
         auto trace_writer = components_generator->GenerateTraceWriter();
         REQUIRE(instanceof<TraceWriter>(trace_writer));
         delete trace_writer;
@@ -137,5 +129,4 @@ void TEST_CASE_COMPONENTS_GENERATOR() {
 
 TEST_CASE("ComponentsGenerator Class", "[Generator],[ComponentsGenerator]") {
     TEST_CASE_COMPONENTS_GENERATOR();
-
 }

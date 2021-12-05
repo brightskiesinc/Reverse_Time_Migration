@@ -17,7 +17,7 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/helpers/callbacks/primitive/CallbackCollection.hpp"
+#include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
 
 using namespace std;
 using namespace operations::helpers::callbacks;

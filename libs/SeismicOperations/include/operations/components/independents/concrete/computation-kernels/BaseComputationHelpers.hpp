@@ -20,8 +20,9 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_COMPUTATION_KERNELS_BASE_COMPUTATION_HELPERS_HPP
 #define OPERATIONS_LIB_COMPONENTS_COMPUTATION_KERNELS_BASE_COMPUTATION_HELPERS_HPP
 
+#ifndef fma
 #define fma(a, b, c) ((a) * (b) + (c))
-
+#endif
 /**
  * Computation kernels forward declarations utilities.
  */

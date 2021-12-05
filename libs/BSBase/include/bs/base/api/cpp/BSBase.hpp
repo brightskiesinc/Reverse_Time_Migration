@@ -20,9 +20,23 @@
 #ifndef BS_BASE_API_CPP_BASE_HPP
 #define BS_BASE_API_CPP_BASE_HPP
 
-/* CONFIGURATIONS. */
-#include <bs/base/configurations/interface/Configurable.hpp.hpp>
-#include <bs/base/configurations/interface/ConfigurationMap.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+/* CONFIGURATIONS MODULE. */
+#include <bs/base/configurations/Configurations.hpp>
+
+/* LOGGER MODULE. */
+#include <bs/base/logger/Logger.hpp>
+
+/* MEMORY MANAGER MODULE. */
+#include <bs/base/memory/MemoryManager.hpp>
+
+/* BACKEND MODULE. */
+#include <bs/base/backend/Backend.hpp>
+#include <bs/base/backend/Technology.hpp>
+
+/* COMMON MODULE. */
+#include <bs/base/common/Common.hpp>
+
+/* EXCEPTIONS MODULE. */
+#include <bs/base/exceptions/Exceptions.hpp>
 
 #endif //BS_BASE_API_CPP_BASE_HPP

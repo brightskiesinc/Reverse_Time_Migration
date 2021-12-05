@@ -22,17 +22,13 @@
 /// Seismic Engine execution.
 ///
 
-#include <stbx/agents/Agents.h>
-#include <stbx/writers/Writers.h>
-#include <stbx/parsers/Parser.hpp>
-#include <stbx/parsers/ArgumentsParser.hpp>
-#include <stbx/generators/Generator.hpp>
-
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/base/logger/concrete/FileLogger.hpp>
 #include <bs/base/logger/concrete/ConsoleLogger.hpp>
 
-#include <bs/timer/api/cpp/BSTimer.hpp>
+#include <stbx/parsers/Parser.hpp>
+#include <stbx/parsers/ArgumentsParser.hpp>
+#include <stbx/generators/Generator.hpp>
 
 using namespace std;
 using namespace stbx::parsers;
@@ -68,31 +64,34 @@ int main(int argc, char *argv[]) {
                            write_path,
                            argc, argv);
 
-    Parser *p = Parser::GetInstance();
-    p->RegisterFile(parameter_file);
-    p->RegisterFile(configuration_file);
-    p->RegisterFile(callback_file);
-    p->RegisterFile(system_file);
-    p->BuildMap();
+    auto parser = Parser::GetInstance();
+    parser->RegisterFile(parameter_file);
+    parser->RegisterFile(configuration_file);
+    parser->RegisterFile(callback_file);
+    parser->RegisterFile(system_file);
+    parser->BuildMap();
 
-    auto g = new Generator(p->GetMap());
-    auto engine = g->GenerateEngine(write_path);
+    auto generator = new Generator(parser->GetMap());
+    auto engine = generator->GenerateEngine(write_path);
 
-    TimerManager::GetInstance()->Configure(g->GenerateTimerConfiguration());
+    TimerManager::GetInstance()->Configure(generator->GenerateTimerConfiguration());
 
-    auto agent = g->GenerateAgent();
+    auto agent = generator->GenerateAgent();
     agent->AssignEngine(engine);
     agent->AssignArgs(argc, argv);
-    MigrationData *md = agent->Execute();
+    auto md = agent->Execute();
 
-    auto writer = g->GenerateWriter();
+    delete engine;
+
+    auto writer = generator->GenerateWriter();
     writer->AssignMigrationData(md);
     writer->Write(write_path);
 
     TimerManager::GetInstance()->Terminate(true);
     TimerManager::Kill();
 
-    delete engine;
+    delete parser;
+    delete generator;
 
-    return 0;
+    return EXIT_SUCCESS;
 }

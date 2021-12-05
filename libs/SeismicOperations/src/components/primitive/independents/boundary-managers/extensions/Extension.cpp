@@ -17,17 +17,19 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp"
+#include <bs/base/api/cpp/BSBase.hpp>
 
-#include <bs/base/memory/MemoryManager.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp>
 
 using namespace std;
+using namespace bs::base::memory;
 using namespace operations::components::addons;
 using namespace operations::dataunits;
-using namespace bs::base::memory;
 
 
-Extension::Extension() = default;
+Extension::Extension()
+        : mBoundaryLength(0),
+          mHalfLength(0) {}
 
 Extension::~Extension() = default;
 
@@ -43,14 +45,12 @@ void Extension::SetGridBox(GridBox *apGridBox) {
     this->mpGridBox = apGridBox;
 }
 
-void Extension::SetProperty(float *property, float *window_property) {
-    this->mProperties = property;
-    this->mpWindowProperties = window_property;
+void Extension::SetProperty(float *apProperty, float *aWindowProperty) {
+    this->mProperties = apProperty;
+    this->mpWindowProperties = aWindowProperty;
 }
 
 void Extension::ExtendProperty() {
-
-
     int nx = mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int ny = mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
     int nz = mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();

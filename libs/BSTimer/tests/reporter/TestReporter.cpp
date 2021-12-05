@@ -17,17 +17,19 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/reporter/TimerReporter.hpp>
-
-#include <bs/timer/core/concrete/ElasticTimer.hpp>
-#include <bs/timer/utils/stats/StatisticsHelper.hpp>
-#include <bs/timer/test-utils/FunctionsGenerator.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-#include <prerequisites/libraries/catch/catch.hpp>
-
 #include <iostream>
 
-#define TOLERANCE 0.00001 /* Based on trial and error */
+#include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+
+#include <bs/timer/reporter/TimerReporter.hpp>
+#include <bs/timer/core/timers/concrete/ElasticTimer.hpp>
+#include <bs/timer/utils/stats/StatisticsHelper.hpp>
+#include <bs/timer/test-utils/FunctionsGenerator.hpp>
+
+
+#define TOLERANCE 0.0001 /* Based on trial and error */
 
 using namespace std;
 using namespace bs::timer;

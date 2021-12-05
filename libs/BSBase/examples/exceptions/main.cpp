@@ -3,12 +3,12 @@
  *
  * This file is part of BS Base Package.
  *
- * SeismicToolbox is free software: you can redistribute it and/or modify it
+ * BS Base Package is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SeismicToolbox is distributed in the hope that it will be useful,
+ * BS Base Package is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include <bs/base/exceptions/Exceptions.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
 
 using namespace bs::base::exceptions;
 
@@ -58,5 +58,5 @@ int main() {
         std::cout << e.what() << std::endl;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

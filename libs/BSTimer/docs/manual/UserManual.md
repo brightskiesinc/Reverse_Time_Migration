@@ -1,50 +1,73 @@
 # User Manual
 
-### Using Elastic Timer
+User manual for how to use BS Timer.
 
-###### Creating Timer
+## Timer Variants
+
+BS Timer library includes different variants of timers for different purposes, each one will be discussed in more
+details in later part in this document. Variant available are `ElasticTimer`, `ScopeTimer` and `LazyTimer`. All timers
+support timing for various backends, they also support timing for both CPU (a.k.a. Host) and GPU (a.k.a. Device)
+
+### Elastic Timer
+
+Used when functions or kernels are long or when wanting to start timing at a scope and ending it at another one.
+
+#### Creating Elastic Timer
+
+Creating `ElasticTimer` can go with two different approaches; one in which only a function name is provided and that
+when timing normal functions. Another way for constructing an `ElasticTimer` is by providing extra information for
+bandwidth calculations and this is used for kernels timing.
+
+**Default Constructor:**
 
 ```cpp
-auto timer = new ElasticTimer("Function Name");
+auto timer = new ElasticTimer(<function-name>, <target-flag>[OPTIONAL]);
 ```
 
-###### Creating Timer for kernel
+**Elaborative Constructor:**
 
 ```cpp
-auto timer = new ElastingTimer("Function Name", Grid Size,
-Number of arrays,
-Single precision flag,
-Number of operations);
+auto timer = new ElasticTimer(<function-name>, <grid-size>, <number-of-arrays>, <single-precision-flag>, <number-of-operations>, <target-flag>[OPTIONAL]);
 ```
 
-###### Starting Timer
+**Using Elastic Timer:**
 
 ```cpp
 timer->Start();
-```
 
-###### Stopping Timer
+/* Block of code to be timed. */
 
-```cpp
 timer->Stop();
 ```
 
-### Using Scope Timer
+### Scope Timer
+
+Used when functions or kernels are a bit small and available in only one scope. Pros of using such variant is that it
+gets auto destructed by exiting scope and that no need for starting or ending functions here.
 
 ```cpp
 {
-...
-ScopeTimer timer("Function Name");
-///Block of code to be timed
+
+/* Block of code that won't be timed. */
+
+ScopeTimer timer(<function-name>);
+
+/* Block of code to be timed. */
+
 }
 ```
 
-### Using Lazy Timer
+### Lazy Timer
+
+Used when functions or kernels are more of a scope functions. Usually used for tests purposes only. Note that codes
+timed by `LazyTimer` won't be reported by streams.
 
 ```cpp
 LazyTimer::Evaluate([&]() {
-/*Block of code to be timed*/
-}, Print to console flag);
+
+/* Block of code to be timed. */
+
+}, <show-results-flag>[OPTIONAL], <time-unit>[OPTIONAL], <target-flag>[OPTIONAL]);
 ```
 
 ### Configuring Manager
@@ -56,9 +79,13 @@ TimerManager::GetInstance()->Configure(JSONConfigurationMap);
 ### Reporting
 
 ```cpp
-TimerManager::GetInstance()->Report(Print to console flag,
-Export report to text file flag,
-Filename);
+TimerManager::GetInstance()->Report(std::ostream &aOutputStream);
+```
+
+Or
+
+```cpp
+TimerManager::GetInstance()->Report(std::vector< std::ostream *> &aStreams);
 ```
 
 ## Building
@@ -103,4 +130,3 @@ cd <path-to-python-module>
 ```shell script
 python3 <path-to-main.py> -i <path-to-input-file> -o <path-to-output-dir>
 ```
-

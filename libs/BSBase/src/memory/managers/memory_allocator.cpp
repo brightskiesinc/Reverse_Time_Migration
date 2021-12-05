@@ -17,12 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/memory/managers/memory_allocator.h>
-
-#include <bs/base/memory/managers/memory_tracker.h>
-
 #include <cstdlib>
 #include <unordered_map>
+
+#include <bs/base/memory/managers/memory_allocator.h>
+#include <bs/base/memory/managers/memory_tracker.h>
 
 #define MASK_ALLOC_OFFSET(x) (x)
 #define CACHELINE_BYTES 64

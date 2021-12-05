@@ -17,22 +17,22 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/api/cpp/BSTimer.hpp>
-#include <bs/timer/common/Definitions.hpp>
-
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
 
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+
+#include <bs/timer/api/cpp/BSTimer.hpp>
+#include <bs/timer/common/Definitions.hpp>
+
 #define SIZE 1000
 
 using namespace std;
+using namespace bs::base::configurations;
 using namespace bs::timer;
 using namespace bs::timer::configurations;
 using namespace bs::timer::reporter;
-using namespace bs::base::configurations;
 
 
 void
@@ -49,7 +49,7 @@ int main() {
     int grid_size = SIZE * SIZE;
     int operations = 4 * 6 + 4; /* Floating point operations in sqrt() = 6*/
 
-    cout << "Timing using lazy timer: " << endl;
+    cout << "Lazy Timer (Serial)" << endl;
     core::LazyTimer::Evaluate([&]() {
         test_function();
     }, true);

@@ -17,15 +17,15 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/core/concrete/ElasticTimer.hpp>
-
-#include <bs/timer/configurations/TimerManager.hpp>
-#include <bs/base/common/ExitCodes.hpp>
-#include <bs/timer/test-utils/FunctionsGenerator.hpp>
+#include <chrono>
 
 #include <prerequisites/libraries/catch/catch.hpp>
 
-#include <chrono>
+#include <bs/base/common/ExitCodes.hpp>
+
+#include <bs/timer/core/timers/concrete/ElasticTimer.hpp>
+#include <bs/timer/configurations/TimerManager.hpp>
+#include <bs/timer/test-utils/FunctionsGenerator.hpp>
 
 using namespace std;
 using namespace bs::timer;

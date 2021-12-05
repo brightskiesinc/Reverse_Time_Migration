@@ -20,12 +20,11 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_COMPUTATION_KERNEL_HPP
 #define OPERATIONS_LIB_COMPONENTS_COMPUTATION_KERNEL_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
+#include <operations/components/independents/interface/Component.hpp>
+#include <operations/components/dependents/primitive/MemoryHandler.hpp>
+#include <operations/common/DataTypes.h>
 
-#include "operations/components/dependents/primitive/MemoryHandler.hpp"
 #include "BoundaryManager.hpp"
-
-#include "operations/common/DataTypes.h"
 
 namespace operations {
     namespace components {

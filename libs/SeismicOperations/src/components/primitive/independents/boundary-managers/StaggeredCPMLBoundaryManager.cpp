@@ -17,24 +17,24 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/boundary-managers/StaggeredCPMLBoundaryManager.hpp>
-
-#include <operations/configurations/MapKeys.h>
-#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-
 #include <algorithm>
 #include <cmath>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/boundary-managers/StaggeredCPMLBoundaryManager.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
 
 #ifndef PWR2
 #define PWR2(EXP) ((EXP) * (EXP))
 #endif
 
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 
 StaggeredCPMLBoundaryManager::StaggeredCPMLBoundaryManager(
@@ -45,9 +45,11 @@ StaggeredCPMLBoundaryManager::StaggeredCPMLBoundaryManager(
     this->mRelaxCoefficient = 1;
     this->mUseTopLayer = true;
     this->mMaxVelocity = 0;
+    this->mpCoeff = 0;
 }
 
-void StaggeredCPMLBoundaryManager::AcquireConfiguration() {
+void
+StaggeredCPMLBoundaryManager::AcquireConfiguration() {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mUseTopLayer = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_USE_TOP_LAYER, this->mUseTopLayer);
     if (this->mUseTopLayer) {
@@ -75,45 +77,49 @@ void StaggeredCPMLBoundaryManager::AcquireConfiguration() {
     }
 }
 
-void StaggeredCPMLBoundaryManager::ExtendModel() {
-    for (auto const &extension : this->mvExtensions) {
+void
+StaggeredCPMLBoundaryManager::ExtendModel() {
+    for (auto const &extension: this->mvExtensions) {
         extension->ExtendProperty();
     }
 }
 
-void StaggeredCPMLBoundaryManager::ReExtendModel() {
-    for (auto const &extension : this->mvExtensions) {
+void
+StaggeredCPMLBoundaryManager::ReExtendModel() {
+    for (auto const &extension: this->mvExtensions) {
         extension->ReExtendProperty();
     }
     ZeroAuxiliaryVariables();
 }
 
 StaggeredCPMLBoundaryManager::~StaggeredCPMLBoundaryManager() {
-    for (auto const &extension : this->mvExtensions) {
+    for (auto const &extension: this->mvExtensions) {
         delete extension;
     }
     this->mvExtensions.clear();
-    delete small_a_x;
-    delete small_a_y;
-    delete small_a_z;
-    delete small_b_x;
-    delete small_b_y;
-    delete small_b_z;
-    delete auxiliary_vel_x_left;
-    delete auxiliary_vel_x_right;
-    delete auxiliary_ptr_x_left;
-    delete auxiliary_ptr_x_right;
-    delete auxiliary_vel_z_up;
-    delete auxiliary_vel_z_down;
-    delete auxiliary_ptr_z_up;
-    delete auxiliary_ptr_z_down;
-    delete auxiliary_vel_y_up;
-    delete auxiliary_vel_y_down;
-    delete auxiliary_ptr_y_up;
-    delete auxiliary_ptr_y_down;
+    delete mpSmall_a_x;
+    delete mpSmall_a_y;
+    delete mpSmall_a_z;
+    delete mpSmall_b_x;
+    delete mpSmall_b_y;
+    delete mpSmall_b_z;
+    delete mpAuxiliary_vel_x_left;
+    delete mpAuxiliary_vel_x_right;
+    delete mpAuxiliary_ptr_x_left;
+    delete mpAuxiliary_ptr_x_right;
+    delete mpAuxiliary_vel_z_up;
+    delete mpAuxiliary_vel_z_down;
+    delete mpAuxiliary_ptr_z_up;
+    delete mpAuxiliary_ptr_z_down;
+    delete mpAuxiliary_vel_y_up;
+    delete mpAuxiliary_vel_y_down;
+    delete mpAuxiliary_ptr_y_up;
+    delete mpAuxiliary_ptr_y_down;
+    delete mpCoeff;
 }
 
-void StaggeredCPMLBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
+void
+StaggeredCPMLBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
@@ -122,15 +128,16 @@ void StaggeredCPMLBoundaryManager::SetComputationParameters(ComputationParameter
     }
 }
 
-void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *apGridBox) {
+void
+StaggeredCPMLBoundaryManager::SetGridBox(GridBox *apGridBox) {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
         Logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-    InitializeExtensions();
 
+    InitializeExtensions();
 
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetLogicalAxisSize();
     int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
@@ -177,44 +184,39 @@ void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *apGridBox) {
     }
 
     // allocate the small arrays for coefficients
-    small_a_x = new FrameBuffer<float>(b_l);
-    small_a_y = new FrameBuffer<float>(b_l);
-    small_a_z = new FrameBuffer<float>(b_l);
-    small_b_x = new FrameBuffer<float>(b_l);
-    small_b_y = new FrameBuffer<float>(b_l);
-    small_b_z = new FrameBuffer<float>(b_l);
+
+    mpSmall_a_x = new FrameBuffer<float>(b_l);
+    mpSmall_a_y = new FrameBuffer<float>(b_l);
+    mpSmall_a_z = new FrameBuffer<float>(b_l);
+    mpSmall_b_x = new FrameBuffer<float>(b_l);
+    mpSmall_b_y = new FrameBuffer<float>(b_l);
+    mpSmall_b_z = new FrameBuffer<float>(b_l);
+
 
     // allocate the auxiliary variables for the boundary length for velocity in x
     // direction
-    auxiliary_vel_x_left = new FrameBuffer<float>(bound_size_x);
-    auxiliary_vel_x_right = new FrameBuffer<float>(bound_size_x);
+    mpAuxiliary_vel_x_left = new FrameBuffer<float>(bound_size_x);
+    mpAuxiliary_vel_x_right = new FrameBuffer<float>(bound_size_x);
+
 
     // allocate the auxiliary variables for the boundary length for velocity in z
     // direction
-    auxiliary_vel_z_up = new FrameBuffer<float>(bound_size_z);
-    auxiliary_vel_z_down = new FrameBuffer<float>(bound_size_z);
-
-    // allocate the auxiliary variables for the boundary length for velocity in y
-    // direction
-    auxiliary_vel_y_up = new FrameBuffer<float>(bound_size_y);
-    auxiliary_vel_y_down = new FrameBuffer<float>(bound_size_y);
+    mpAuxiliary_vel_z_up = new FrameBuffer<float>(bound_size_z);
+    mpAuxiliary_vel_z_down = new FrameBuffer<float>(bound_size_z);
 
     // allocate the auxiliary variables for the boundary length for pressure in x
     // direction
-    auxiliary_ptr_x_left = new FrameBuffer<float>(bound_size_x);
-    auxiliary_ptr_x_right = new FrameBuffer<float>(bound_size_x);
+    mpAuxiliary_ptr_x_left = new FrameBuffer<float>(bound_size_x);
+    mpAuxiliary_ptr_x_right = new FrameBuffer<float>(bound_size_x);
 
     // allocate the auxiliary variables for the boundary length for pressure in z
     // direction
-    auxiliary_ptr_z_up = new FrameBuffer<float>(bound_size_z);
-    auxiliary_ptr_z_down = new FrameBuffer<float>(bound_size_z);
+    mpAuxiliary_ptr_z_up = new FrameBuffer<float>(bound_size_z);
+    mpAuxiliary_ptr_z_down = new FrameBuffer<float>(bound_size_z);
 
-    // allocate the auxiliary variables for the boundary length for pressure in y
-    // direction
-    auxiliary_ptr_y_up = new FrameBuffer<float>(bound_size_y);
-    auxiliary_ptr_y_down = new FrameBuffer<float>(bound_size_y);
 
     // get the maximum velocity
+
     float *velocity_base = this->mpGridBox->Get(PARM | GB_VEL)->GetHostPointer();
     for (int k = 0; k < ny; ++k) {
         for (int j = 0; j < nz; ++j) {
@@ -231,35 +233,52 @@ void StaggeredCPMLBoundaryManager::SetGridBox(GridBox *apGridBox) {
     /// Put values for the small arrays
 
     StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
-            small_a_x->GetNativePointer(), small_b_x->GetNativePointer(), b_l,
+            mpSmall_a_x->GetNativePointer(), mpSmall_b_x->GetNativePointer(), b_l, h_l,
             this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension(), this->mpGridBox->GetDT(),
             this->mMaxVelocity, this->mShiftRatio, this->mReflectCoefficient, this->mRelaxCoefficient);
 
-    StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
-            small_a_y->GetNativePointer(), small_b_y->GetNativePointer(), b_l,
-            this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension(), this->mpGridBox->GetDT(),
-            this->mMaxVelocity, this->mShiftRatio, this->mReflectCoefficient, this->mRelaxCoefficient);
 
     StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
-            small_a_z->GetNativePointer(), small_b_z->GetNativePointer(), b_l,
+            mpSmall_a_z->GetNativePointer(), mpSmall_b_z->GetNativePointer(), b_l, h_l,
             this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension(), this->mpGridBox->GetDT(),
             this->mMaxVelocity, this->mShiftRatio, this->mReflectCoefficient, this->mRelaxCoefficient);
+
+
+    if (ny > 1) {
+
+        // allocate the auxiliary variables for the boundary length for velocity in y
+        // direction
+        mpAuxiliary_vel_y_up = new FrameBuffer<float>(bound_size_y);
+        mpAuxiliary_vel_y_down = new FrameBuffer<float>(bound_size_y);
+
+        // allocate the auxiliary variables for the boundary length for pressure in y
+        // direction
+        mpAuxiliary_ptr_y_up = new FrameBuffer<float>(bound_size_y);
+        mpAuxiliary_ptr_y_down = new FrameBuffer<float>(bound_size_y);
+
+        StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
+                mpSmall_a_y->GetNativePointer(), mpSmall_b_y->GetNativePointer(), b_l, h_l,
+                this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension(), this->mpGridBox->GetDT(),
+                this->mMaxVelocity, this->mShiftRatio, this->mReflectCoefficient, this->mRelaxCoefficient);
+    }
+
 }
 
 
-void StaggeredCPMLBoundaryManager::InitializeExtensions() {
+void
+StaggeredCPMLBoundaryManager::InitializeExtensions() {
     uint params_size = this->mpGridBox->GetParameters().size();
     for (int i = 0; i < params_size; ++i) {
         this->mvExtensions.push_back(new HomogenousExtension(this->mUseTopLayer));
     }
 
-    for (auto const &extension : this->mvExtensions) {
+    for (auto const &extension: this->mvExtensions) {
         extension->SetHalfLength(this->mpParameters->GetHalfLength());
         extension->SetBoundaryLength(this->mpParameters->GetBoundaryLength());
     }
 
     uint index = 0;
-    for (auto const &parameter : this->mpGridBox->GetParameters()) {
+    for (auto const &parameter: this->mpGridBox->GetParameters()) {
         this->mvExtensions[index]->SetGridBox(this->mpGridBox);
         this->mvExtensions[index]->SetProperty(parameter.second->GetNativePointer(),
                                                this->mpGridBox->Get(WIND | parameter.first)->GetNativePointer());
@@ -267,17 +286,20 @@ void StaggeredCPMLBoundaryManager::InitializeExtensions() {
     }
 }
 
-void StaggeredCPMLBoundaryManager::AdjustModelForBackward() {
-    for (auto const &extension : this->mvExtensions) {
+void
+StaggeredCPMLBoundaryManager::AdjustModelForBackward() {
+    for (auto const &extension: this->mvExtensions) {
         extension->AdjustPropertyForBackward();
     }
     ZeroAuxiliaryVariables();
 }
 
 // this function used to reset the auxiliary variables to zero
-void StaggeredCPMLBoundaryManager::ZeroAuxiliaryVariables() {
+void
+StaggeredCPMLBoundaryManager::ZeroAuxiliaryVariables() {
 
     int wny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
+
     int lnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize();
     int lny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize();
     int lnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize();
@@ -294,65 +316,76 @@ void StaggeredCPMLBoundaryManager::ZeroAuxiliaryVariables() {
     int bound_y = b_l * (lnx - 2 * half_length) * (lnz - 2 * half_length);
 
     // X-Variables.
-    Device::MemSet(this->auxiliary_vel_x_left->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_vel_x_left->GetNativePointer(), 0,
                    bound_x * sizeof(float));
-    Device::MemSet(this->auxiliary_vel_x_right->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_vel_x_right->GetNativePointer(), 0,
                    bound_x * sizeof(float));
-    Device::MemSet(this->auxiliary_ptr_x_left->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_ptr_x_left->GetNativePointer(), 0,
                    bound_x * sizeof(float));
-    Device::MemSet(this->auxiliary_ptr_x_right->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_ptr_x_right->GetNativePointer(), 0,
                    bound_x * sizeof(float));
     // Z-Variables
-    Device::MemSet(this->auxiliary_vel_z_up->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_vel_z_up->GetNativePointer(), 0,
                    bound_z * sizeof(float));
-    Device::MemSet(this->auxiliary_vel_z_down->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_vel_z_down->GetNativePointer(), 0,
                    bound_z * sizeof(float));
-    Device::MemSet(this->auxiliary_ptr_z_up->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_ptr_z_up->GetNativePointer(), 0,
                    bound_z * sizeof(float));
-    Device::MemSet(this->auxiliary_ptr_z_down->GetNativePointer(), 0,
+    Device::MemSet(this->mpAuxiliary_ptr_z_down->GetNativePointer(), 0,
                    bound_z * sizeof(float));
 
     // for the auxiliaries in the z boundaries for all x and y
     if (wny != 1) {
-        Device::MemSet(this->auxiliary_vel_y_up->GetNativePointer(), 0,
+        Device::MemSet(this->mpAuxiliary_vel_y_up->GetNativePointer(), 0,
                        bound_y * sizeof(float));
-        Device::MemSet(this->auxiliary_vel_y_down->GetNativePointer(), 0,
+        Device::MemSet(this->mpAuxiliary_vel_y_down->GetNativePointer(), 0,
                        bound_y * sizeof(float));
-        Device::MemSet(this->auxiliary_ptr_y_up->GetNativePointer(), 0,
+        Device::MemSet(this->mpAuxiliary_ptr_y_up->GetNativePointer(), 0,
                        bound_y * sizeof(float));
-        Device::MemSet(this->auxiliary_ptr_y_down->GetNativePointer(), 0,
+        Device::MemSet(this->mpAuxiliary_ptr_y_down->GetNativePointer(), 0,
                        bound_y * sizeof(float));
     }
 }
 
-void StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
-        float *coeff_a, float *coeff_b, int boundary_length, float dh, float dt,
-        float max_vel, float shift_ratio, float reflect_coeff, float relax_cp) {
-    float pml_reg_len = boundary_length;
-    float coeff_a_temp[boundary_length];
-    float coeff_b_temp[boundary_length];
+void
+StaggeredCPMLBoundaryManager::FillCPMLCoefficients(
+        float *apCoeff_a, float *apCoeff_b, int aBoundaryLength, int aHalfLength, float aDh, float aDt,
+        float aMaxVel, float aShiftRatio, float aReflectCoeff, float aRelaxCp) {
+
+    float pml_reg_len = aBoundaryLength;
+    float coeff_a_temp[aBoundaryLength];
+    float coeff_b_temp[aBoundaryLength];
+
     if (pml_reg_len == 0) {
         pml_reg_len = 1;
     }
+
     float d0 = 0;
     // compute damping vector ...
     d0 =
-            (-logf(reflect_coeff) * ((3 * max_vel) / (pml_reg_len * dh)) * relax_cp) /
+            (-logf(aReflectCoeff) * ((3 * aMaxVel) / (pml_reg_len * aDh)) * aRelaxCp) /
             pml_reg_len;
-    for (int i = boundary_length; i > 0; i--) {
+    for (int i = aBoundaryLength; i > 0; i--) {
         float damping_ratio = i * i * d0;
-        coeff_a_temp[i - 1] = expf(-dt * (damping_ratio + shift_ratio));
+        coeff_a_temp[i - 1] = expf(-aDt * (damping_ratio + aShiftRatio));
         coeff_b_temp[i - 1] =
-                (damping_ratio / (damping_ratio + shift_ratio)) * (coeff_a_temp[i - 1] - 1);
+                (damping_ratio / (damping_ratio + aShiftRatio)) * (coeff_a_temp[i - 1] - 1);
     }
-    Device::MemCpy(coeff_a, coeff_a_temp, boundary_length * sizeof(float),
+    Device::MemCpy(apCoeff_a, coeff_a_temp, aBoundaryLength * sizeof(float),
                    dataunits::Device::COPY_HOST_TO_DEVICE);
-    Device::MemCpy(coeff_b, coeff_b_temp, boundary_length * sizeof(float),
+    Device::MemCpy(apCoeff_b, coeff_b_temp, aBoundaryLength * sizeof(float),
+                   dataunits::Device::COPY_HOST_TO_DEVICE);
+
+    mpCoeff = new FrameBuffer<float>(aHalfLength);
+
+    Device::MemCpy(mpCoeff->GetNativePointer(), mpParameters->GetFirstDerivativeStaggeredFDCoefficient(),
+                   aHalfLength * sizeof(float),
                    dataunits::Device::COPY_HOST_TO_DEVICE);
 }
 
-void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
-    if (kernel_id == 0) {
+void
+StaggeredCPMLBoundaryManager::ApplyBoundary(uint aKernelId) {
+    if (aKernelId == 0) {
         if (this->mAdjoint) {
             this->ApplyPressureCPML<true>();
         } else {
@@ -368,7 +401,8 @@ void StaggeredCPMLBoundaryManager::ApplyBoundary(uint kernel_id) {
 }
 
 template<bool ADJOINT_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
+void
+StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
 
     int ny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
 
@@ -391,7 +425,8 @@ void StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
 }
 
 template<bool ADJOINT_, int HALF_LENGTH_>
-void StaggeredCPMLBoundaryManager::ApplyPressureCPML() {
+void
+StaggeredCPMLBoundaryManager::ApplyPressureCPML() {
 
     int ny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
 
@@ -414,7 +449,8 @@ void StaggeredCPMLBoundaryManager::ApplyPressureCPML() {
 }
 
 template<bool ADJOINT_>
-void StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
+void
+StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
     switch (this->mpParameters->GetHalfLength()) {
         case O_2:
             ApplyVelocityCPML < ADJOINT_, O_2 > ();
@@ -435,7 +471,8 @@ void StaggeredCPMLBoundaryManager::ApplyVelocityCPML() {
 }
 
 template<bool ADJOINT_>
-void StaggeredCPMLBoundaryManager::ApplyPressureCPML() {
+void
+StaggeredCPMLBoundaryManager::ApplyPressureCPML() {
     switch (this->mpParameters->GetHalfLength()) {
         case O_2:
             ApplyPressureCPML < ADJOINT_, O_2 > ();

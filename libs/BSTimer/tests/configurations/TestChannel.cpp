@@ -17,12 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/configurations/TimerChannel.hpp>
-
-#include <bs/timer/configurations/TimerManager.hpp>
-#include <bs/timer/core/concrete/ElasticTimer.hpp>
-
 #include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/timer/configurations/TimerChannel.hpp>
+#include <bs/timer/configurations/TimerManager.hpp>
+#include <bs/timer/core/timers/concrete/ElasticTimer.hpp>
 
 using namespace bs::timer;
 using namespace bs::timer::configurations;

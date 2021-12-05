@@ -17,13 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/memory/data-units/mem_list.h>
-
-#include <bs/base/memory/utils//mem_utils.h>
-#include <bs/base/memory/utils/logger.h>
-
 #include <stdio.h>
 #include <string.h>
+
+#include <bs/base/memory/data-units/mem_list.h>
+#include <bs/base/memory/utils//mem_utils.h>
+#include <bs/base/memory/utils/logger.h>
 
 namespace bs {
     namespace base {

@@ -20,10 +20,10 @@
 #ifndef OPERATIONS_LIB_CALLBACK_HPP
 #define OPERATIONS_LIB_CALLBACK_HPP
 
-#include "operations/common/DataTypes.h"
-#include "operations/common/ComputationParameters.hpp"
-#include "operations/data-units/concrete/holders/GridBox.hpp"
-#include "operations/data-units/concrete/holders/TracesHolder.hpp"
+#include <operations/common/DataTypes.h>
+#include <operations/common/ComputationParameters.hpp>
+#include <operations/data-units/concrete/holders/GridBox.hpp>
+#include <operations/data-units/concrete/holders/TracesHolder.hpp>
 
 namespace operations {
     namespace helpers {

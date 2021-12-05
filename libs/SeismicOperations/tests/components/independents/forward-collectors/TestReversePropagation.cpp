@@ -17,13 +17,14 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 #include <operations/components/independents/concrete/forward-collectors/ReversePropagation.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/components/dependency/concrete/HasDependents.hpp>
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
@@ -31,7 +32,6 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -576,7 +576,7 @@ void TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(GridBox *apGridBox,
             }
         }
     }
-    REQUIRE(misses == 0);
+    REQUIRE (misses == 0);
 
     delete apGridBox;
     delete apParameters;
@@ -592,62 +592,26 @@ TEST_CASE("Reverse Forward Collector - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Reverse Forward Collector - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Reverse Forward Collector - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Reverse Forward Collector - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_REVERSE_NO_INJECTION(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Reverse Forward Collector Injection - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Reverse Forward Collector Injection - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Reverse Forward Collector Injection - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_REVERSE_INC_INJECTION(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }

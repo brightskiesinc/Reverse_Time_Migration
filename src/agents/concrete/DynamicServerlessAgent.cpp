@@ -19,14 +19,14 @@
 
 #if defined(USING_MPI)
 
-#include <stbx/agents/concrete/DynamicServerlessAgent.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <mpi.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <stbx/agents/concrete/DynamicServerlessAgent.hpp>
 
 using namespace std;
+using namespace bs::base::logger;
 using namespace stbx::agents;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 DynamicServerlessAgent::~DynamicServerlessAgent() {
     for (auto it : this->mStacks) {

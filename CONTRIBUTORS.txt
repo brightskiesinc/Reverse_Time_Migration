@@ -19,7 +19,5 @@ Mohammad Basyouni <mohammad.basyouni@brightskiesinc.com>
 Mohamed El Sherbiny <mohamed.el-sherbiny@brightskiesinc.com>
 Ingy Mounir <ingy.mounir@brightskiesinc.com>
 Omar Marzouk <omar.marzouk@brightskiesinc.com>
-Osama El-mehy <osama.el-mehy@brightskiesinc.com>
 Pancee Sawmaa <pancee.sawmaa@brightskiesinc.com>
-Zeyad Habib <zeyad.habib@brightskiesinc.com>
 Zeyad Osama <zeyad.osama@brightskiesinc.com>

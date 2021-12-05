@@ -22,6 +22,5 @@
 
 #include <stbx/writers/interface/Writer.hpp>
 #include <stbx/writers/concrete/NormalWriter.hpp>
-#include <stbx/writers/concrete/ADCIGWriter.hpp>
 
 #endif //PIPELINE_WRITERS_WRITERS_H

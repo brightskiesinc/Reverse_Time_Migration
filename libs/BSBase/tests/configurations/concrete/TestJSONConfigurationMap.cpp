@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
 #include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 using namespace bs::base::configurations;
 using json = nlohmann::json;

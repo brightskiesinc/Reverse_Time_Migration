@@ -40,11 +40,12 @@ for arg in "$@"; do
   "--images") set -- "$@" "-i" ;;
   "--tests") set -- "$@" "-t" ;;
   "--examples") set -- "$@" "-e" ;;
+  "--tools") set -- "$@" "-x" ;;
   *) set -- "$@" "$arg" ;;
   esac
 done
 
-while getopts ":c:d:w:C:b:ghvimrte" opt; do
+while getopts ":c:d:w:C:b:ghvimrtex" opt; do
   case $opt in
   t) ##### Building tests enabled #####
     echo -e "${GREEN}Building tests enabled${NC}"
@@ -54,6 +55,11 @@ while getopts ":c:d:w:C:b:ghvimrte" opt; do
   e) ##### Building examples enabled #####
     echo -e "${GREEN}Building examples enabled${NC}"
     BUILD_EXAMPLES="ON"
+    ;;
+
+  x) ##### Building tools enabled #####
+    echo -e "${GREEN}Building tools enabled${NC}"
+    BUILD_TOOLS="ON"
     ;;
 
   c) ##### Setting compression type #####
@@ -160,7 +166,7 @@ while getopts ":c:d:w:C:b:ghvimrte" opt; do
     echo ""
     printf "%20s %s\n" "-v | --verbose :" "to print the output of make with details (if not set it will build without details)"
     echo ""
-    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | cuda"
+    printf "%20s %s\n" "-b [backend] :" "Specifies the technology which will be used. values : omp | dpc | omp-offload"
     printf "%20s %s\n" "" "default tech = omp"
     echo ""
     printf "%20s %s\n" "-t | --test :" "Enables building tests."
@@ -180,6 +186,11 @@ fi
 if [ -z "$BUILD_EXAMPLES" ]; then
   BUILD_EXAMPLES="OFF"
   echo -e "${RED}Building examples disabled${NC}"
+fi
+
+if [ -z "$BUILD_TOOLS" ]; then
+  BUILD_TOOLS="OFF"
+  echo -e "${RED}Building tools disabled${NC}"
 fi
 
 if [ -z "$TECH" ]; then
@@ -295,6 +306,7 @@ cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DBUILD_TESTS=$BUILD_TESTS \
   -DBUILD_EXAMPLES=$BUILD_EXAMPLES \
+  -DBUILD_TOOLS=$BUILD_TOOLS \
   -DUSE_OMP=$USE_OMP \
   -DUSE_DPC=$USE_DPC \
   -DUSE_OMP_OFFLOAD=$USE_OMP_OFFLOAD\

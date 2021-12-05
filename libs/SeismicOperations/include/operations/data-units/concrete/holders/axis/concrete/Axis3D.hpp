@@ -20,9 +20,9 @@
 #ifndef OPERATIONS_LIB_DATA_UNITS_AXIS_3D_AXIS_HPP
 #define OPERATIONS_LIB_DATA_UNITS_AXIS_3D_AXIS_HPP
 
-#include <operations/data-units/concrete/holders/axis/concrete/RegularAxis.hpp>
-
 #include <vector>
+
+#include <operations/data-units/concrete/holders/axis/concrete/RegularAxis.hpp>
 
 namespace operations {
     namespace dataunits {

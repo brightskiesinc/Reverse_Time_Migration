@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -16,11 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <bs/io/streams/concrete/writers/ImageWriter.hpp>
-
-#include <bs/io/configurations/MapKeys.h>
-#include <bs/base/common/ExitCodes.hpp>
 
 #include <cmath>
 #include <vector>
@@ -31,6 +26,11 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #endif
+
+#include <bs/base/common/ExitCodes.hpp>
+
+#include <bs/io/streams/concrete/writers/ImageWriter.hpp>
+#include <bs/io/configurations/MapKeys.h>
 
 using namespace bs::io::streams;
 using namespace std;
@@ -63,7 +63,7 @@ ImageWriter::NormalizeArrayByPercentile(const float *apInputArray,
         }
     }
     std::sort(values.begin(), values.end());
-    int index = ((aPercentile / 100.0) * (values.size() - 1));
+    int index = (int) ((aPercentile / 100.0) * ((double) (values.size() - 1)));
     if (index < 0) {
         index = 0;
     }
@@ -158,7 +158,7 @@ ImageWriter::WriteGather(io::dataunits::Gather *apGather,
             array[iz * width + ix] = apGather->GetTrace(ix)->GetTraceData()[iz];
         }
     }
-    auto rc = ImageWriter::WriteArrayToPNG(array, width, height, this->mPercentile,
+    auto rc = ImageWriter::WriteArrayToPNG(array, (int) width, height, this->mPercentile,
                                            (this->mFilePath + aPostfix).c_str());
     delete[] array;
     return rc;

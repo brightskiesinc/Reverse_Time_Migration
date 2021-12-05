@@ -21,9 +21,9 @@
 #ifndef OPERATIONS_LIB_TEST_UTILS_DUMMY_DATA_GENERATORS_DUMMY_CONFIGURATION_MAP_GENERATOR_HPP
 #define OPERATIONS_LIB_TEST_UTILS_DUMMY_DATA_GENERATORS_DUMMY_CONFIGURATION_MAP_GENERATOR_HPP
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
 #include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 namespace operations {
     namespace testutils {

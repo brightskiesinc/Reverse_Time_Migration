@@ -20,11 +20,11 @@
 #ifndef BS_TIMER_UTILS_STATISTICS_HELPER_HPP
 #define BS_TIMER_UTILS_STATISTICS_HELPER_HPP
 
-#include <bs/base/common/assertions.h>
-
 #include <vector>
 #include <cmath>
 #include <type_traits>
+
+#include <bs/base/common/assertions.h>
 
 namespace bs {
     namespace timer {

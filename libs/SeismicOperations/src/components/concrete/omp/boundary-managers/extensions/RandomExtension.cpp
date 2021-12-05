@@ -17,317 +17,287 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp"
-
-#include <algorithm>
-#include <cstdlib>
+#include <operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp>
 
 using namespace std;
 using namespace operations::components;
 using namespace operations::components::addons;
-using namespace operations::dataunits;
+using namespace bs::base::exceptions;
 
-void RandomExtension::VelocityExtensionHelper(float *property_array,
-                                              int start_x, int start_y, int start_z,
-                                              int end_x, int end_y, int end_z,
-                                              int nx, int ny, int nz,
-                                              uint boundary_length) {
-    /*!
-     * change the values of velocities at boundaries (HALF_LENGTH excluded) to
-     * zeros the start for x , y and z is at HALF_LENGTH and the end is at (nx -
-     * HALF_LENGTH) or (ny - HALF_LENGTH) or (nz- HALF_LENGTH)
+void RandomExtension::VelocityExtensionHelper(float *apPropertyArray,
+                                              int aStartX, int aStartY, int aStartZ,
+                                              int aEndX, int aEndY, int aEndZ,
+                                              int aNx, int aNy, int aNz,
+                                              uint aBoundaryLength) {
+
+    /*
+     * initialize values required for grain computing
      */
-    int nz_nx = nx * nz;
-    float max_velocity = 0, temp = 0;
-    // In case of 2D
-    if (ny == 1) {
-        end_y = 1;
-        start_y = 0;
-        // Get maximum property_array value in 2D domain.
-        for (int row = start_z + boundary_length; row < end_z - boundary_length;
-             row++) {
-            for (int column = start_x + boundary_length;
-                 column < end_x - boundary_length; column++) {
-                max_velocity = max(max_velocity, property_array[row * nx + column]);
-            }
-        }
-    } else {
-        // Get maximum property_array value.
-        for (int depth = start_y + boundary_length; depth < end_y - boundary_length;
-             depth++) {
-            for (int row = start_z + boundary_length; row < end_z - boundary_length;
-                 row++) {
-                for (int column = start_x + boundary_length;
-                     column < end_x - boundary_length; column++) {
-                    max_velocity = max(max_velocity,
-                                       property_array[depth * nz_nx + row * nx + column]);
-                }
-            }
-        }
-        // general case for 3D
-        /*!putting random values for velocities at the boundaries for y and with all
-         * x and z */
-        for (int depth = 0; depth < boundary_length; depth++) {
-            for (int row = start_z; row < end_z; row++) {
-                for (int column = start_x; column < end_x; column++) {
-                    /*! Create temporary value */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (depth)) / boundary_length) *
-                           max_velocity;
-                    /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH*/
-                    property_array[(depth + start_y) * nz_nx + row * nx + column] =
-                            abs(property_array[(boundary_length + start_y) * nz_nx +
-                                               row * nx + column] -
-                                temp);
-                    /*! Create temporary value */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (depth)) / boundary_length) *
-                           max_velocity;
-                    /*!for values from y = ny-HALF_LENGTH TO y =
-                     * ny-HALF_LENGTH-BOUND_LENGTH*/
-                    property_array[(end_y - 1 - depth) * nz_nx + row * nx + column] =
-                            abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                               row * nx + column] -
-                                temp);
-                }
-            }
+    int dx = mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
+    int dy = mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension();
+    int dz = mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
+    int grain_side_length = this->mGrainSideLength; // in meters
+
+    int stride_x = grain_side_length / dx;
+    int stride_z = grain_side_length / dz;
+
+    int stride_y = 0;
+
+    if (aNy != 1) {
+        stride_y = grain_side_length / dy;
+    }
+
+    /*
+     * compute maximum value of the property
+     */
+    float max_velocity = 0;
+    max_velocity = *max_element(apPropertyArray, apPropertyArray + aNx * aNy * aNz);
+
+    /*
+     * processing boundaries in X dimension "left and right bounds"
+     */
+
+    /*
+     * populate random seeds
+     */
+    vector<Point3D> seeds;
+
+
+    float temp = 0;
+    for (int row = aStartZ + aBoundaryLength; row < aEndZ - aBoundaryLength; row += stride_z) {
+        for (int column = 0; column < aBoundaryLength; column += stride_x) {
+
+            int index = row * aNx + column + aStartX;
+            temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
+            apPropertyArray[index] = abs(apPropertyArray[row * aNx + aBoundaryLength + aStartX] - temp);
+
+            seeds.push_back(Point3D(column + aStartX, 1, row));
+
+            index = row * aNx + (aEndX - column - 1);
+            temp = GET_RANDOM_VALUE(aBoundaryLength, column) * max_velocity;
+            apPropertyArray[index] = abs(apPropertyArray[row * aNx + (aEndX - 1 - aBoundaryLength)] - temp);
+
+            seeds.push_back(Point3D((aEndX - column - 1), 1, row));
         }
     }
-    /*!putting random values for velocities at the boundaries for X and with all Y
-     * and Z */
-    for (int depth = start_y; depth < end_y; depth++) {
-        for (int row = start_z; row < end_z; row++) {
-            for (int column = 0; column < boundary_length; column++) {
-                /*! Create temporary value */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (column)) / boundary_length) *
-                       max_velocity;
-                /*!for values from x = HALF_LENGTH TO x= HALF_LENGTH +BOUND_LENGTH*/
-                property_array[depth * nz_nx + row * nx + column + start_x] =
-                        abs(property_array[depth * nz_nx + row * nx + boundary_length +
-                                           start_x] -
-                            temp);
-                /*! Create temporary value */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (column)) / boundary_length) *
-                       max_velocity;
-                /*!for values from x = nx-HALF_LENGTH TO x =
-                 * nx-HALF_LENGTH-BOUND_LENGTH*/
-                property_array[depth * nz_nx + row * nx + (end_x - 1 - column)] =
-                        abs(property_array[depth * nz_nx + row * nx +
-                                           (end_x - 1 - boundary_length)] -
-                            temp);
-            }
-        }
-    }
-    /*!putting random values for velocities at the boundaries for z and with all x
-     * and y */
-    for (int depth = start_y; depth < end_y; depth++) {
-        for (int row = 0; row < boundary_length; row++) {
-            for (int column = start_x; column < end_x; column++) {
-                /*! Create temporary value */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (row)) / boundary_length) *
-                       max_velocity;
-                /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                // Remove top layer boundary : give value as zero since having top layer
-                // random boundaries will introduce too much noise.
-                property_array[depth * nz_nx + (start_z + row) * nx + column] = 0;
-                // If we want random, give this value :
-                // property_array[depth * nz_nx + (start_z + boundary_length) * nx +
-                // column] - temp;
-                /*! Create temporary value */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (row)) / boundary_length) *
-                       max_velocity;
-                /*!for values from z = nz-HALF_LENGTH TO z =
-                 * nz-HALF_LENGTH-BOUND_LENGTH*/
-                property_array[depth * nz_nx + (end_z - 1 - row) * nx + column] =
-                        abs(property_array[depth * nz_nx +
-                                           (end_z - 1 - boundary_length) * nx + column] -
-                            temp);
-            }
-        }
-    }
-    uint offset = 0;
-    // Random-Corners in the boundaries nx-nz boundary intersection at bottom--
-    // top boundaries not needed.
-    for (int depth = start_y; depth < end_y; depth++) {
-        for (int row = 0; row < boundary_length; row++) {
-            for (int column = 0; column < boundary_length; column++) {
-                offset = min(row, column);
-                /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                /*! Top left boundary in other words */
-                property_array[depth * nz_nx + (start_z + row) * nx + column +
-                               start_x] = 0;
-                /*!for values from z = nz-HALF_LENGTH TO z =
-                 * nz-HALF_LENGTH-BOUND_LENGTH*/
-                /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                /*! Bottom left boundary in other words */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (offset)) / boundary_length) *
-                       max_velocity;
-                property_array[depth * nz_nx + (end_z - 1 - row) * nx + column +
-                               start_x] =
-                        abs(property_array[depth * nz_nx +
-                                           (end_z - 1 - boundary_length) * nx + start_x +
-                                           boundary_length] -
-                            temp);
-                /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH */
-                /*! Top right boundary in other words */
-                property_array[depth * nz_nx + (start_z + row) * nx +
-                               (end_x - 1 - column)] = 0;
-                /*!for values from z = nz-HALF_LENGTH TO z =
-                 * nz-HALF_LENGTH-BOUND_LENGTH*/
-                /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH - BOUND_LENGTH */
-                /*! Bottom right boundary in other words */
-                temp = ((float) rand() / RAND_MAX) *
-                       ((float) (boundary_length - (offset)) / boundary_length) *
-                       max_velocity;
-                property_array[depth * nz_nx + (end_z - 1 - row) * nx +
-                               (end_x - 1 - column)] =
-                        abs(property_array[depth * nz_nx +
-                                           (end_z - 1 - boundary_length) * nx +
-                                           (end_x - 1 - boundary_length)] -
-                            temp);
-            }
-        }
-    }
-    // If 3-D, zero corners in the y-x and y-z plans.
-    if (ny > 1) {
-        // Random-Corners in the boundaries ny-nz boundary intersection at bottom--
-        // top boundaries not needed.
-        for (int depth = 0; depth < boundary_length; depth++) {
-            for (int row = 0; row < boundary_length; row++) {
-                for (int column = start_x; column < end_x; column++) {
-                    offset = min(row, depth);
-                    /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for y = HALF_LENGTH to y = HALF_LENGTH + BOUND_LENGTH */
-                    property_array[(depth + start_y) * nz_nx + (start_z + row) * nx +
-                                   column] = 0;
-                    /*!for values from z = nz-HALF_LENGTH TO z =
-                     * nz-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for y = HALF_LENGTH to y = HALF_LENGTH + BOUND_LENGTH */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(depth + start_y) * nz_nx + (end_z - 1 - row) * nx +
-                                   column] =
-                            abs(property_array[(start_y + boundary_length) * nz_nx +
-                                               (end_z - 1 - boundary_length) * nx + column] -
-                                temp);
-                    /*!for values from z = HALF_LENGTH TO z = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for y = ny-HALF_LENGTH to y = ny-HALF_LENGTH - BOUND_LENGTH */
-                    property_array[(end_y - 1 - depth) * nz_nx + (start_z + row) * nx +
-                                   column] = 0;
-                    /*!for values from z = nz-HALF_LENGTH TO z =
-                     * nz-HALF_LENGTH-BOUND_LENGTH */
-                    /*! and for y = ny-HALF_LENGTH to y = ny - HALF_LENGTH - BOUND_LENGTH
-                     */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(end_y - 1 - depth) * nz_nx + (end_z - 1 - row) * nx +
-                                   column] =
-                            abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                               (end_z - 1 - boundary_length) * nx + column] -
-                                temp);
+
+
+    /*
+     * fill empty points
+     */
+    for (int row = aStartZ + aBoundaryLength; row < aEndZ - aBoundaryLength; row++) {
+        for (int column = 0; column < aBoundaryLength; column++) {
+
+            Point3D left_point(column + aStartX, 1, row);
+            Point3D right_point((aEndX - column - 1), 1, row);
+
+            /*
+             * check if this point is a seed point
+             * same check works for both left and right points
+             */
+            bool is_seed = false;
+            for (auto seed : seeds) {
+                if (left_point == seed) {
+                    is_seed = true;
+                    break;
                 }
             }
-        }
-        // Zero-Corners in the boundaries nx-ny boundary intersection on the top
-        // layer--boundaries not needed.
-        for (int depth = 0; depth < boundary_length; depth++) {
-            for (int row = start_z; row < start_z + boundary_length; row++) {
-                for (int column = 0; column < boundary_length; column++) {
-                    /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    property_array[(depth + start_y) * nz_nx + row * nx + column +
-                                   start_x] = 0;
-                    /*!for values from y = ny-HALF_LENGTH TO y =
-                     * ny-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    property_array[(end_y - 1 - depth) * nz_nx + row * nx + column +
-                                   start_x] = 0;
-                    /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH */
-                    property_array[(depth + start_y) * nz_nx + row * nx +
-                                   (end_x - 1 - column)] = 0;
-                    /*!for values from y = ny-HALF_LENGTH TO y =
-                     * ny-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH - BOUND_LENGTH
-                     */
-                    property_array[(end_y - 1 - depth) * nz_nx + row * nx +
-                                   (end_x - 1 - column)] = 0;
+            if (is_seed) {
+                continue; // this is a seed point, don't fill
+            }
+
+            Point3D left_point_seed(0, 0, 0);
+            Point3D right_point_seed(0, 0, 0);
+            /*
+             * Get nearest seed
+             */
+
+            for (auto seed : seeds) {
+                if (
+                        (seed.x <= left_point.x) && (seed.x + stride_x > left_point.x) &&
+                        (seed.z <= left_point.z) && (seed.z + stride_z > left_point.z)
+                        ) {
+                    left_point_seed = seed;
+                }
+
+                if (
+                        (seed.x >= right_point.x) && (seed.x - stride_x < right_point.x) &&
+                        (seed.z <= right_point.z) && (seed.z + stride_z > right_point.z)
+                        ) {
+                    right_point_seed = seed;
                 }
             }
-        }
-        // Random-Corners in the boundaries nx-ny boundary intersection.
-        for (int depth = 0; depth < boundary_length; depth++) {
-            for (int row = start_z + boundary_length; row < end_z; row++) {
-                for (int column = 0; column < boundary_length; column++) {
-                    offset = min(column, depth);
-                    /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(depth + start_y) * nz_nx + row * nx + column +
-                                   start_x] =
-                            abs(property_array[(boundary_length + start_y) * nz_nx +
-                                               row * nx + boundary_length + start_x] -
-                                temp);
-                    /*!for values from y = ny-HALF_LENGTH TO y =
-                     * ny-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = HALF_LENGTH to x = HALF_LENGTH + BOUND_LENGTH */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(end_y - 1 - depth) * nz_nx + row * nx + column +
-                                   start_x] =
-                            abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                               row * nx + boundary_length + start_x] -
-                                temp);
-                    /*!for values from y = HALF_LENGTH TO y = HALF_LENGTH +BOUND_LENGTH */
-                    /*! and for x = nx-HALF_LENGTH to x = nx-HALF_LENGTH - BOUND_LENGTH */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(depth + start_y) * nz_nx + row * nx +
-                                   (end_x - 1 - column)] =
-                            abs(property_array[(boundary_length + start_y) * nz_nx +
-                                               row * nx + (end_x - 1 - boundary_length)] -
-                                temp);
-                    /*!for values from y = ny-HALF_LENGTH TO y =
-                     * ny-HALF_LENGTH-BOUND_LENGTH*/
-                    /*! and for x = nx-HALF_LENGTH to x = nx - HALF_LENGTH - BOUND_LENGTH
-                     */
-                    temp = ((float) rand() / RAND_MAX) *
-                           ((float) (boundary_length - (offset)) / boundary_length) *
-                           max_velocity;
-                    property_array[(end_y - 1 - depth) * nz_nx + row * nx +
-                                   (end_x - 1 - column)] =
-                            abs(property_array[(end_y - 1 - boundary_length) * nz_nx +
-                                               row * nx + (end_x - 1 - boundary_length)] -
-                                temp);
-                }
+
+            /*
+             * populate left point
+             */
+            int id_x;
+            int id_z;
+
+            float px = RANDOM_VALUE;
+            float pz = RANDOM_VALUE;
+
+            float denom_x = (float) (left_point.x - left_point_seed.x) / stride_x;
+            float denom_z = (float) (left_point.z - left_point_seed.z) / stride_z;
+
+            if ((px <= denom_x) && (pz <= denom_z)) {
+                id_x = left_point_seed.x + stride_x;
+                id_z = left_point_seed.z + stride_z;
+            } else if ((px <= denom_x) && (pz > denom_z)) {
+                id_x = left_point_seed.x + stride_x;
+                id_z = left_point_seed.z;
+            } else if ((px > denom_x) && (pz <= denom_z)) {
+                id_x = left_point_seed.x;
+                id_z = left_point_seed.z + stride_z;
+            } else if ((px > denom_x) && (pz > denom_z)) {
+                id_x = left_point_seed.x;
+                id_z = left_point_seed.z;
             }
+
+            if (id_z >= aEndZ - aBoundaryLength) {
+                id_z = left_point_seed.z;
+            }
+            apPropertyArray[left_point.z * aNx + left_point.x] = apPropertyArray[id_z * aNx + id_x];
+
+            /*
+             * populate right point
+             */
+
+            px = RANDOM_VALUE;
+            pz = RANDOM_VALUE;
+
+            denom_x = (float) (right_point_seed.x - right_point.x) / stride_x;
+            denom_z = (float) (right_point.z - right_point_seed.z) / stride_z;
+
+            if ((px >= denom_x) && (pz <= denom_z)) {
+                id_x = right_point_seed.x;
+                id_z = right_point_seed.z + stride_z;
+            } else if ((px >= denom_x) && (pz > denom_z)) {
+                id_x = right_point_seed.x;
+                id_z = right_point_seed.z;
+            } else if ((px < denom_x) && (pz <= denom_z)) {
+                id_x = right_point_seed.x - stride_x;
+                id_z = right_point_seed.z + stride_z;
+            } else if ((px < denom_x) && (pz > denom_z)) {
+                id_x = right_point_seed.x - stride_x;
+                id_z = right_point_seed.z;
+            }
+
+            if (id_x >= aEndX) {
+                id_x = right_point_seed.x;
+            }
+
+            if (id_z >= aEndZ - aBoundaryLength) {
+                id_z = right_point_seed.z;
+            }
+            apPropertyArray[right_point.z * aNx + right_point.x] = apPropertyArray[id_z * aNx + id_x];
         }
     }
+
+    seeds.clear();
+
+    /*
+     * processing boundaries in Z dimension "bottom bound"
+     */
+
+    /*
+     * populate random seeds
+     */
+    for (int row = 0; row < aBoundaryLength; row += stride_z) {
+        for (int column = aStartX; column < aEndX; column += stride_x) {
+
+
+            int index = (aEndZ - row - 1) * aNx + column;
+            temp = GET_RANDOM_VALUE(aBoundaryLength, row) * max_velocity;
+            apPropertyArray[index] = abs(apPropertyArray[(aEndZ - 1 - aBoundaryLength) * aNx + column] - temp);
+
+            seeds.push_back(Point3D(column, 1, (aEndZ - row - 1)));
+        }
+    }
+
+    /*
+     * fill empty points
+     */
+    for (int row = 0; row < aBoundaryLength; row++) {
+        for (int column = aStartX; column < aEndX; column++) {
+
+            Point3D bottom_point(column, 1, (aEndZ - row - 1));
+
+            /*
+             * check if this point is a seed point
+             */
+            bool is_seed = false;
+            for (auto seed:seeds) {
+                if (bottom_point == seed) {
+                    is_seed = true;
+                    break;
+                }
+            }
+            if (is_seed) {
+                continue; // this is a seed point, don't fill
+            }
+
+            Point3D bottom_point_seed(0, 0, 0);
+            /*
+             * Get nearest seed
+             */
+
+            for (auto seed:seeds) {
+                if (
+                        (seed.x <= bottom_point.x) && (seed.x + stride_x > bottom_point.x) &&
+                        (seed.z >= bottom_point.z) && (seed.z - stride_z < bottom_point.z)
+                        ) {
+                    bottom_point_seed = seed;
+                }
+            }
+
+            /*
+             * populate left point
+             */
+            int id_x;
+            int id_z;
+
+            float px = RANDOM_VALUE;
+            float pz = RANDOM_VALUE;
+
+            float denom_x = (float) (bottom_point.x - bottom_point_seed.x) / stride_x;
+            float denom_z = (float) (bottom_point_seed.z - bottom_point.z) / stride_z;
+
+            if ((px <= denom_x) && (pz >= denom_z)) {
+                id_x = bottom_point_seed.x + stride_x;
+                id_z = bottom_point_seed.z;
+            } else if ((px <= denom_x) && (pz < denom_z)) {
+                id_x = bottom_point_seed.x + stride_x;
+                id_z = bottom_point_seed.z - stride_z;
+            } else if ((px > denom_x) && (pz >= denom_z)) {
+                id_x = bottom_point_seed.x;
+                id_z = bottom_point_seed.z;
+            } else if ((px > denom_x) && (pz < denom_z)) {
+                id_x = bottom_point_seed.x;
+                id_z = bottom_point_seed.z - stride_z;
+            }
+
+            if (id_z >= aEndZ) {
+                id_z = bottom_point_seed.z;
+            }
+            apPropertyArray[bottom_point.z * aNx + bottom_point.x] = apPropertyArray[id_z * aNx + id_x];
+        }
+    }
+
+    seeds.clear();
 }
 
 void RandomExtension::TopLayerExtensionHelper(float *property_array,
-                                              int start_x, int start_y, int start_z,
-                                              int end_x, int end_y, int end_z,
-                                              int nx, int ny, int nz, uint boundary_length) {
+                                              int aStartX, int aStartY, int aStartZ,
+                                              int aEndX, int aEndY, int aEndZ,
+                                              int aNx, int aNy, int aNz, uint aBoundaryLength) {
     // Do nothing, no top layer to extend in random boundaries.
 }
 
 void RandomExtension::TopLayerRemoverHelper(float *property_array,
-                                            int start_x, int start_y, int start_z,
-                                            int end_x, int end_y, int end_z,
-                                            int nx, int ny, int nz, uint boundary_length) {
+                                            int aStartX, int aStartY, int aStartZ,
+                                            int aEndX, int aEndY, int aEndZ,
+                                            int aNx, int aNy, int aNz, uint aBoundaryLength) {
     // Do nothing, no top layer to remove in random boundaries.
 }

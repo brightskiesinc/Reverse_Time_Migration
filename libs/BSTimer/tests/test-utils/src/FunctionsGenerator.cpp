@@ -33,7 +33,7 @@
 
 void
 bs::timer::testutils::target_technology_test_function() {
-#ifdef USE_OMP
+#if USE_OMP
     omp_test_function();
 #else
     serial_test_function();

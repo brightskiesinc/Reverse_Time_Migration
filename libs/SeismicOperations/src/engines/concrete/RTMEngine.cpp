@@ -17,26 +17,26 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/engines/concrete/RTMEngine.hpp>
-
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/base/memory/MemoryManager.hpp>
 #include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/engines/concrete/RTMEngine.hpp>
 
 #define PB_STR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PB_WIDTH 50
 
 using namespace std;
-using namespace bs::base::configurations;
-using namespace operations::configurations;
-using namespace operations::engines;
-using namespace bs::timer;
-using namespace operations::common;
-using namespace operations::dataunits;
-using namespace operations::helpers::callbacks;
 using namespace bs::base::exceptions;
 using namespace bs::base::logger;
 using namespace bs::base::memory;
+using namespace bs::base::configurations;
+using namespace bs::timer;
+using namespace operations::configurations;
+using namespace operations::engines;
+using namespace operations::common;
+using namespace operations::dataunits;
+using namespace operations::helpers::callbacks;
 
 
 void print_progress(double percentage, const char *str = nullptr) {
@@ -327,6 +327,7 @@ RTMEngine::Backward(GridBox *apGridBox) {
     auto logger = LoggerSystem::GetInstance();
     this->mpConfiguration->GetComputationKernel()->SetMode(
             components::KERNEL_MODE::ADJOINT);
+
     uint onePercent = apGridBox->GetNT() / 100 + 1;
     for (uint it = apGridBox->GetNT() - 1; it > 0; it--) {
         {

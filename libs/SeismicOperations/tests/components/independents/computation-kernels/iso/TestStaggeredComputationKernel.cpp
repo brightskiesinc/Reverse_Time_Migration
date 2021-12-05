@@ -18,20 +18,19 @@
  */
 
 
-#include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
+#include <limits>
 
+#include <prerequisites/libraries/catch/catch.hpp>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
 #include <operations/common/DataTypes.h>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyParametersGenerator.hpp>
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
-
-#include <bs/base/memory/MemoryManager.hpp>
-
-#include <prerequisites/libraries/catch/catch.hpp>
-
-#include <limits>
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -259,8 +258,6 @@ void TEST_CASE_STAGGERED_COMPUTATION_KERNEL(GridBox *apGridBox,
 /* Both DPC++ and OpenMP Offload does not support staggered yet,
 * so if one them is on we skip this test of 3D. */
 
-#if !defined(USING_OMP_OFFLOAD) && !defined(USING_DPCPP)
-
 TEST_CASE("Staggered Order - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_STAGGERED_COMPUTATION_KERNEL(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
@@ -274,24 +271,3 @@ TEST_CASE("Staggered Order - 2D - Window", "[Window],[2D]") {
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
             generate_average_case_configuration_map_wave());
 }
-
-#endif
-
-/// @todo {
-/// TO BE FIXED
-/*
-TEST_CASE("Staggered Order - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_STAGGERED_COMPUTATION_KERNEL(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
-}
-
-TEST_CASE("Staggered Order - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_STAGGERED_COMPUTATION_KERNEL(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave());
-}
-*/
-/// }

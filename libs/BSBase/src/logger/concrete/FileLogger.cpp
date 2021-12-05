@@ -17,7 +17,6 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/logger/concrete/FileLogger.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -32,6 +31,8 @@
 #include <sys/stat.h>
 
 #endif
+
+#include <bs/base/logger/concrete/FileLogger.hpp>
 
 
 using namespace bs::base::logger;

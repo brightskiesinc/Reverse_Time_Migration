@@ -20,11 +20,11 @@
 #ifndef BS_TIMER_DATA_UNITS_CHANNEL_STATS_HPP
 #define BS_TIMER_DATA_UNITS_CHANNEL_STATS_HPP
 
+#include <map>
+
 #include <bs/timer/utils/stats/StatisticsHelper.hpp>
 #include <bs/timer/common/Definitions.hpp>
-#include <bs/timer/core/interface/Snapshot.hpp>
-
-#include <map>
+#include <bs/timer/core/snapshots/interface/Snapshot.hpp>
 
 namespace bs {
     namespace timer {
@@ -34,97 +34,30 @@ namespace bs {
              *
              */
             class ChannelStats {
-
             public:
-                ChannelStats() :
-                        mGridSize(-1),
-                        mDataSize(-1),
-                        mFLOPS(-1),
-                        mNumberOfCalls(0) {}
+                /**
+                 * @brief Constructor.
+                 */
+                ChannelStats();
 
+                /**
+                 * @brief Destructor.
+                 */
                 ~ChannelStats();
-
-                /**
-                 * @brief Returns a map of all statistics of the channel object.
-                 *
-                 */
-                std::map<std::string, double> GetMap();
-
-                /**
-                 * @brief Calculates maximum runtime.
-                 *
-                 */
-                double
-                GetMaxRuntime();
-
-                /**
-                 * @brief Calculates minimum runtime.
-                 *
-                 */
-                double
-                GetMinRuntime();
-
-                /**
-                 * @brief Calculates average runtime.
-                 *
-                 */
-                double
-                GetAverageRuntime();
-
-                /**
-                 * @brief Calculates variance in runtimes.
-                 *
-                 */
-                double
-                GetVariance();
-
-                /**
-                 * @brief Calculates deviation in runtimes.
-                 *
-                 */
-                double
-                GetDeviation();
-
-                /**
-                 * @brief Calculates total runtime.
-                 *
-                 */
-                double
-                GetTotal();
 
                 /**
                  * @brief Adds a runtime value to the vector of runtimes accompanied to channel.
                  * @param aRuntime
                  */
                 void
-                AddRuntime(double
-                           aRuntime);
-
-                /**
-                 *
-                 * @return Vector of runtimes.
-                 */
-                std::vector<double> GetRuntimes();
-
-                /**
-                 *
-                 * @return Vector of bandwidths.
-                 */
-                std::vector<double> GetBandwidths();
-
-                /**
-                 *
-                 * @return Number of calls for a function.
-                 */
-                unsigned int
-                GetNumberOfCalls() const;
+                AddRuntime(double aRuntime);
 
                 /**
                  * @brief Adds a snapshot object to channel.
                  * @param apSnapshot
                  */
                 void
-                AddSnapshot(core::snapshot::Snapshot *apSnapshot);
+                AddSnapshot(core::snapshots::Snapshot *apSnapshot);
 
                 /**
                  * @brief Calls all resolve functions of current snapshots
@@ -154,73 +87,140 @@ namespace bs {
                 SetFLOPS(int aFLOPS);
 
                 /**
-                 * @brief Getter
+                 * @brief Returns a map of all statistics of the channel object.
+                 */
+                std::map<std::string, double>
+                GetMap();
+
+                /**
+                 * @brief Calculates maximum runtime.
+                 */
+                double
+                GetMaxRuntime();
+
+                /**
+                 * @brief Calculates minimum runtime.
+                 */
+                double
+                GetMinRuntime();
+
+                /**
+                 * @brief Calculates average runtime.
+                 */
+                double
+                GetAverageRuntime();
+
+                /**
+                 * @brief Calculates variance in runtimes.
+                 */
+                double
+                GetVariance();
+
+                /**
+                 * @brief Calculates deviation in runtimes.
+                 *
+                 */
+                double
+                GetDeviation();
+
+                /**
+                 * @brief Calculates total runtime.
+                 */
+                double
+                GetTotal();
+
+                /**
+                 * @return Vector of runtimes.
+                 */
+                std::vector<double>
+                GetRuntimes();
+
+                /**
+                 * @return Vector of bandwidths.
+                 */
+                std::vector<double>
+                GetBandwidths();
+
+                /**
+                 * @return Number of calls for a function.
+                 */
+                unsigned int
+                GetNumberOfCalls() const;
+
+                /**
+                 * @brief Grid size getter.
                  */
                 int
                 GetGridSize() const;
 
                 /**
-                 * @brief Getter
+                 * @brief Data size getter.
                  */
                 int
                 GetDataSize() const;
 
                 /**
-                 * @brief Getter
+                 * @brief Maximum bandwidth getter.
+                 * @note Returned value is in Byte.
                  */
                 double
                 GetMaxBandwidth();
 
                 /**
-                 * @brief Getter
+                 * @brief Minimum bandwidth getter.
+                 * @note Returned value is in Byte.
                  */
                 double
                 GetMinBandwidth();
 
                 /**
-                 * @brief Getter
+                 * @brief Average bandwidth getter.
+                 * @note Returned value is in Byte.
                  */
                 double
                 GetAverageBandwidth();
 
                 /**
-                 * @brief Getter
+                 * @brief Maximum throughput getter.
                  */
                 double
                 GetMaxThroughput();
 
                 /**
-                 * @brief Getter
+                 * @brief Minimum throughput getter.
                  */
                 double
                 GetMinThroughput();
 
                 /**
-                 * @brief Getter
+                 * @brief Average throughput getter.
                  */
                 double
                 GetAverageThroughput();
 
                 /**
-                 * @brief Getter
+                 * @brief Minimum GFLOPS getter.
+                 * @note Returned value is in Giga unit.
                  */
                 double
                 GetMinGFLOPS();
 
                 /**
-                 * @brief Getter
+                 * @brief Maximum GFLOPS getter.
+                 * @note Returned value is in Giga unit.
                  */
                 double
                 GetMaxGFLOPS();
 
                 /**
-                 * @brief Getter
+                 * @brief Average GFLOPS getter.
+                 * @note Returned value is in Giga unit.
                  */
                 double
                 GetAverageGFLOPS();
 
                 /**
-                 * @brief Getter
+                 * @brief Number of operations getter.
                  */
                 int
                 GetNumberOfOperations() const;
@@ -235,7 +235,7 @@ namespace bs {
                 /// Number of times the function is called.
                 unsigned int mNumberOfCalls;
                 /// Vector of snapshots accompanied with this timer.
-                std::vector<core::snapshot::Snapshot *> mSnapshots;
+                std::vector<core::snapshots::Snapshot *> mSnapshots;
                 /// Grid size
                 int mGridSize;
                 /// Size of data

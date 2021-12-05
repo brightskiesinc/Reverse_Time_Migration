@@ -44,25 +44,27 @@ ComponentsGenerator::ComponentsGenerator(const nlohmann::json &aMap,
 
 ComputationKernel *
 ComponentsGenerator::GenerateComputationKernel() {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    auto logger = LoggerSystem::GetInstance();
     auto map = this->TruncateMap(K_COMPUTATION_KERNEL);
 
     if (this->mOrder == FIRST && this->mSampling == UNIFORM) {
         switch (this->mApproximation) {
             case ISOTROPIC:
+                logger->Info() << "Generating Staggered First Order Isotropic Computation Kernel...\n";
                 return new StaggeredComputationKernel(map);
         }
     } else if (this->mOrder == SECOND && this->mSampling == UNIFORM) {
         switch (this->mApproximation) {
             case ISOTROPIC:
+                logger->Info() << "Generating Second Order Isotropic Computation Kernel...\n";
                 return new SecondOrderComputationKernel(map);
         }
-        Logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
-    Logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
-    Logger->Error() << "Terminating..." << '\n';
+    logger->Error() << "No entry for wave->physics to identify Computation Kernel..." << '\n';
+    logger->Error() << "Terminating..." << '\n';
     exit(EXIT_FAILURE);
 }
 
@@ -76,10 +78,10 @@ ComponentsGenerator::GenerateModelHandler() {
 
 SourceInjector *
 ComponentsGenerator::GenerateSourceInjector() {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    auto logger = LoggerSystem::GetInstance();
     if (this->mMap[K_SOURCE_INJECTOR].empty()) {
-        Logger->Error() << "No entry for source-injector key : supported values [ ricker ]" << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "No entry for source-injector key : supported values [ ricker ]" << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -88,10 +90,11 @@ ComponentsGenerator::GenerateSourceInjector() {
     SourceInjector *source_injector;
 
     if (type == "ricker") {
+        logger->Info() << "Generating Ricker Source Injector...\n";
         source_injector = new RickerSourceInjector(map);
     } else {
-        Logger->Error() << "Invalid value for source-injector key : supported values [ ricker ]" << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Invalid value for source-injector key : supported values [ ricker ]" << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return source_injector;
@@ -99,11 +102,11 @@ ComponentsGenerator::GenerateSourceInjector() {
 
 BoundaryManager *
 ComponentsGenerator::GenerateBoundaryManager() {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    auto logger = LoggerSystem::GetInstance();
     if (this->mMap[K_BOUNDARY_MANAGER].empty()) {
-        Logger->Error() << "No entry for boundary-manager key : supported values "
+        logger->Error() << "No entry for boundary-manager key : supported values "
                         << K_SUPPORTED_VALUES_BOUNDARY_MANAGER << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -112,30 +115,36 @@ ComponentsGenerator::GenerateBoundaryManager() {
     BoundaryManager *boundary_manager = nullptr;
 
     if (type == "none") {
+        logger->Info() << "Generating None Boundary Manager...\n";
         boundary_manager = new NoBoundaryManager(map);
     } else if (type == "random") {
+        logger->Info() << "Generating Random Boundary Manager...\n";
         boundary_manager = new RandomBoundaryManager(map);
     } else if (type == "sponge") {
+        logger->Info() << "Generating Sponge Boundary Manager...\n";
         boundary_manager = new SpongeBoundaryManager(map);
     } else if (type == "cpml") {
         if (this->mApproximation == ISOTROPIC) {
-            if (this->mOrder == SECOND) {
-                boundary_manager = new CPMLBoundaryManager(map);
-            } else if (this->mOrder == FIRST) {
+            if (this->mOrder == FIRST) {
+                logger->Info() << "Generating Staggered First Order Isotropic CPML Boundary Manager...\n";
                 boundary_manager = new StaggeredCPMLBoundaryManager(map);
+            } else if (this->mOrder == SECOND) {
+                logger->Info() << "Generating Second Order Isotropic CPML Boundary Manager...\n";
+                boundary_manager = new CPMLBoundaryManager(map);
             }
         }
         if (boundary_manager == nullptr) {
-            Logger->Error() << "Invalid value for boundary-manager key : "
+            logger->Error() << "Invalid value for boundary-manager key : "
                             << "Unsupported for this approximation/order pair" << '\n';
-            Logger->Error() << "Terminating..." << '\n';
+            logger->Error() << "Terminating..." << '\n';
             exit(EXIT_FAILURE);
         }
     }
+
     if (boundary_manager == nullptr) {
-        Logger->Error() << "Invalid value for boundary-manager key : supported values "
+        logger->Error() << "Invalid value for boundary-manager key : supported values "
                         << K_SUPPORTED_VALUES_BOUNDARY_MANAGER << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return boundary_manager;
@@ -143,11 +152,11 @@ ComponentsGenerator::GenerateBoundaryManager() {
 
 ForwardCollector *
 ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    auto logger = LoggerSystem::GetInstance();
     if (this->mMap[K_FORWARD_COLLECTOR].empty()) {
-        Logger->Error() << "No entry for forward-collector key : supported values "
+        logger->Error() << "No entry for forward-collector key : supported values "
                         << K_SUPPORTED_VALUES_FORWARD_COLLECTOR << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -158,13 +167,17 @@ ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
     ForwardCollector *forward_collector = nullptr;
 
     if (type == "two") {
+        logger->Info() << "Generating Two Propagation Forward Collector...\n";
         forward_collector = new TwoPropagation(map);
     } else if (type == "three") {
+        logger->Info() << "Generating Three Propagation Forward Collector...\n";
         forward_collector = new ReversePropagation(map);
-    } else {
-        Logger->Error() << "Invalid value for forward-collector key : supported values "
+    }
+
+    if (forward_collector == nullptr) {
+        logger->Error() << "Invalid value for forward-collector key : supported values "
                         << K_SUPPORTED_VALUES_FORWARD_COLLECTOR << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return forward_collector;
@@ -173,10 +186,10 @@ ComponentsGenerator::GenerateForwardCollector(const string &write_path) {
 
 MigrationAccommodator *
 ComponentsGenerator::GenerateMigrationAccommodator() {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    auto logger = LoggerSystem::GetInstance();
     if (this->mMap[K_MIGRATION_ACCOMMODATOR].empty()) {
-        Logger->Error() << "No entry for migration-accommodator key : supported values [ ""cross-correlation ]" << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "No entry for migration-accommodator key : supported values [ ""cross-correlation ]" << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -185,13 +198,15 @@ ComponentsGenerator::GenerateMigrationAccommodator() {
     MigrationAccommodator *correlation_kernel = nullptr;
 
     if (type == "cross-correlation") {
+        logger->Info() << "Generating Cross Correlation Migration Accommodator...\n";
         correlation_kernel = new CrossCorrelationKernel(map);
     }
+
     if (correlation_kernel == nullptr) {
-        Logger->Error()
-                << "Invalid value for migration-accommodator key : supported values [ ""cross-correlation | isic | adcig | pstm]"
+        logger->Error()
+                << "Invalid value for migration-accommodator key : supported values [cross-correlation]"
                 << '\n';
-        Logger->Error() << "Terminating..." << '\n';
+        logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     return correlation_kernel;

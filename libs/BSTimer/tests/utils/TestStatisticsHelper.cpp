@@ -17,11 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/utils/stats/StatisticsHelper.hpp>
+#include <vector>
 
 #include <prerequisites/libraries/catch/catch.hpp>
 
-#include <vector>
+#include <bs/timer/utils/stats/StatisticsHelper.hpp>
 
 using namespace bs::timer::utils::stats;
 

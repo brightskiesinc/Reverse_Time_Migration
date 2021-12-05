@@ -17,18 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/forward-collectors/ReversePropagation.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
 
+#include <operations/components/independents/concrete/forward-collectors/ReversePropagation.hpp>
 #include <operations/configurations/MapKeys.h>
 #include <operations/components/independents/concrete/forward-collectors/boundary-saver/BoundarySaver.h>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::helpers;
 using namespace operations::helpers;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 
 ReversePropagation::ReversePropagation(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
@@ -113,25 +113,8 @@ void ReversePropagation::ResetGrid(bool is_forward_run) {
                 this->mpInternalGridBox->Set(WAVE | GB_PRSS | NEXT | DIR_Z,
                                              this->mpInternalGridBox->Get(WAVE | GB_PRSS | PREV | DIR_Z));
             }
-        } else if (this->mpParameters->GetApproximation() == VTI ||
-                   this->mpParameters->GetApproximation() == TTI) {
-
-            // Swap vertical previous and current to reverse time.
-            this->mpInternalGridBox->Swap(WAVE | GB_PRSS | PREV | DIR_X,
-                                          WAVE | GB_PRSS | CURR | DIR_X);
-
-            // Swap horizontal  previous and current to reverse time.
-            this->mpInternalGridBox->Swap(WAVE | GB_PRSS | PREV | DIR_Z, WAVE | GB_PRSS | CURR | DIR_Z);
-
-            /// Using only two pointers
-            // Only use two pointers, prev is same as next for vertical.
-            this->mpInternalGridBox->Set(WAVE | GB_PRSS | NEXT | DIR_X,
-                                         this->mpInternalGridBox->Get(WAVE | GB_PRSS | PREV | DIR_X));
-            // Only use two pointers, prev is same as next for horizontal .
-
-            this->mpInternalGridBox->Set(WAVE | GB_PRSS | NEXT | DIR_Z,
-                                         this->mpInternalGridBox->Get(WAVE | GB_PRSS | PREV | DIR_Z));
         }
+
     } else {
         if (this->mInjectionEnabled) {
             this->Inject();
@@ -186,14 +169,6 @@ void ReversePropagation::Inject() {
                     this->mBoundarySavers.push_back(boundary_saver_particle_y);
                 }
             }
-        } else if (this->mpParameters->GetApproximation() == VTI ||
-                   this->mpParameters->GetApproximation() == TTI) {
-            auto boundary_saver_horizontal = new BoundarySaver();
-            boundary_saver_horizontal->Initialize(
-                    WAVE | GB_PRSS | CURR | DIR_X,
-                    this->mpInternalGridBox,
-                    this->mpMainGridBox, this->mpParameters);
-            this->mBoundarySavers.push_back(boundary_saver_horizontal);
         }
     }
 }

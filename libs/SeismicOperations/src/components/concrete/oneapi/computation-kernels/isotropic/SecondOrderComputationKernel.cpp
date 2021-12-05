@@ -17,25 +17,25 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
+#include <cstring>
+#include <chrono>
+#include <fstream>
 
-#include <operations/backend/OneAPIBackend.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 
-#include <bs/timer/api/cpp/BSTimer.hpp>
-#include <bs/base/memory/MemoryManager.hpp>
-
-#include <cstring>
-
-
-using namespace cl::sycl;
 using namespace std;
+using namespace cl::sycl;
+using namespace bs::base::backend;
+using namespace bs::base::memory;
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
-using namespace bs::base::memory;
-using namespace bs::timer;
+
 
 FORWARD_DECLARE_COMPUTE_TEMPLATE(SecondOrderComputationKernel, Compute)
 
@@ -59,17 +59,21 @@ void SecondOrderComputationKernel::Compute() {
     ElasticTimer timer("ComputationKernel::Kernel", size, 4, true,
                        flops_per_second);
 
+    auto t_start = std::chrono::high_resolution_clock::now();
     timer.Start();
-    if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            size_t num_groups = OneAPIBackend::GetInstance()->GetWorkgroupNumber();
-            size_t wgsize = OneAPIBackend::GetInstance()->GetWorkgroupSize();
+    if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+            size_t num_groups = Backend::GetInstance()->GetWorkgroupNumber();
+            size_t wgsize = Backend::GetInstance()->GetWorkgroupSize();
 
             int compute_nz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize();
             int compute_nx = mpParameters->GetHalfLength() +
                              this->mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize();
 
             size_t z_stride = (compute_nz + num_groups - 1) / num_groups;
+
+            // auto global_range = range<2>(full_x, full_z);
+            // auto local_range = range<2>(full_x, block_z);
 
             auto global_range = range<1>(num_groups);
             auto local_range = range<1>(wgsize);
@@ -83,32 +87,31 @@ void SecondOrderComputationKernel::Compute() {
             const float *c_z = mpCoeffZ->GetNativePointer();
             const int *v = mpVerticalIdx->GetNativePointer();
             const float c_xyz = mCoeffXYZ;
-            cgh.parallel_for_work_group(
-                    global_range, local_range, [=](group<1> grp) {
-                        size_t z_id = grp.get_id(0) * z_stride + HALF_LENGTH_;
-                        size_t end_z =
-                                (z_id + z_stride) < (compute_nz + HALF_LENGTH_) ?
-                                (z_id + z_stride) : (compute_nz +
-                                                     HALF_LENGTH_);
-                        grp.parallel_for_work_item([&](h_item<1> it) {
-                            for (size_t iz = z_id; iz < end_z; iz++) {
-                                size_t offset = iz * wnx + it.get_local_id(0);
-                                for (size_t ix = HALF_LENGTH_; ix < hl + compute_nx; ix += wgsize) {
-                                    size_t idx = offset + ix;
-                                    float value = current[idx] * c_xyz;
-                                    DERIVE_SEQ_AXIS_EQ_OFF(idx, 1, +, current, c_x, value)
-                                    DERIVE_ARRAY_AXIS_EQ_OFF(idx, v, +, current, c_z, value)
-                                    next[idx] = (2 * current[idx]) - prev[idx] + (vel[idx] * value);
-                                }
-                            }
-                        });
-                    });
+            cgh.parallel_for_work_group(global_range, local_range, [=](group<1> grp) {
+                size_t z_id = grp.get_id(0) * z_stride + HALF_LENGTH_;
+                size_t end_z =
+                        (z_id + z_stride) < (compute_nz + HALF_LENGTH_) ?
+                        (z_id + z_stride) : (compute_nz +
+                                             HALF_LENGTH_);
+                grp.parallel_for_work_item([&](h_item<1> it) {
+                    for (size_t iz = z_id; iz < end_z; iz++) {
+                        size_t offset = iz * wnx + it.get_local_id(0);
+                        for (size_t ix = HALF_LENGTH_; ix < compute_nx; ix += wgsize) {
+                            size_t idx = offset + ix;
+                            float value = current[idx] * c_xyz;
+                            DERIVE_SEQ_AXIS_EQ_OFF(idx, 1, +, current, c_x, value)
+                            DERIVE_ARRAY_AXIS_EQ_OFF(idx, v, +, current, c_z, value)
+                            next[idx] = (2 * current[idx]) - prev[idx] + (vel[idx] * value);
+                        }
+                    }
+                });
+            });
         });
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
         int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize();
         int compute_nx = mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize();
 
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             auto global_range = range<2>(compute_nz, compute_nx);
             auto local_range = range<2>(mpParameters->GetBlockZ(), mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
@@ -127,67 +130,66 @@ void SecondOrderComputationKernel::Compute() {
             /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for(
-                    workgroup_range, [=](nd_item<2> it) {
-                        float *local = tab.get_pointer();
-                        int idx =
-                                it.get_global_id(1) + hl + (it.get_global_id(0) + hl) * nx;
-                        size_t id0 = it.get_local_id(1);
-                        size_t id1 = it.get_local_id(0);
-                        size_t identifiant = (id0 + hl) + (id1 + hl) * local_nx;
-                        float c_x_loc[HALF_LENGTH_];
-                        float c_z_loc[HALF_LENGTH_];
-                        int v_loc[HALF_LENGTH_];
-                        /* Set local coefficient. */
-                        for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
-                            c_x_loc[iter] = c_x[iter];
-                            c_z_loc[iter] = c_z[iter];
-                            v_loc[iter] = (iter + 1) * local_nx;
-                        }
-                        bool copyHaloX = false;
-                        bool copyHaloY = false;
-                        const unsigned int items_X = it.get_local_range(1);
+            cgh.parallel_for(workgroup_range, [=](nd_item<2> it) {
+                float *local = tab.get_pointer();
+                int idx =
+                        it.get_global_id(1) + hl + (it.get_global_id(0) + hl) * nx;
+                size_t id0 = it.get_local_id(1);
+                size_t id1 = it.get_local_id(0);
+                size_t identifiant = (id0 + hl) + (id1 + hl) * local_nx;
+                float c_x_loc[HALF_LENGTH_];
+                float c_z_loc[HALF_LENGTH_];
+                int v_loc[HALF_LENGTH_];
+                /* Set local coefficient. */
+                for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
+                    c_x_loc[iter] = c_x[iter];
+                    c_z_loc[iter] = c_z[iter];
+                    v_loc[iter] = (iter + 1) * local_nx;
+                }
+                bool copyHaloX = false;
+                bool copyHaloY = false;
+                const unsigned int items_X = it.get_local_range(1);
 
-                        /* Set shared memory. */
-                        local[identifiant] = current[idx];
-                        if (id0 < HALF_LENGTH_) {
-                            copyHaloX = true;
-                        }
-                        if (id1 < HALF_LENGTH_) {
-                            copyHaloY = true;
-                        }
-                        if (copyHaloX) {
-                            local[identifiant - HALF_LENGTH_] = current[idx - HALF_LENGTH_];
-                            local[identifiant + items_X] = current[idx + items_X];
-                        }
-                        if (copyHaloY) {
-                            local[identifiant - HALF_LENGTH_ * local_nx] =
-                                    current[idx - HALF_LENGTH_ * nx];
-                            local[identifiant + idx_range * local_nx] =
-                                    current[idx + idx_range * nx];
-                        }
-                        it.barrier(access::fence_space::local_space);
-                        float value = 0;
-                        value = fma(local[identifiant], c_xyz, value);
-                        for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                            value = fma(local[identifiant - iter], c_x_loc[iter - 1], value);
-                            value = fma(local[identifiant + iter], c_x_loc[iter - 1], value);
-                        }
-                        for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                            value = fma(local[identifiant - v_loc[iter - 1]],
-                                        c_z_loc[iter - 1], value);
-                            value = fma(local[identifiant + v_loc[iter - 1]],
-                                        c_z_loc[iter - 1], value);
-                        }
-                        value = fma(vel[idx], value, -prev[idx]);
-                        value = fma(2.0f, local[identifiant], value);
-                        next[idx] = value;
-                    });
+                /* Set shared memory. */
+                local[identifiant] = current[idx];
+                if (id0 < HALF_LENGTH_) {
+                    copyHaloX = true;
+                }
+                if (id1 < HALF_LENGTH_) {
+                    copyHaloY = true;
+                }
+                if (copyHaloX) {
+                    local[identifiant - HALF_LENGTH_] = current[idx - HALF_LENGTH_];
+                    local[identifiant + items_X] = current[idx + items_X];
+                }
+                if (copyHaloY) {
+                    local[identifiant - HALF_LENGTH_ * local_nx] =
+                            current[idx - HALF_LENGTH_ * nx];
+                    local[identifiant + idx_range * local_nx] =
+                            current[idx + idx_range * nx];
+                }
+                it.barrier(access::fence_space::local_space);
+                float value = 0;
+                value = fma(local[identifiant], c_xyz, value);
+                for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                    value = fma(local[identifiant - iter], c_x_loc[iter - 1], value);
+                    value = fma(local[identifiant + iter], c_x_loc[iter - 1], value);
+                }
+                for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                    value = fma(local[identifiant - v_loc[iter - 1]],
+                                c_z_loc[iter - 1], value);
+                    value = fma(local[identifiant + v_loc[iter - 1]],
+                                c_z_loc[iter - 1], value);
+                }
+                value = fma(vel[idx], value, -prev[idx]);
+                value = fma(2.0f, local[identifiant], value);
+                next[idx] = value;
+            });
         });
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
         int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize() / mpParameters->GetBlockZ();
 
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             auto global_range = range<2>(compute_nz, mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize());
             auto local_range = range<2>(1, mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
@@ -207,67 +209,66 @@ void SecondOrderComputationKernel::Compute() {
             //  Create an accessor for SLM buffer
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for(
-                    workgroup_range, [=](nd_item<2> it) {
-                        float *local = tab.get_pointer();
-                        int idx = it.get_global_id(1) + hl +
-                                  (it.get_global_id(0) * idx_range + hl) * nx;
-                        size_t id0 = it.get_local_id(1);
-                        size_t identifiant = (id0 + hl) + hl * local_nx;
-                        float c_x_loc[HALF_LENGTH_];
-                        float c_z_loc[HALF_LENGTH_];
-                        int v_loc[HALF_LENGTH_];
-                        // Set local coeff.
-                        for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
-                            c_x_loc[iter] = c_x[iter];
-                            c_z_loc[iter] = c_z[iter];
-                            v_loc[iter] = (iter + 1) * local_nx;
-                        }
-                        bool copyHaloX = false;
-                        if (id0 < HALF_LENGTH_)
-                            copyHaloX = true;
-                        const unsigned int items_X = it.get_local_range(1);
-                        int load_identifiant = identifiant - hl * local_nx;
-                        int load_idx = idx - hl * nx;
-                        // Set Shared Memory.
-                        for (int i = 0; i < local_nz; i++) {
-                            local[load_identifiant] = current[load_idx];
-                            if (copyHaloX) {
-                                local[load_identifiant - HALF_LENGTH_] =
-                                        current[load_idx - HALF_LENGTH_];
-                                local[load_identifiant + items_X] = current[load_idx + items_X];
-                            }
-                            load_idx += nx;
-                            load_identifiant += local_nx;
-                        }
-                        it.barrier(access::fence_space::local_space);
-                        for (int i = 0; i < idx_range; i++) {
-                            float value = 0;
-                            value = fma(local[identifiant], c_xyz, value);
-                            for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                                value =
-                                        fma(local[identifiant - iter], c_x_loc[iter - 1], value);
-                                value =
-                                        fma(local[identifiant + iter], c_x_loc[iter - 1], value);
-                            }
-                            for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                                value = fma(local[identifiant - v_loc[iter - 1]],
-                                            c_z_loc[iter - 1], value);
-                                value = fma(local[identifiant + v_loc[iter - 1]],
-                                            c_z_loc[iter - 1], value);
-                            }
-                            value = fma(vel[idx], value, -prev[idx]);
-                            value = fma(2.0f, local[identifiant], value);
-                            next[idx] = value;
-                            idx += nx;
-                            identifiant += local_nx;
-                        }
-                    });
+            cgh.parallel_for(workgroup_range, [=](nd_item<2> it) {
+                float *local = tab.get_pointer();
+                int idx = it.get_global_id(1) + hl +
+                          (it.get_global_id(0) * idx_range + hl) * nx;
+                size_t id0 = it.get_local_id(1);
+                size_t identifiant = (id0 + hl) + hl * local_nx;
+                float c_x_loc[HALF_LENGTH_];
+                float c_z_loc[HALF_LENGTH_];
+                int v_loc[HALF_LENGTH_];
+                // Set local coeff.
+                for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
+                    c_x_loc[iter] = c_x[iter];
+                    c_z_loc[iter] = c_z[iter];
+                    v_loc[iter] = (iter + 1) * local_nx;
+                }
+                bool copyHaloX = false;
+                if (id0 < HALF_LENGTH_)
+                    copyHaloX = true;
+                const unsigned int items_X = it.get_local_range(1);
+                int load_identifiant = identifiant - hl * local_nx;
+                int load_idx = idx - hl * nx;
+                // Set Shared Memory.
+                for (int i = 0; i < local_nz; i++) {
+                    local[load_identifiant] = current[load_idx];
+                    if (copyHaloX) {
+                        local[load_identifiant - HALF_LENGTH_] =
+                                current[load_idx - HALF_LENGTH_];
+                        local[load_identifiant + items_X] = current[load_idx + items_X];
+                    }
+                    load_idx += nx;
+                    load_identifiant += local_nx;
+                }
+                it.barrier(access::fence_space::local_space);
+                for (int i = 0; i < idx_range; i++) {
+                    float value = 0;
+                    value = fma(local[identifiant], c_xyz, value);
+                    for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                        value =
+                                fma(local[identifiant - iter], c_x_loc[iter - 1], value);
+                        value =
+                                fma(local[identifiant + iter], c_x_loc[iter - 1], value);
+                    }
+                    for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                        value = fma(local[identifiant - v_loc[iter - 1]],
+                                    c_z_loc[iter - 1], value);
+                        value = fma(local[identifiant + v_loc[iter - 1]],
+                                    c_z_loc[iter - 1], value);
+                    }
+                    value = fma(vel[idx], value, -prev[idx]);
+                    value = fma(2.0f, local[identifiant], value);
+                    next[idx] = value;
+                    idx += nx;
+                    identifiant += local_nx;
+                }
+            });
         });
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
         int compute_nz = mpGridBox->GetWindowAxis()->GetZAxis().GetComputationAxisSize() / mpParameters->GetBlockZ();
 
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             auto global_range = range<2>(compute_nz, mpGridBox->GetWindowAxis()->GetXAxis().GetComputationAxisSize());
             auto local_range = range<2>(1, mpParameters->GetBlockX());
             sycl::nd_range<2> workgroup_range(global_range, local_range);
@@ -287,101 +288,97 @@ void SecondOrderComputationKernel::Compute() {
             /*  Create an accessor for SLM buffer. */
             accessor<float, 1, access::mode::read_write, access::target::local> tab(
                     localRange_ptr_cur, cgh);
-            cgh.parallel_for(
-                    workgroup_range, [=](nd_item<2> it) {
-                        float *local = tab.get_pointer();
-                        int idx = it.get_global_id(1) + hl +
-                                  (it.get_global_id(0) * idx_range + hl) * nx;
-                        int id0 = it.get_local_id(1);
-                        int identifiant = (id0 + hl);
-                        float c_x_loc[HALF_LENGTH_];
-                        float c_z_loc[HALF_LENGTH_];
-                        int v_end = v[HALF_LENGTH_ - 1];
-                        float front[HALF_LENGTH_ + 1];
-                        float back[HALF_LENGTH_];
-                        for (unsigned int iter = 0; iter <= HALF_LENGTH_; iter++) {
-                            front[iter] = current[idx + nx * iter];
-                        }
-                        for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                            back[iter - 1] = current[idx - nx * iter];
-                            c_x_loc[iter - 1] = c_x[iter - 1];
-                            c_z_loc[iter - 1] = c_z[iter - 1];
-                        }
-                        bool copyHaloX = false;
-                        if (id0 < HALF_LENGTH_)
-                            copyHaloX = true;
-                        const unsigned int items_X = it.get_local_range(1);
-                        for (int i = 0; i < idx_range; i++) {
-                            it.barrier(access::fence_space::local_space);
-                            local[identifiant] = front[0];
-                            if (copyHaloX) {
-                                local[identifiant - HALF_LENGTH_] = current[idx - HALF_LENGTH_];
-                                local[identifiant + items_X] = current[idx + items_X];
-                            }
-                            it.barrier(access::fence_space::local_space);
-                            float value = 0;
-                            value = fma(local[identifiant], c_xyz, value);
-                            for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                                value =
-                                        fma(local[identifiant - iter], c_x_loc[iter - 1], value);
-                                value =
-                                        fma(local[identifiant + iter], c_x_loc[iter - 1], value);
-                            }
-                            for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
-                                value = fma(front[iter], c_z_loc[iter - 1], value);
-                                value = fma(back[iter - 1], c_z_loc[iter - 1], value);
-                            }
-                            value = fma(vel[idx], value, -prev[idx]);
-                            value = fma(2.0f, local[identifiant], value);
-                            next[idx] = value;
-                            idx += nx;
-                            for (unsigned int iter = HALF_LENGTH_ - 1; iter > 0; iter--) {
-                                back[iter] = back[iter - 1];
-                            }
-                            back[0] = front[0];
-                            for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
-                                front[iter] = front[iter + 1];
-                            }
-                            // Only one new data-point read from global memory
-                            // in z-dimension (depth)
-                            front[HALF_LENGTH_] = current[idx + v_end];
-                        }
-                    });
+            cgh.parallel_for(workgroup_range, [=](nd_item<2> it) {
+                float *local = tab.get_pointer();
+                int idx = it.get_global_id(1) + hl +
+                          (it.get_global_id(0) * idx_range + hl) * nx;
+                int id0 = it.get_local_id(1);
+                int identifiant = (id0 + hl);
+                float c_x_loc[HALF_LENGTH_];
+                float c_z_loc[HALF_LENGTH_];
+                int v_end = v[HALF_LENGTH_ - 1];
+                float front[HALF_LENGTH_ + 1];
+                float back[HALF_LENGTH_];
+                for (unsigned int iter = 0; iter <= HALF_LENGTH_; iter++) {
+                    front[iter] = current[idx + nx * iter];
+                }
+                for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                    back[iter - 1] = current[idx - nx * iter];
+                    c_x_loc[iter - 1] = c_x[iter - 1];
+                    c_z_loc[iter - 1] = c_z[iter - 1];
+                }
+                bool copyHaloX = false;
+                if (id0 < HALF_LENGTH_)
+                    copyHaloX = true;
+                const unsigned int items_X = it.get_local_range(1);
+                for (int i = 0; i < idx_range; i++) {
+                    it.barrier(access::fence_space::local_space);
+                    local[identifiant] = front[0];
+                    if (copyHaloX) {
+                        local[identifiant - HALF_LENGTH_] = current[idx - HALF_LENGTH_];
+                        local[identifiant + items_X] = current[idx + items_X];
+                    }
+                    it.barrier(access::fence_space::local_space);
+                    float value = 0;
+                    value = fma(local[identifiant], c_xyz, value);
+                    for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                        value =
+                                fma(local[identifiant - iter], c_x_loc[iter - 1], value);
+                        value =
+                                fma(local[identifiant + iter], c_x_loc[iter - 1], value);
+                    }
+                    for (int iter = 1; iter <= HALF_LENGTH_; iter++) {
+                        value = fma(front[iter], c_z_loc[iter - 1], value);
+                        value = fma(back[iter - 1], c_z_loc[iter - 1], value);
+                    }
+                    value = fma(vel[idx], value, -prev[idx]);
+                    value = fma(2.0f, local[identifiant], value);
+                    next[idx] = value;
+                    idx += nx;
+                    for (unsigned int iter = HALF_LENGTH_ - 1; iter > 0; iter--) {
+                        back[iter] = back[iter - 1];
+                    }
+                    back[0] = front[0];
+                    for (unsigned int iter = 0; iter < HALF_LENGTH_; iter++) {
+                        front[iter] = front[iter + 1];
+                    }
+                    // Only one new data-point read from global memory
+                    // in z-dimension (depth)
+                    front[HALF_LENGTH_] = current[idx + v_end];
+                }
+            });
         });
     }
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
     timer.Stop();
+
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
 }
 
 void SecondOrderComputationKernel::PreprocessModel() {
 
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
-    int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-
     float dt2 = mpGridBox->GetDT() * mpGridBox->GetDT();
-
     /*
      * Preprocess the velocity model by calculating the dt2 * c2 component of
      * the wave equation.
      */
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit(
+    Backend::GetInstance()->GetDeviceQueue()->submit(
             [&](sycl::handler &cgh) {
-                auto global_range = range<3>(nx, ny, nz);
-                auto local_range = range<3>(1, 1, 1);
-                auto global_nd_range = nd_range<3>(global_range, local_range);
+                auto global_range = range<2>(nx, nz);
                 float *vel_device = mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
 
-                cgh.parallel_for(
-                        global_nd_range, [=](sycl::nd_item<3> it) {
-                            int x = it.get_global_id(0);
-                            int y = it.get_global_id(1);
-                            int z = it.get_global_id(2);
-                            float value = vel_device[y * nz * nx + z * nx + x];
-                            vel_device[y * nz * nx + z * nx + x] =
-                                    value * value * dt2;
-                        });
+                cgh.parallel_for(global_range, [=](sycl::id<2> idx) {
+                    int x = idx[0];
+                    int z = idx[1];
+                    float value = vel_device[z * nx + x];
+                    vel_device[z * nx + x] =
+                            value * value * dt2;
+                });
             });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }

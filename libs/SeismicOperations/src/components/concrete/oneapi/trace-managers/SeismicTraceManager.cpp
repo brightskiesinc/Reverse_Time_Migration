@@ -17,15 +17,16 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp"
-#include <operations/backend/OneAPIBackend.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
 
-using namespace cl::sycl;
+#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
+
 using namespace std;
+using namespace cl::sycl;
+using namespace bs::base::backend;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
 
 void SeismicTraceManager::ApplyTraces(int time_step) {
     int trace_size = mpTracesHolder->TraceSizePerTimeStep;
@@ -40,7 +41,7 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
     uint trace_step = uint(current_time / mpTracesHolder->SampleDT);
     trace_step = std::min(trace_step, mpTracesHolder->SampleNT - 1);
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         auto global_range = range<1>(trace_size);
         auto local_range = range<1>(1);
         auto global_nd_range = nd_range<1>(global_range, local_range);
@@ -56,5 +57,5 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
             current[offset] += trace_values[(trace_step) * trace_size + i] * w_vel[offset];
         });
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }

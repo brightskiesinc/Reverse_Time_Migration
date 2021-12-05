@@ -17,10 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/MinExtension.hpp"
-
 #include <algorithm>
 #include <cstdlib>
+
+#include <operations/components/independents/concrete/boundary-managers/extensions/MinExtension.hpp>
 
 using namespace std;
 using namespace operations::components;

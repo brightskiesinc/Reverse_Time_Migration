@@ -18,41 +18,41 @@ Alternatively, approaches to reduce the IO bottleneck or remove it completely to
 
 ## Table of Contents
 
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Setup The Environment](#setup-the-environment)
-- [Docker](docs/manual/Docker.md#docker)
-    - [OpenMP docker](docs/manual/Docker.md#openmp-docker)
-    - [OneAPI docker](docs/manual/Docker.md#oneapi-docker)
-    - [OpenMPOffload](docs/manual/Docker.md#oneapi-docker)
-    - [Additional Options](docs/manual/Docker.md#additional-options)
-- [Building & Running](docs/manual/BuildingAndRunning.md#building-&-running)
-    - [OpenMP Version](docs/manual/BuildingAndRunning.md#openmp-version)
-        - [Building OpenMP Version](docs/manual/BuildingAndRunning.md#building-openmp-version)
-        - [Run OpenMP](docs/manual/BuildingAndRunning.md#run-openmp)
-    - [OneAPI Version](docs/manual/BuildingAndRunning.md#oneapi-version)
-        - [Building OneAPI Version](docs/manual/BuildingAndRunning.md#building-oneapi-version)
-        - [Run OneAPI on CPU](docs/manual/BuildingAndRunning.md#run-oneapi-on-cpu)
-        - [Run OneAPI on Gen9 GPU](docs/manual/BuildingAndRunning.md#run-oneapi-on-gen9-gpu)
-    - [OpenMP Offload Version](docs/manual/BuildingAndRunning.md#openmp-offload-version)
-        - [Building OpenMP Offload Version](docs/manual/BuildingAndRunning.md#building-openmp-offload-version)
-        - [Run OpenMP Offload](docs/manual/BuildingAndRunning.md#run-openmp-offload)
-- [Advanced Running Options](docs/manual/AdvancedRunningOptions.md#advanced-running-options)
-    - [Program Arguments](docs/manual/AdvancedRunningOptions.md#program-arguments)
-    - [Configuration Files](docs/manual/AdvancedRunningOptions.md#configuration-files)
-        - [Structure](docs/manual/AdvancedRunningOptions.md#structure)
-        - [Computation Parameter Configuration Block](docs/manual/AdvancedRunningOptions.md#computation-parameter-configuration-block)
-        - [Engines Configurations Block](docs/manual/AdvancedRunningOptions.md#engines-configurations-block)
-        - [Callback Configuration Block](docs/manual/AdvancedRunningOptions.md#callback-configuration-block)
-- [Results Directories](docs/manual/ResultsDirectories.md#results-directories)
-- [Tools](docs/manual/Tools.md#tools) **(Closed Source)**
-    - [Build & Run](docs/manual/Tools.md#build-&-run)
-    - [Available Tools](docs/manual/Tools.md#available-tools)
-        - [Comparator](docs/manual/Tools.md#comparator)
-        - [Generator](docs/manual/Tools.md#generator)
-- [Versioning](#versioning)
-- [Changelog](#changelog)
-- [License](#license)
+- [Features](#Features)
+- [Prerequisites](#Prerequisites)
+- [Setup The Environment](#Setup The Environment)
+- [Docker](docs/manual/Docker.md#Docker)
+    - [OpenMP docker](docs/manual/Docker.md#OpenMP Docker)
+    - [OneAPI docker](docs/manual/Docker.md#OneAPI Docker)
+    - [OpenmpOffload](docs/manual/Docker.md#OneAPI Docker)
+    - [Additional Options](docs/manual/Docker.md#Additional Options)
+- [Building & Running](docs/manual/BuildingAndRunning.md#Building-&-Running)
+    - [OpenMP Version](docs/manual/BuildingAndRunning.md#OpenMP Version)
+        - [Building OpenMP Version](docs/manual/BuildingAndRunning.md#Building OpenMP Version)
+        - [Run OpenMP](docs/manual/BuildingAndRunning.md#Run OpenMP)
+    - [OneAPI Version](docs/manual/BuildingAndRunning.md#OneAPI-version)
+        - [Building OneAPI Version](docs/manual/BuildingAndRunning.md#building-OneAPI-version)
+        - [Run OneAPI on CPU](docs/manual/BuildingAndRunning.md#Run OneAPI on CPU)
+        - [Run OneAPI on Gen9 GPU](docs/manual/BuildingAndRunning.md#Run OneAPI on Gen9 GPU)
+    - [OpenMP Offload Version](docs/manual/BuildingAndRunning.md#OpenMP Offload Version)
+        - [Building OpenMP Offload Version](docs/manual/BuildingAndRunning.md#Building OpenMP Offload Version)
+        - [Run OpenMP Offload](docs/manual/BuildingAndRunning.md#Run OpenMP Offload)
+- [Advanced Running Options](docs/manual/AdvancedRunningOptions.md#Advanced-Running-Options)
+    - [Program Arguments](docs/manual/AdvancedRunningOptions.md#Program Arguments)
+    - [Configuration Files](docs/manual/AdvancedRunningOptions.md#Configuration Files)
+        - [Structure](docs/manual/AdvancedRunningOptions.md#Structure)
+        - [Computation Parameter Configuration Block](docs/manual/AdvancedRunningOptions.md#Computation Parameter Configuration Block)
+        - [Engines Configurations Block](docs/manual/AdvancedRunningOptions.md#Engines Configurations Block)
+        - [Callback Configuration Block](docs/manual/AdvancedRunningOptions.md#Callback Configuration Block)
+- [Results Directories](docs/manual/ResultsDirectories.md#Results-Directories)
+- [Tools](docs/manual/Tools.md#Tools)
+    - [Build & Run](docs/manual/Tools.md#Build-&-Run)
+    - [Available Tools](docs/manual/Tools.md#Available-Tools)
+        - [Comparator](docs/manual/Tools.md#Comparator)
+        - [Generator](docs/manual/Tools.md#Generator)
+- [Versioning](#Versioning)
+- [Changelog](#Changelog)
+- [License](#License)
 
 ## Features
 
@@ -79,8 +79,6 @@ Alternatively, approaches to reduce the IO bottleneck or remove it completely to
     * Support solving the equation system in:
         * Second Order
         * Staggered First Order
-        * Vertical Transverse Isotropic (VTI) **(Closed Source)**
-        * Tilted Transverse Isotropic (TTI) **(Closed Source)**
     * Support manual cache blocking.
 * An optimized DPC++ version:
     * Support the following boundary conditions:
@@ -122,12 +120,12 @@ Alternatively, approaches to reduce the IO bottleneck or remove it completely to
 
 1. Clone the basic project
     ```shell script
-    git clone https://github.com/brightskiesinc/Reverse_Time_Migration.git
+    git clone https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox
     ```
 
 2. Change directory to the project base directory
     ```shell script
-    cd Reverse_Time_Migration/
+    cd SeismicToolbox/
     ```
 3. To install and download everything you can easily run the ```setup.sh``` script found in ```/prerequisites``` folder
     ```shell script
@@ -158,12 +156,6 @@ Alternatively, approaches to reduce the IO bottleneck or remove it completely to
     * v4.3 recommended
     * You can download it from a script found in ```prerequisites/frameworks/opencv``` folder
 
-* **[Speed Logger](https://github.com/gabime/spdlog)**
-    * Optional
-
-* **[Nlohmann JSON](https://github.com/nlohmann/json)**
-    * Already avaliable inside the codebase.
-
 ## Versioning
 
 When installing Seismic Toolbox, require its version. For us, this is what ```major.minor.patch``` means:
@@ -180,6 +172,6 @@ For previous versions, please see our [CHANGELOG](CHANGELOG.rst) file.
 
 ## License
 
-This project is licensed under the GNU Lesser General Public License, version 3.0 (LGPL-3.0) Legal License - see
+This project is licensed under the The GNU Lesser General Public License, version 3.0 (LGPL-3.0) Legal License - see
 the [LICENSE](LICENSE.txt) file for details
 

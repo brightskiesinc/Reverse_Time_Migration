@@ -16,12 +16,12 @@
 # License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
 
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/backend)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/components)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/data-units)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engines)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/helpers)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/utils)
+
 
 set(OPERATIONS-LIBS
 
@@ -29,7 +29,6 @@ set(OPERATIONS-LIBS
         BS-TIMER
         BS-IO
         FILE-COMPRESSION
-
         ${OPERATIONS-LIBS}
         )
 

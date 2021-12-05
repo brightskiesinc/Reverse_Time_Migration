@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -33,13 +33,15 @@ Trace::Trace(const Trace &aTrace) {}
 
 Trace::~Trace() = default;
 
-Trace &Trace::operator=(Trace &&aTrace) noexcept {
+Trace &
+Trace::operator=(Trace &&aTrace) noexcept {
     this->mTraceHeaderMap = aTrace.mTraceHeaderMap;
     this->mpTraceData = std::move(aTrace.mpTraceData);
     return *this;
 }
 
-void Trace::SetScaledCoordinateHeader(TraceHeaderKey aKey, float aLocation) {
+void
+Trace::SetScaledCoordinateHeader(TraceHeaderKey aKey, float aLocation) {
     float scale_coordinate = 0;
     if (this->HasTraceHeader(TraceHeaderKey::SCALCO)) {
         scale_coordinate = this->GetTraceHeaderKeyValue<int16_t>(TraceHeaderKey::SCALCO);
@@ -57,7 +59,8 @@ void Trace::SetScaledCoordinateHeader(TraceHeaderKey aKey, float aLocation) {
     this->SetTraceHeaderKeyValue(aKey, val);
 }
 
-float Trace::GetScaledCoordinateHeader(TraceHeaderKey aKey) {
+float
+Trace::GetScaledCoordinateHeader(TraceHeaderKey aKey) {
     float scale_coordinate = 0;
     if (this->HasTraceHeader(TraceHeaderKey::SCALCO)) {
         scale_coordinate = this->GetTraceHeaderKeyValue<int16_t>(TraceHeaderKey::SCALCO);

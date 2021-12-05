@@ -17,27 +17,25 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/engines/concrete/ModellingEngine.hpp>
-
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
 #include <bs/base/memory/MemoryManager.hpp>
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/engines/concrete/ModellingEngine.hpp>
 
 #define PB_STR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PB_WIDTH 50
 
 using namespace std;
+using namespace bs::timer;
+using namespace bs::base::configurations;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
 using namespace operations::configurations;
 using namespace operations::engines;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::helpers::callbacks;
-using namespace bs::timer;
-using namespace bs::base::configurations;
-using namespace bs::base::logger;
-using namespace bs::base::memory;
-
 
 void print_modelling_progress(double percentage, const char *str = nullptr) {
     int val = (int) (percentage * 100);

@@ -17,26 +17,26 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
+#include <iostream>
+#include <CL/sycl.hpp>
 
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/backend/Backend.hpp>
+
+#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
-#include <operations/backend/OneAPIBackend.hpp>
 
 #include <operations/common/ComputationParameters.hpp>
 #include <operations/common/DataTypes.h>
 
-#include <prerequisites/libraries/nlohmann/json.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <iostream>
-
-#include <CL/sycl.hpp>
-
 using namespace std;
-using namespace operations::common;
-using namespace operations::backend;
-using namespace bs::base::logger;
-using namespace stbx::generators;
 using json = nlohmann::json;
+using namespace bs::base::backend;
+using namespace bs::base::logger;
+using namespace operations::common;
+using namespace stbx::generators;
 
 // This is the class provided to SYCL runtime by the application to decide
 // on which Device to run, or whether to run at all.
@@ -85,9 +85,9 @@ void CheckBlockingFactors(cl::sycl::queue *q,
     int temp_block_z = parameters->GetBlockZ();
     auto maxBlockSize =
             device.get_info<cl::sycl::info::device::max_work_group_size>();
-    if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+    if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
         // No need to check since the blocks don't control the group launching.
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
         // Reject if STATIC block is bigger than max block size.
         if (temp_block_x * temp_block_z > maxBlockSize) {
             Logger->Info() << "Warning : Invalid block size." << '\n';
@@ -121,7 +121,7 @@ void CheckBlockingFactors(cl::sycl::queue *q,
             Logger->Info() << "Terminating..." << '\n';
             exit(EXIT_FAILURE);
         }
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
         // Reject if block-x is bigger than max block size.
         if (temp_block_x > maxBlockSize) {
             Logger->Info() << "Warning : Invalid block size." << '\n';
@@ -145,7 +145,7 @@ void CheckBlockingFactors(cl::sycl::queue *q,
             Logger->Info() << "Terminating..." << '\n';
             exit(EXIT_FAILURE);
         }
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
         // Reject if block-x is bigger than max block size.
         if (temp_block_x > maxBlockSize) {
             Logger->Info() << "Warning : Invalid block size." << '\n';
@@ -199,13 +199,13 @@ void print_parameters(ComputationParameters *parameters) {
     Logger->Info() << "\tblock factor in x-direction : " << parameters->GetBlockX() << '\n';
     Logger->Info() << "\tblock factor in z-direction : " << parameters->GetBlockZ() << '\n';
     Logger->Info() << "\tblock factor in y-direction : " << parameters->GetBlockY() << '\n';
-    if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+    if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
         Logger->Info() << "\tUsing CPU Algorithm" << '\n';
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SHARED) {
         Logger->Info() << "\tUsing GPU Algorithm - Shared Memory Algorithm" << '\n';
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU_SEMI_SHARED) {
         Logger->Info() << "\tUsing GPU Algorithm - Sliding in Z - Shared Memory X Algorithm" << '\n';
-    } else if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
+    } else if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::GPU) {
         Logger->Info() << "\tUsing GPU Algorithm - Slice z + Shared x Hybrid" << '\n';
     }
     if (parameters->IsUsingWindow()) {
@@ -331,6 +331,7 @@ ComputationParameters *generate_parameters(json &map) {
     device_name = d.device_name;
     device_pattern = d.device_pattern;
 
+
     if (order == -1) {
         Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';
         Logger->Info() << "Using default stencil order of 8" << '\n';
@@ -428,6 +429,7 @@ ComputationParameters *generate_parameters(json &map) {
     parameters->SetApproximation(configurationsGenerator->GetApproximation());
     parameters->SetPhysics(configurationsGenerator->GetPhysics());
 
+
     /// OneAPI
     parameters->SetBlockX(block_x);
     parameters->SetBlockZ(block_z);
@@ -450,24 +452,24 @@ ComputationParameters *generate_parameters(json &map) {
         if (selected_device == SYCL_ALGORITHM::CPU) {
             Logger->Info() << "Using default CPU selector" << '\n';
             sycl::cpu_selector cpu_sel;
-            OneAPIBackend::GetInstance()->SetDeviceQueue(
+            Backend::GetInstance()->SetDeviceQueue(
                     new sycl::queue(cpu_sel, asyncHandler));
         } else {
             Logger->Info() << "Using default GPU selector" << '\n';
             sycl::gpu_selector gpu_sel;
-            OneAPIBackend::GetInstance()->SetDeviceQueue(
+            Backend::GetInstance()->SetDeviceQueue(
                     new sycl::queue(gpu_sel, asyncHandler));
         }
     } else {
         Logger->Info() << "Trying to select the Device that is closest to the given pattern '" << device_pattern << "'"
                        << '\n';
         MyDeviceSelector dev_sel(device_pattern);
-        OneAPIBackend::GetInstance()->SetDeviceQueue(
+        Backend::GetInstance()->SetDeviceQueue(
                 new sycl::queue(dev_sel, asyncHandler));
     }
-    OneAPIBackend::GetInstance()->SetAlgorithm(selected_device);
+    Backend::GetInstance()->SetAlgorithm(selected_device);
     print_parameters(parameters);
-    PrintTargetInfo(OneAPIBackend::GetInstance()->GetDeviceQueue());
-    CheckBlockingFactors(OneAPIBackend::GetInstance()->GetDeviceQueue(), parameters);
+    PrintTargetInfo(Backend::GetInstance()->GetDeviceQueue());
+    CheckBlockingFactors(Backend::GetInstance()->GetDeviceQueue(), parameters);
     return parameters;
 }

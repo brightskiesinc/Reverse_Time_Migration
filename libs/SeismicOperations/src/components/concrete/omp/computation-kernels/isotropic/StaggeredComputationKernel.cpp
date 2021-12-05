@@ -17,14 +17,13 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
-
 #include <cmath>
 
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/computation-kernels/isotropic/StaggeredComputationKernel.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-
-#include <bs/timer/api/cpp/BSTimer.hpp>
 
 using namespace std;
 using namespace bs::timer;
@@ -50,13 +49,11 @@ void StaggeredComputationKernel::ComputeVelocity() {
     float *vel_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
     float *den_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
 
-
     int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     float dx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
     float dz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
-
 
     float dt = this->mpGridBox->GetDT();
     float *coefficients = this->mpParameters->GetFirstDerivativeStaggeredFDCoefficient();
@@ -67,10 +64,8 @@ void StaggeredComputationKernel::ComputeVelocity() {
     int nx_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
     int nz_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
 
-    int wnxnz = wnx * wnz;
     int nx = wnx;
     int nz = wnz;
-    int nxnz = nx * nz;
     int size = (wnx - 2 * HALF_LENGTH_) * (wnz - 2 * HALF_LENGTH_);
 
     /// General note: floating point operations for forward is the same as backward
@@ -101,16 +96,15 @@ void StaggeredComputationKernel::ComputeVelocity() {
     float coefficients_z[HALF_LENGTH_];
 
     int vertical[HALF_LENGTH_];
-    int front[HALF_LENGTH_];
+
     for (int i = 0; i < HALF_LENGTH_; i++) {
         coefficients_x[i] = coefficients[i + 1];
         coefficients_z[i] = coefficients[i + 1];
         vertical[i] = (i + 1) * wnx;
     }
 
-
     // start the timers for the velocity kernel.
-    ElasticTimer timer("ComputationKernel::Kernel",
+    ElasticTimer timer("ComputationKernel::ComputeVelocity",
                        size,
                        num_of_arrays_velocity,
                        true,
@@ -120,11 +114,11 @@ void StaggeredComputationKernel::ComputeVelocity() {
 // Start the computation by creating the threads.
 #pragma omp parallel default(shared)
     {
-        float *prev, *next, *den, *vel, *vel_x, *vel_y, *vel_z;
+        float *prev, *next, *den, *vel, *vel_x, *vel_z;
 
 /// Three loops for cache blocking.
 /// Utilizing the cache to the maximum to speed up computation.
-#pragma omp for schedule(static, 1) collapse(2)
+#pragma omp for schedule(static, 1) collapse(1)
         for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z) {
             for (int bx = HALF_LENGTH_; bx < nx_end; bx += block_x) {
                 /// Calculate the endings appropriately
@@ -145,38 +139,34 @@ void StaggeredComputationKernel::ComputeVelocity() {
 
                     vel_x = particle_vel_x + offset;
                     vel_z = particle_vel_z + offset;
+
 #pragma vector aligned
 #pragma vector vecremainder
 #pragma omp simd
 #pragma ivdep
                     for (int ix = 0; ix < ixEnd; ++ix) {
                         float value_x = 0;
-                        float value_y = 0;
                         float value_z = 0;
-                        if constexpr (KERNEL_MODE_ == KERNEL_MODE::ADJOINT) {
-                            DERIVE_SEQ_AXIS(ix, 1, 0, -, prev, coefficients_x, value_x, vel)
-                            DERIVE_JUMP_AXIS(ix, wnx, 1, 0, -, prev, coefficients_z, value_z, vel)
-                            vel_x[ix] = vel_x[ix] - value_x / dx;
+
+                        DERIVE_SEQ_AXIS(ix, 1, 0, -, prev, coefficients_x, value_x)
+                        DERIVE_JUMP_AXIS(ix, wnx, 1, 0, -, prev, coefficients_z, value_z)
+
+                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE) {
                             // 3 floating point operations
-                            vel_z[ix] = vel_z[ix] - value_z / dz;
+                            vel_x[ix] = vel_x[ix] - (den[ix] / dx) * value_x;
+                            // 3 floating point operations
+                            vel_z[ix] = vel_z[ix] - (den[ix] / dz) * value_z;
                         } else {
-                            DERIVE_SEQ_AXIS(ix, 1, 0, -, prev, coefficients_x, value_x)
-                            DERIVE_JUMP_AXIS(ix, wnx, 1, 0, -, prev, coefficients_z, value_z)
-                            if constexpr(KERNEL_MODE_ == KERNEL_MODE::FORWARD) {
-                                // 3 floating point operations
-                                vel_x[ix] = vel_x[ix] - (den[ix] / dx) * value_x;
-                                // 3 floating point operations
-                                vel_z[ix] = vel_z[ix] - (den[ix] / dz) * value_z;
-                            } else {
-                                vel_x[ix] = vel_x[ix] + (den[ix] / dx) * value_x;
-                                vel_z[ix] = vel_z[ix] + (den[ix] / dz) * value_z;
-                            }
+                            vel_x[ix] = vel_x[ix] + (den[ix] / dx) * value_x;
+
+                            vel_z[ix] = vel_z[ix] + (den[ix] / dz) * value_z;
                         }
                     }
                 }
             }
         }
     }
+
     // the end of time of particle velocity kernel
     timer.Stop();
 }
@@ -196,7 +186,6 @@ void StaggeredComputationKernel::ComputePressure() {
     float *vel_base = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
     float *den_base = this->mpGridBox->Get(PARM | WIND | GB_DEN)->GetNativePointer();
 
-
     int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
@@ -212,10 +201,8 @@ void StaggeredComputationKernel::ComputePressure() {
     int nx_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
     int nz_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
 
-    int wnxnz = wnx * wnz;
     int nx = wnx;
     int nz = wnz;
-    int nxnz = nx * nz;
     int size = (wnx - 2 * HALF_LENGTH_) * (wnz - 2 * HALF_LENGTH_);
 
     /// General note: floating point operations for forward is the same as backward
@@ -228,30 +215,22 @@ void StaggeredComputationKernel::ComputePressure() {
     // vel,curr,next,vel_x,vel_z
     int num_of_arrays_pressure = 5;
 
-
     /*
      * Pre-compute the coefficients for each direction.
      */
 
     float coefficients_x[HALF_LENGTH_];
-    float coefficients_y[HALF_LENGTH_];
     float coefficients_z[HALF_LENGTH_];
 
     int vertical[HALF_LENGTH_];
-    int front[HALF_LENGTH_];
     for (int i = 0; i < HALF_LENGTH_; i++) {
         coefficients_x[i] = coefficients[i + 1];
         coefficients_z[i] = coefficients[i + 1];
         vertical[i] = (i + 1) * wnx;
-        if (!IS_2D_) {
-            coefficients_y[i] = coefficients[i + 1];
-            front[i] = (i + 1) * wnxnz;
-        }
     }
 
-
     // start the timers for the velocity kernel.
-    ElasticTimer timer("ComputationKernel::Kernel",
+    ElasticTimer timer("ComputationKernel::ComputePressure",
                        size,
                        num_of_arrays_pressure,
                        true,
@@ -260,7 +239,7 @@ void StaggeredComputationKernel::ComputePressure() {
     timer.Start();
 #pragma omp parallel default(shared)
     {
-        float *curr, *next, *den, *vel, *vel_x, *vel_y, *vel_z;
+        float *curr, *next, *den, *vel, *vel_x, *vel_z;
         // Pressure Calculation
 #pragma omp for schedule(static, 1) collapse(2)
         for (int bz = HALF_LENGTH_; bz < nz_end; bz += block_z) {
@@ -287,29 +266,18 @@ void StaggeredComputationKernel::ComputePressure() {
 #pragma ivdep
                     for (int ix = 0; ix < ixEnd; ++ix) {
                         float value_x = 0;
-                        float value_y = 0;
                         float value_z = 0;
-                        if constexpr (KERNEL_MODE_ == KERNEL_MODE::ADJOINT) {
-                            DERIVE_SEQ_AXIS(ix, 0, 1, -, vel_x, coefficients_x, value_x, den)
-                            DERIVE_JUMP_AXIS(ix, nx, 0, 1, -, vel_z, coefficients_z, value_z, den)
+
+                        DERIVE_SEQ_AXIS(ix, 0, 1, -, vel_x, coefficients_x, value_x)
+                        DERIVE_JUMP_AXIS(ix, nx, 0, 1, -, vel_z, coefficients_z, value_z)
+
+                        if constexpr (KERNEL_MODE_ != KERNEL_MODE::INVERSE) {
                             // 5 floating point operations
                             next[ix] =
-                                    curr[ix] - ((value_x / dx) + (value_z / dz));
-
+                                    curr[ix] - vel[ix] * ((value_x / dx) + (value_z / dz));
                         } else {
-                            DERIVE_SEQ_AXIS(ix, 0, 1, -, vel_x, coefficients_x, value_x)
-                            DERIVE_JUMP_AXIS(ix, nx, 0, 1, -, vel_z, coefficients_z, value_z)
-                            if constexpr (KERNEL_MODE_ == KERNEL_MODE::FORWARD) {
-
-                                // 5 floating point operations
-                                next[ix] =
-                                        curr[ix] - vel[ix] * ((value_x / dx) + (value_z / dz));
-
-                            } else {
-                                next[ix] =
-                                        curr[ix] + vel[ix] * ((value_x / dx) + (value_z / dz));
-
-                            }
+                            next[ix] =
+                                    curr[ix] + vel[ix] * ((value_x / dx) + (value_z / dz));
                         }
                     }
                 }
@@ -323,14 +291,12 @@ void StaggeredComputationKernel::PreprocessModel() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-
     float dt = this->mpGridBox->GetDT();
     float dt2 = dt * dt;
 
     float *velocity_values = this->mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
 
     int full_nx = nx;
-    int full_nx_nz = nx * nz;
     float *density_values = this->mpGridBox->Get(PARM | GB_DEN)->GetNativePointer();
     /// Preprocess the velocity model by calculating the
     /// dt * c2 * density component of the wave equation.

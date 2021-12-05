@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,17 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/io/streams/concrete/readers/SUReader.hpp>
-#include <bs/io/streams/concrete/writers/SUWriter.hpp>
-
-#include <bs/io/data-units/concrete/Gather.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-#include <bs/io/configurations/MapKeys.h>
-#include <bs/io/test-utils/DataGenerator.hpp>
+#include <sys/stat.h>
 
 #include <prerequisites/libraries/catch/catch.hpp>
 
-#include <sys/stat.h>
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+
+#include <bs/io/streams/concrete/readers/SUReader.hpp>
+#include <bs/io/streams/concrete/writers/SUWriter.hpp>
+#include <bs/io/data-units/concrete/Gather.hpp>
+#include <bs/io/configurations/MapKeys.h>
+#include <bs/io/test-utils/DataGenerator.hpp>
 
 using namespace bs::io::streams;
 using namespace bs::io::dataunits;
@@ -43,44 +43,50 @@ TEST_SU_FORMAT() {
     std::string dir(IO_TESTS_RESULTS_PATH);
     mkdir(dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-    SECTION("Write Big Endian")
-    {
+    SECTION("Write Big Endian") {
         json node;
         node[IO_K_PROPERTIES][IO_K_WRITE_LITTLE_ENDIAN] = false;
         node[IO_K_PROPERTIES][IO_K_WRITE_PATH] = std::string(IO_TESTS_RESULTS_PATH);
         JSONConfigurationMap map = JSONConfigurationMap(node);
+
         vector<Gather *> gathers;
-        Gather *gather = DataGenerator::GenerateGather(0, 10, 1);
-        gathers.push_back(gather);
+
+        Gather *gather1 = DataGenerator::GenerateGather(0, 10, 1);
+        gathers.push_back(gather1);
+
         Gather *gather2 = DataGenerator::GenerateGather(0, 10, 10);
         gathers.push_back(gather2);
 
-        SUWriter writer(&map);
-        writer.AcquireConfiguration();
+        SUWriter w(&map);
+        w.AcquireConfiguration();
         std::string filePath("SUFile");
-        writer.Initialize(filePath);
-        REQUIRE(writer.Write(gathers) == 0);
-        writer.Finalize();
+        w.Initialize(filePath);
+        REQUIRE(w.Write(gathers) == 0);
+
+        w.Finalize();
     }
 
-    SECTION("Write Little Endian")
-    {
+    SECTION("Write Little Endian") {
         json node;
         node[IO_K_PROPERTIES][IO_K_WRITE_LITTLE_ENDIAN] = true;
         node[IO_K_PROPERTIES][IO_K_WRITE_PATH] = std::string(IO_TESTS_RESULTS_PATH);
         JSONConfigurationMap map = JSONConfigurationMap(node);
+
         vector<Gather *> gathers;
-        Gather *gather = DataGenerator::GenerateGather(0, 10, 1);
-        gathers.push_back(gather);
+
+        Gather *gather1 = DataGenerator::GenerateGather(0, 10, 1);
+        gathers.push_back(gather1);
+
         Gather *gather2 = DataGenerator::GenerateGather(0, 10, 10);
         gathers.push_back(gather2);
 
-        SUWriter writer(&map);
-        writer.AcquireConfiguration();
+        SUWriter w(&map);
+        w.AcquireConfiguration();
         std::string filePath("SUFile");
-        writer.Initialize(filePath);
-        REQUIRE(writer.Write(gathers) == 0);
-        writer.Finalize();
+        w.Initialize(filePath);
+        REQUIRE(w.Write(gathers) == 0);
+
+        w.Finalize();
     }
 }
 
@@ -102,5 +108,4 @@ TEST_SU_FORMAT() {
 
 TEST_CASE("SU Format Test") {
     TEST_SU_FORMAT();
-
 }

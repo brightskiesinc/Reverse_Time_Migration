@@ -1,7 +1,7 @@
 {
   "traces": {
     "min": 601,
-    "max": 610,
+    "max": 602,
     "sort-type": "CSR",
     "paths": [
       "data/iso/shots/shots0601_0800.segy"
@@ -19,9 +19,10 @@
   },
   "components": {
     "boundary-manager": {
-      "type": "none",
+      "type": "random",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": false,
+        "grain-side-length": 200
       }
     },
     "migration-accommodator": {
@@ -33,7 +34,7 @@
     "forward-collector": {
       "type": "three",
       "properties": {
-        "boundary-saving": false
+        "boundary-saving": true
       }
     },
     "trace-manager": {

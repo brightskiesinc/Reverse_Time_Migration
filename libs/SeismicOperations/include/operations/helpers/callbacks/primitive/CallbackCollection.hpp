@@ -20,9 +20,9 @@
 #ifndef OPERATIONS_LIB_CALLBACK_COLLECTION_HPP
 #define OPERATIONS_LIB_CALLBACK_COLLECTION_HPP
 
-#include <operations/helpers/callbacks/interface/Callback.hpp>
-
 #include <vector>
+
+#include <operations/helpers/callbacks/interface/Callback.hpp>
 
 namespace operations {
     namespace helpers {

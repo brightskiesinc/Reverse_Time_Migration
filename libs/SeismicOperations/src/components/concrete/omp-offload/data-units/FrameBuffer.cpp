@@ -17,19 +17,19 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/common/DataTypes.h>
-
-#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
-#include <operations/utils/checks/Checks.hpp>
-
-#include <bs/base/exceptions/Exceptions.hpp>
-
 #include <string.h>
 #include <omp.h>
 
+#include <bs/base/exceptions/Exceptions.hpp>
+
+
+#include <operations/common/DataTypes.h>
+#include <operations/data-units/concrete/holders/FrameBuffer.hpp>
+#include <operations/utils/checks/Checks.hpp>
+
+using namespace bs::base::exceptions;
 using namespace operations::dataunits;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 
 
 /** @note
@@ -62,6 +62,8 @@ template float *FrameBuffer<float>::GetNativePointer();
 
 template float *FrameBuffer<float>::GetHostPointer();
 
+template float *FrameBuffer<float>::GetDiskFlushPointer();
+
 template void FrameBuffer<float>::SetNativePointer(float *ptr);
 
 template void FrameBuffer<float>::ReflectOnNative();
@@ -83,6 +85,8 @@ template int *FrameBuffer<int>::GetNativePointer();
 
 template int *FrameBuffer<int>::GetHostPointer();
 
+template int *FrameBuffer<int>::GetDiskFlushPointer();
+
 template void FrameBuffer<int>::SetNativePointer(int *ptr);
 
 template void FrameBuffer<int>::ReflectOnNative();
@@ -103,6 +107,8 @@ template void FrameBuffer<uint>::Free();
 template uint *FrameBuffer<uint>::GetNativePointer();
 
 template uint *FrameBuffer<uint>::GetHostPointer();
+
+template uint *FrameBuffer<uint>::GetDiskFlushPointer();
 
 template void FrameBuffer<uint>::SetNativePointer(uint *ptr);
 
@@ -139,7 +145,6 @@ void FrameBuffer<T>::Allocate(uint aSize, const std::string &aName) {
     }
 
     mpDataPointer = (T *) omp_target_alloc(mAllocatedBytes, device_num);
-
     if (no_space_exist(mpDataPointer)) {
         throw DEVICE_NO_SPACE_EXCEPTION();
     }
@@ -186,6 +191,11 @@ T *FrameBuffer<T>::GetHostPointer() {
         throw NULL_POINTER_EXCEPTION();
     }
     return this->mpHostDataPointer;
+}
+
+template<typename T>
+T *FrameBuffer<T>::GetDiskFlushPointer() {
+    return this->GetHostPointer();
 }
 
 template<typename T>

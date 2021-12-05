@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,51 +17,62 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/io/data-units/concrete/Trace.hpp>
+#include <iostream>
 
 #include <prerequisites/libraries/catch/catch.hpp>
-#include <iostream>
+
+#include <bs/io/data-units/concrete/Trace.hpp>
 
 using namespace bs::io::dataunits;
 
 
 void
 TEST_TRACE() {
-    SECTION("Constructor")
-    {
-        Trace tr(10);
-        REQUIRE(tr.GetTraceHeaderKeyValue<int>(TraceHeaderKey(TraceHeaderKey::Key::NS)) == 10);
+    SECTION("Constructor") {
+        Trace t(10);
+        REQUIRE(t.GetTraceHeaderKeyValue<int>(TraceHeaderKey(TraceHeaderKey::Key::NS)) == 10);
     }
 
-    SECTION("Move Constructor")
-    {
-        Trace tr(3);
-        auto data = (float *) malloc(3 * sizeof(float));
-        data[0] = 1.0;
-        data[1] = 2.3;
-        data[2] = 5.6;
-        tr.SetTraceData(data);
-        Trace temp = std::move(tr);
-        float *ret2 = temp.GetTraceData();
-        float x = 2.3;
-        REQUIRE(ret2[1] == x);
+    SECTION("Move Constructor") {
+        Trace t(3);
+
+        auto ground_truth_data = (float *) malloc(3 * sizeof(float));
+        ground_truth_data[0] = 1.0;
+        ground_truth_data[1] = 2.3;
+        ground_truth_data[2] = 5.6;
+
+        t.SetTraceData(ground_truth_data);
+        Trace temp = std::move(t);
+        float *test_data = temp.GetTraceData();
+
+        REQUIRE(test_data[0] == ground_truth_data[0]);
+        REQUIRE(test_data[1] == ground_truth_data[1]);
+        REQUIRE(test_data[2] == ground_truth_data[2]);
     }
 
-    SECTION("HasHeader")
-    {
-        Trace tr(3);
-        REQUIRE(tr.HasTraceHeader(TraceHeaderKey::NS));
-        REQUIRE(!tr.HasTraceHeader(TraceHeaderKey::TRACL));
-        REQUIRE(tr.GetNumberOfSamples() == 3);
-        REQUIRE(tr.GetTraceHeaders()->size() == 1);
+    SECTION("HasHeader") {
+        int ns = 3;
+        Trace t(ns);
+        REQUIRE(t.HasTraceHeader(TraceHeaderKey::NS));
+        /* FLDR is not set. */
+        REQUIRE(!t.HasTraceHeader(TraceHeaderKey::FLDR));
+        REQUIRE(t.GetNumberOfSamples() == ns);
+        /* Only NS header is set. */
+        REQUIRE(t.GetTraceHeaders()->size() == 1);
+
+        int fldr = 1;
+        t.SetTraceHeaderKeyValue(TraceHeaderKey::FLDR, fldr);
+        /* FLDR is now set. */
+        REQUIRE(t.HasTraceHeader(TraceHeaderKey::FLDR));
+        /* FLDR and NS header are now set. */
+        REQUIRE(t.GetTraceHeaders()->size() == 2);
     }
 
-    SECTION("Set_Scaled_Coordinate")
-    {
-        Trace tr(3);
-        tr.SetScaledCoordinateHeader(TraceHeaderKey(TraceHeaderKey::SCALCO), 2.0);
-        float x = 2.0;
-        REQUIRE(tr.GetTraceHeaderKeyValue<float>(TraceHeaderKey::SCALCO) == x);
+    SECTION("Set_Scaled_Coordinate") {
+        Trace t(3);
+        float ground_truth_location = 2.0f;
+        t.SetScaledCoordinateHeader(TraceHeaderKey(TraceHeaderKey::SCALCO), ground_truth_location);
+        REQUIRE(t.GetTraceHeaderKeyValue<float>(TraceHeaderKey::SCALCO) == ground_truth_location);
     }
 }
 
@@ -78,5 +89,4 @@ TEST_TRACE() {
 
 TEST_CASE("TraceTest", "[Trace]") {
     TEST_TRACE();
-
 }

@@ -16,13 +16,7 @@
 # License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
 
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/snapshot)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/snapshots)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/timers)
 
-set(BS_TIMER_SOURCES
-
-        ${CMAKE_CURRENT_SOURCE_DIR}/ElasticTimer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/ScopeTimer.cpp
-
-        ${BS_TIMER_SOURCES}
-        PARENT_SCOPE
-        )
+set(BS_TIMER_SOURCES ${BS_TIMER_SOURCES} PARENT_SCOPE)

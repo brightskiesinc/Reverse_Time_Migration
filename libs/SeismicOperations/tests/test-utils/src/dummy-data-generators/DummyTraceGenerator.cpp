@@ -17,12 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 #include <operations/test-utils/dummy-data-generators/DummyTraceGenerator.hpp>
 
 #include <operations/utils/io/write_utils.h>
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 using namespace std;
 

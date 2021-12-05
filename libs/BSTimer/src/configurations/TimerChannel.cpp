@@ -37,7 +37,7 @@ TimerChannel::AddTimer(Timer *aTimer) {
 }
 
 void
-TimerChannel::AddSnapshot(core::snapshot::Snapshot *apSnapshot) {
+TimerChannel::AddSnapshot(core::snapshots::Snapshot *apSnapshot) {
     this->mChannelStats.AddSnapshot(apSnapshot);
 }
 

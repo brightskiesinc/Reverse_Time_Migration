@@ -17,27 +17,25 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
-
-#include <operations/backend/OneAPIBackend.hpp>
-
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
 #include <vector>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
+
 #define EPSILON 1e-20f
 
-using namespace cl::sycl;
 using namespace std;
+using namespace cl::sycl;
+using namespace bs::base::backend;
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
-using namespace bs::timer;
-
 
 template void CrossCorrelationKernel::Correlation<true, NO_COMPENSATION>(GridBox *apGridBox);
 
@@ -89,45 +87,44 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
     float *source = apGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     float *receiver = mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
     timer.Start();
-    if (OneAPIBackend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
+    if (Backend::GetInstance()->GetAlgorithm() == SYCL_ALGORITHM::CPU) {
         float *output_buffer = mpShotCorrelation->GetNativePointer();
         float *src_buffer = mpSourceIllumination->GetNativePointer();
         float *dest_buffer = mpReceiverIllumination->GetNativePointer();
 
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            size_t num_groups = OneAPIBackend::GetInstance()->GetWorkgroupNumber();
-            size_t wgsize = OneAPIBackend::GetInstance()->GetWorkgroupSize();
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+            size_t num_groups = Backend::GetInstance()->GetWorkgroupNumber();
+            size_t wgsize = Backend::GetInstance()->GetWorkgroupSize();
             size_t z_stride = compute_nz / num_groups;
             auto global_range = range<1>(num_groups);
             auto local_range = range<1>(wgsize);
 
             const int hl = mpParameters->GetHalfLength();
 
-            cgh.parallel_for_work_group(
-                    global_range, local_range, [=](group<1> grp) {
-                        size_t z_id = grp.get_id(0) * z_stride + hl;
-                        size_t end_z = (z_id + z_stride) < (compute_nz + hl) ? (z_id + z_stride) : (compute_nz + hl);
-                        grp.parallel_for_work_item([&](h_item<1> it) {
-                            for (size_t iz = z_id; iz < end_z; iz++) {
-                                size_t offset = iz * wnx + it.get_local_id(0);
-                                for (size_t ix = hl; ix < hl + compute_nx; ix += wgsize) {
-                                    size_t idx = offset + ix;
-                                    output_buffer[idx] += source[idx] * receiver[idx];
-                                    if (_COMPENSATION_TYPE == COMPENSATION_TYPE::COMBINED_COMPENSATION) {
-                                        src_buffer[idx] += source[idx] * source[idx];
-                                        dest_buffer[idx] += receiver[idx] * receiver[idx];
-                                    }
-                                }
+            cgh.parallel_for_work_group(global_range, local_range, [=](group<1> grp) {
+                size_t z_id = grp.get_id(0) * z_stride + hl;
+                size_t end_z = (z_id + z_stride) < (compute_nz + hl) ? (z_id + z_stride) : (compute_nz + hl);
+                grp.parallel_for_work_item([&](h_item<1> it) {
+                    for (size_t iz = z_id; iz < end_z; iz++) {
+                        size_t offset = iz * wnx + it.get_local_id(0);
+                        for (size_t ix = hl; ix < compute_nx; ix += wgsize) {
+                            size_t idx = offset + ix;
+                            output_buffer[idx] += source[idx] * receiver[idx];
+                            if (_COMPENSATION_TYPE == COMPENSATION_TYPE::COMBINED_COMPENSATION) {
+                                src_buffer[idx] += source[idx] * source[idx];
+                                dest_buffer[idx] += receiver[idx] * receiver[idx];
                             }
-                        });
-                    });
+                        }
+                    }
+                });
+            });
         });
     } else {
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
 
-            auto global_range = range<3>(compute_ny, compute_nz, compute_nx);
-            auto local_range = range<3>(1, 1, block_x);
-            auto starting_offset = id<3>(y_offset, half_length, half_length);
+            auto global_range = range<3>(compute_nx, compute_nz, compute_ny);
+            auto local_range = range<3>(block_x, block_z, block_y);
+            auto starting_offset = id<3>(half_length, half_length, y_offset);
             auto global_nd_range = nd_range<3>(global_range,
                                                local_range,
                                                starting_offset);
@@ -137,7 +134,7 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
             float *dest_buffer = mpReceiverIllumination->GetNativePointer();
             cgh.parallel_for(global_nd_range, [=](nd_item<3> it) {
 
-                int idx = it.get_global_id(0) * wnz * wnx + it.get_global_id(1) * wnx + it.get_global_id(2);
+                int idx = it.get_global_id(2) * wnz * wnx + it.get_global_id(1) * wnx + it.get_global_id(0);
                 output_buffer[idx] += source[idx] * receiver[idx];
 
                 if (_COMPENSATION_TYPE == COMPENSATION_TYPE::COMBINED_COMPENSATION) {
@@ -148,7 +145,7 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
             });
         });
     }
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
     timer.Stop();
 }
 
@@ -182,7 +179,7 @@ void CrossCorrelationKernel::Stack() {
                        flops_per_second);
     size_t sizeTotal = nx * nz * ny;
     timer.Start();
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         auto global_range = range<3>(orig_x - 2 * offset, orig_z - 2 * offset,
                                      orig_y);
         int wsx = mpGridBox->GetWindowStart(X_AXIS);
@@ -193,26 +190,24 @@ void CrossCorrelationKernel::Stack() {
         float *cor_src = mpSourceIllumination->GetNativePointer();
         float *cor_rcv = mpReceiverIllumination->GetNativePointer();
         if (_COMPENSATION_TYPE == NO_COMPENSATION) {
-            cgh.parallel_for(
-                    global_range, [=](id<3> idx) {
-                        uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz
-                                             + constant_offset_win;
-                        uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz
-                                      + constant_offset;
-                        stack_buf[offset] += cor_buf[offset_window];
-                    });
+            cgh.parallel_for(global_range, [=](id<3> idx) {
+                uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz
+                                     + constant_offset_win;
+                uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz
+                              + constant_offset;
+                stack_buf[offset] += cor_buf[offset_window];
+            });
         } else {
-            cgh.parallel_for(
-                    global_range, [=](id<3> idx) {
-                        uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz
-                                             + constant_offset_win;
-                        uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz
-                                      + constant_offset;
-                        stack_buf[offset] += (cor_buf[offset_window] /
-                                              (sqrtf(cor_src[offset_window] * cor_rcv[offset_window]) + EPSILON));
-                    });
+            cgh.parallel_for(global_range, [=](id<3> idx) {
+                uint offset_window = idx[0] + idx[1] * wnx + idx[2] * wnx * wnz
+                                     + constant_offset_win;
+                uint offset = idx[0] + idx[1] * nx + idx[2] * nx * nz
+                              + constant_offset;
+                stack_buf[offset] += (cor_buf[offset_window] /
+                                      (sqrtf(cor_src[offset_window] * cor_rcv[offset_window]) + EPSILON));
+            });
         }
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
     timer.Stop();
 }

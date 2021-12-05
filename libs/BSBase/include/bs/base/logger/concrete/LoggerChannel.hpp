@@ -20,10 +20,10 @@
 #ifndef BS_BASE_LOGGER_LOGGER_CHANNEL_H
 #define BS_BASE_LOGGER_LOGGER_CHANNEL_H
 
+#include <sstream>
+
 #include <bs/base/logger/interface/Logger.hpp>
 #include <bs/base/logger/concrete/LoggerCollection.hpp>
-
-#include <sstream>
 
 namespace bs {
     namespace base {
@@ -75,7 +75,7 @@ namespace bs {
             };
 
         } //namespace logger
-    } //namespace helpers
-} //namespace operations
+    } //namespace base
+} //namespace bs
 
 #endif //BS_BASE_LOGGER_LOGGER_CHANNEL_H

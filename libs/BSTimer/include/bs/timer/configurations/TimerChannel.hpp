@@ -20,15 +20,11 @@
 #ifndef BS_TIMER_CORE_CHANNEL_HPP
 #define BS_TIMER_CORE_CHANNEL_HPP
 
-#include <bs/timer/core/interface/Timer.hpp>
-#include <bs/timer/data-units/ChannelStats.hpp>
-#include <bs/timer/core/interface/Snapshot.hpp>
-
-#include <string>
-#include <map>
-#include <utility>
-#include <vector>
 #include <memory>
+
+#include <bs/timer/core/timers/interface/Timer.hpp>
+#include <bs/timer/data-units/ChannelStats.hpp>
+#include <bs/timer/core/snapshots/interface/Snapshot.hpp>
 
 namespace bs {
     namespace timer {
@@ -106,7 +102,7 @@ namespace bs {
              * Pointer to Snapshot accompanied to this channel to be added.
              */
             void
-            AddSnapshot(core::snapshot::Snapshot *apSnapshot);
+            AddSnapshot(core::snapshots::Snapshot *apSnapshot);
 
             /**
              * @brief Returns a ChannelStats object holding all data regarding this channel.

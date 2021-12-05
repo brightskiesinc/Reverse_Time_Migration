@@ -22,9 +22,6 @@ You can find detailed features [here](docs/manual/Features.md).
 ### Engines
 
 * [RTM](include/operations/engines/concrete/RTMEngine.hpp)
-* [FWI](include/operations/engines/concrete/FWIEngine.hpp)
-* [PSDM](include/operations/engines/concrete/PSDMEngine.hpp)
-* [PSTM](include/operations/engines/concrete/PSTMEngine.hpp)
 
 ### Components
 
@@ -35,10 +32,6 @@ You can find detailed features [here](docs/manual/Features.md).
 * [Source Injector](include/operations/components/independents/primitive/SourceInjector.hpp)
 * [Trace Manager](include/operations/components/independents/primitive/TraceManager.hpp)
 * [Trace Writer](include/operations/components/independents/primitive/TraceWriter.hpp)
-* [Ray Tracer](include/operations/components/independents/primitive/RayTracer.hpp)
-* [Residual Manager](include/operations/components/independents/primitive/ResidualManager.hpp)
-* [Stoppage Criteria](include/operations/components/independents/primitive/StoppageCriteria.hpp)
-* [Model Updater](include/operations/components/independents/primitive/ModelUpdater.hpp)
 
 ## Prerequisites
 

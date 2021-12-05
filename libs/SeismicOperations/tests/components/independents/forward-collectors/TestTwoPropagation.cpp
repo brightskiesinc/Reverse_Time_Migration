@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <operations/components/independents/concrete/forward-collectors/TwoPropagation.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
@@ -28,7 +28,6 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -910,127 +909,54 @@ TEST_CASE("Two Forward Collector - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Two Forward Collector - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Two Forward Collector Injection no tolerance - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("TwoForward Collector Injection no tolerance  - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
-
-TEST_CASE("Two Forward Collector Injection no tolerance  - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector Injection no tolerance - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_TOLERANCE(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
 
 TEST_CASE("Two Forward Collector Injection no relative - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("TwoForward Collector Injection no relative  - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector Injection no relative  - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector Injection no relative - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_RELATIVE(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Two Forward Collector Injection no parallel - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("TwoForward Collector Injection no parallel  - 2D - Window", "[Window],[2D]") {
     TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector Injection no parallel  - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Two Forward Collector Injection no parallel - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_FORWARD_COLLECTOR_TWO_INC_COMPRESSION_NO_PARALLEL(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }

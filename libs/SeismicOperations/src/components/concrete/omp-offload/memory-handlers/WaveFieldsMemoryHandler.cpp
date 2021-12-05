@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-
 #include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
 
 using namespace bs::timer;
 using namespace operations::components;

@@ -17,25 +17,25 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
-
-#include <operations/configurations/MapKeys.h>
-#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-
 #include <algorithm>
 #include <cmath>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/boundary-managers/CPMLBoundaryManager.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
 
 #ifndef PWR2
 #define PWR2(EXP) ((EXP) * (EXP))
 #endif
 
+using namespace bs::base::logger;
 using namespace bs::base::configurations;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 
 CPMLBoundaryManager::CPMLBoundaryManager(ConfigurationMap *apConfigurationMap) {
@@ -167,25 +167,18 @@ void CPMLBoundaryManager::FillCPMLCoefficients() {
 
 template<int HALF_LENGTH_>
 void CPMLBoundaryManager::ApplyAllCPML() {
+
     int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetLogicalAxisSize();
+
     CalculateFirstAuxiliary<X_AXIS, true, HALF_LENGTH_>();
     CalculateFirstAuxiliary<Z_AXIS, true, HALF_LENGTH_>();
     CalculateFirstAuxiliary<X_AXIS, false, HALF_LENGTH_>();
     CalculateFirstAuxiliary<Z_AXIS, false, HALF_LENGTH_>();
-    if (ny > 1) {
-        CalculateFirstAuxiliary<Y_AXIS, true, HALF_LENGTH_>();
-        CalculateFirstAuxiliary<Y_AXIS, false, HALF_LENGTH_>();
-    }
 
     CalculateCPMLValue<X_AXIS, true, HALF_LENGTH_>();
     CalculateCPMLValue<Z_AXIS, true, HALF_LENGTH_>();
     CalculateCPMLValue<X_AXIS, false, HALF_LENGTH_>();
     CalculateCPMLValue<Z_AXIS, false, HALF_LENGTH_>();
-    // 3D --> Add CPML for y-direction.
-    if (ny > 1) {
-        CalculateCPMLValue<Y_AXIS, true, HALF_LENGTH_>();
-        CalculateCPMLValue<Y_AXIS, false, HALF_LENGTH_>();
-    }
 }
 
 void CPMLBoundaryManager::InitializeVariables() {

@@ -20,9 +20,9 @@
 #ifndef BS_BASE_CONFIGURATIONS_JSON_CONFIGURATION_MAP_HPP
 #define BS_BASE_CONFIGURATIONS_JSON_CONFIGURATION_MAP_HPP
 
-#include <bs/base/configurations/interface/ConfigurationMap.hpp>
-
 #include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/configurations/interface/ConfigurationMap.hpp>
 
 namespace bs {
     namespace base {
@@ -146,8 +146,37 @@ namespace bs {
                 std::string
                 ToString() override;
 
+                std::string GetKeyValue(const std::string &aPropertyKey,
+                                        const std::string &aDefaultValue) override;
+
+                /**
+                 * @brief
+                 * This function retrieves the submaps residing in an array in
+                 * the configuration map.
+                 *
+                 * @param
+                 * aSectionKey
+                 *
+                 * @return
+                 * Submaps identified by provided key.
+                 */
                 std::vector<bs::base::configurations::ConfigurationMap *>
-                GetConfigurationArray(std::string &aMapKey) override;
+                GetConfigurationArray(std::string &aPropertyKey,
+                                      std::string &aSectionKey) override;
+
+                /**
+                 * @brief
+                 * This function retrieves the submaps residing in an array in
+                 * the configuration map.
+                 *
+                 * @param
+                 * aPropertyKey, aSectionKey
+                 *
+                 * @return
+                 * Submaps identified by provided keys.
+                 */
+                std::vector<bs::base::configurations::ConfigurationMap *>
+                GetConfigurationArray(std::string &aSectionKey) override;
 
             private:
                 /// The json object used internally.

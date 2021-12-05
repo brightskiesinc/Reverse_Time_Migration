@@ -20,14 +20,16 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_MANAGERS_SEISMIC_TRACE_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_MANAGERS_SEISMIC_TRACE_MANAGER_HPP
 
+#include <fstream>
+#include <unordered_map>
+
+#include <bs/io/api/cpp/BSIO.hpp>
+
+
 #include <operations/components/independents/primitive/TraceManager.hpp>
 #include <operations/components/dependency/concrete/HasNoDependents.hpp>
 #include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 
-#include <bs/io/api/cpp/BSIO.hpp>
-
-#include <fstream>
-#include <unordered_map>
 
 namespace operations {
     namespace components {

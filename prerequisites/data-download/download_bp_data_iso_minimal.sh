@@ -32,13 +32,16 @@ dir="$(pwd)"
 cd ../..
 
 if [ ! -d "data" ]; then
-  cd ..
   mkdir data
 fi
 
 cd data || exit
 
-cd .. || exit
+if [ ! -d "iso" ]; then
+  mkdir iso
+fi
+
+cd iso || exit
 
 if [ ! -d "params" ]; then
   mkdir params

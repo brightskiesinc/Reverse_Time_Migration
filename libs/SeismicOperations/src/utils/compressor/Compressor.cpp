@@ -17,13 +17,13 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/utils/compressor/Compressor.hpp>
+#include <cstdio>
+#include <cstdlib>
 
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/timer/api/cpp/BSTimer.hpp>
 
-#include <cstdio>
-#include <cstdlib>
+#include <operations/utils/compressor/Compressor.hpp>
 
 #ifdef ZFP_COMPRESSION
 
@@ -35,8 +35,8 @@
 #define MIN_BLOCK_SIZE 4
 
 using namespace bs::timer;
-using namespace operations::utils::compressors;
 using namespace bs::base::logger;
+using namespace operations::utils::compressors;
 
 void apply_zfp(float *array, int nx, int ny, int nz, int nt,
                FILE *file, int decompress, bool zfp_is_relative, double tolerance);

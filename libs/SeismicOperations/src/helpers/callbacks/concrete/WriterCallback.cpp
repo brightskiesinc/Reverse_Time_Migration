@@ -17,16 +17,16 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/helpers/callbacks/concrete/WriterCallback.h>
-#include <operations/common/DataTypes.h>
-#include <operations/utils/io/write_utils.h>
+#include <map>
+#include <vector>
+#include <sys/stat.h>
 
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
-#include <map>
-#include <vector>
-#include <sys/stat.h>
+#include <operations/helpers/callbacks/concrete/WriterCallback.h>
+#include <operations/common/DataTypes.h>
+#include <operations/utils/io/write_utils.h>
 
 #define CAT_STR_TO_CHR(a, b) ((char *)string(a + b).c_str())
 
@@ -34,13 +34,13 @@
 #define TIME_SAMPLE_SCALE   1e6
 
 using namespace std;
+using namespace bs::base::logger;
+using namespace bs::base::configurations;
+using namespace bs::io::streams;;
 using namespace operations::helpers::callbacks;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::io;
-using namespace bs::base::logger;
-using namespace bs::base::configurations;
-using namespace bs::io::streams;
 
 
 /// Helper functions to be relocated/replaced
@@ -251,7 +251,7 @@ WriterCallback::AfterInitialization(GridBox *apGridBox) {
 
         for (const auto &param : this->mParamsVec) {
             if (apGridBox->Has(get_callbacks_map(param))) {
-                float *arr = apGridBox->Get(get_callbacks_map(param))->GetHostPointer();
+                float *arr = apGridBox->Get(get_callbacks_map(param))->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pnx, pny, pnz, nx, ny, nz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -279,7 +279,7 @@ WriterCallback::BeforeShotPreprocessing(TracesHolder *traces) {
         float dx = 1.0;
         float dy = 1.0;
 
-        WriteResult(nx, ny, nt, dx, dy, dt, traces->Traces->GetHostPointer(),
+        WriteResult(nx, ny, nt, dx, dy, dt, traces->Traces->GetDiskFlushPointer(),
                     "/traces_raw/trace_" +
                     to_string(this->mShotCount), TIME_SAMPLE_SCALE);
     }
@@ -297,7 +297,7 @@ WriterCallback::AfterShotPreprocessing(TracesHolder *traces) {
         float dx = 1.0;
         float dy = 1.0;
 
-        WriteResult(nx, ny, nt, dx, dy, dt, traces->Traces->GetHostPointer(),
+        WriteResult(nx, ny, nt, dx, dy, dt, traces->Traces->GetDiskFlushPointer(),
                     "/traces/trace_" +
                     to_string(this->mShotCount), TIME_SAMPLE_SCALE);
     }
@@ -322,7 +322,7 @@ WriterCallback::BeforeForwardPropagation(GridBox *apGridBox) {
 
         for (const auto &param : this->mReExtendedParamsVec) {
             if (apGridBox->Has(get_callbacks_map(param))) {
-                float *arr = apGridBox->Get(get_callbacks_map(param) | WIND)->GetHostPointer();
+                float *arr = apGridBox->Get(get_callbacks_map(param) | WIND)->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -365,7 +365,7 @@ WriterCallback::AfterForwardStep(GridBox *apGridBox, int time_step) {
                               S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
                 }
 
-                float *arr = apGridBox->Get(pressure.second)->GetHostPointer();
+                float *arr = apGridBox->Get(pressure.second)->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -400,7 +400,7 @@ WriterCallback::BeforeBackwardPropagation(GridBox *apGridBox) {
 
         for (const auto &param : this->mReExtendedParamsVec) {
             if (apGridBox->Has(get_callbacks_map(param))) {
-                float *arr = apGridBox->Get(get_callbacks_map(param) | WIND)->GetHostPointer();
+                float *arr = apGridBox->Get(get_callbacks_map(param) | WIND)->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -443,7 +443,7 @@ WriterCallback::AfterBackwardStep(
                               S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
                 }
 
-                float *arr = apGridBox->Get(pressure.second)->GetHostPointer();
+                float *arr = apGridBox->Get(pressure.second)->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -488,7 +488,7 @@ WriterCallback::AfterFetchStep(
                 }
 
 
-                float *arr = apGridBox->Get(pressure.second)->GetHostPointer();
+                float *arr = apGridBox->Get(pressure.second)->GetDiskFlushPointer();
                 float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
                 if (unpadded_arr) {
                     arr = unpadded_arr;
@@ -521,7 +521,7 @@ WriterCallback::BeforeShotStacking(
         float dy = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension();
         float dz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
 
-        float *arr = shot_correlation->GetHostPointer();
+        float *arr = shot_correlation->GetDiskFlushPointer();
         float *unpadded_arr = Unpad(arr, pwnx, pwny, pwnz, wnx, wny, wnz);
         if (unpadded_arr) {
             arr = unpadded_arr;
@@ -552,7 +552,7 @@ WriterCallback::AfterShotStacking(
         float dz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
 
 
-        float *arr = stacked_shot_correlation->GetHostPointer();
+        float *arr = stacked_shot_correlation->GetDiskFlushPointer();
         float *unpadded_arr = Unpad(arr, pnx, pny, pnz, nx, ny, nz);
         if (unpadded_arr) {
             arr = unpadded_arr;
@@ -587,7 +587,7 @@ WriterCallback::AfterMigration(
         float dz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
 
 
-        float *arr = stacked_shot_correlation->GetHostPointer();
+        float *arr = stacked_shot_correlation->GetDiskFlushPointer();
         float *unpadded_arr = Unpad(arr, pnx, pny, pnz, nx, ny, nz);
         if (unpadded_arr) {
             arr = unpadded_arr;

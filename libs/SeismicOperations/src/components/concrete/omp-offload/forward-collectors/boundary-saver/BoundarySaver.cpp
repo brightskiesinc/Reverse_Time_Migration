@@ -19,15 +19,13 @@
  */
 
 #include <operations/components/independents/concrete/forward-collectors/boundary-saver/BoundarySaver.h>
-
 #include <operations/utils/checks/Checks.hpp>
 
+using namespace bs::base::exceptions;
 using namespace operations::components::helpers;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
-
 
 #pragma omp declare target
 

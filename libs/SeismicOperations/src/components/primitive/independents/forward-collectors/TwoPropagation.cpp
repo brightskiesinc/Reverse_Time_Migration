@@ -17,27 +17,27 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/forward-collectors/TwoPropagation.hpp>
+#include <sys/stat.h>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/forward-collectors/TwoPropagation.hpp>
 #include <operations/configurations/MapKeys.h>
 #include <operations/utils/compressor/Compressor.hpp>
 
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
-#include <sys/stat.h>
-
 using namespace std;
 using namespace bs::timer;
+using namespace bs::base::logger;
+using namespace bs::base::memory;
 using namespace operations::helpers;
 using namespace operations::components;
 using namespace operations::components::helpers;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::compressors;
-using namespace bs::base::logger;
-using namespace bs::base::memory;
 
+static float *initial_internalGridbox_curr = nullptr;
 
 TwoPropagation::TwoPropagation(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
@@ -57,6 +57,7 @@ TwoPropagation::~TwoPropagation() {
         mem_free(this->mpForwardPressureHostMemory);
     }
     delete this->mpForwardPressure;
+    this->mpInternalGridBox->Set(WAVE | GB_PRSS | CURR | DIR_Z, initial_internalGridbox_curr);
     this->mpWaveFieldsMemoryHandler->FreeWaveFields(this->mpInternalGridBox);
     delete this->mpInternalGridBox;
 }
@@ -149,6 +150,10 @@ void TwoPropagation::ResetGrid(bool aIsForwardRun) {
         if (this->mpInternalGridBox->GetWaveFields().empty()) {
             this->mpWaveFieldsMemoryHandler->CloneWaveFields(this->mpMainGridBox,
                                                              this->mpInternalGridBox);
+
+            // save the pressure pointer for deletion afterwards
+            initial_internalGridbox_curr = mpInternalGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
+
         } else {
             this->mpWaveFieldsMemoryHandler->CopyWaveFields(this->mpMainGridBox,
                                                             this->mpInternalGridBox);

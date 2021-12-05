@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/logger/concrete/LoggerCollection.hpp>
-
 #include <iostream>
+
+#include <bs/base/logger/concrete/LoggerCollection.hpp>
 
 using namespace bs::base::logger;
 

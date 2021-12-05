@@ -17,24 +17,23 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
 #include <operations/components/independents/concrete/trace-writers/SeismicTraceWriter.hpp>
 
 #include <operations/configurations/MapKeys.h>
 #include <operations/utils/io/write_utils.h>
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-
-#include <iostream>
-
 using namespace std;
-using namespace operations::components;
-using namespace operations::common;
-using namespace operations::dataunits;
 using namespace bs::io::streams;
 using namespace bs::io::dataunits;
 using namespace bs::base::logger;
-
+using namespace operations::components;
+using namespace operations::common;
+using namespace operations::dataunits;
 
 SeismicTraceWriter::SeismicTraceWriter(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;

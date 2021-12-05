@@ -20,13 +20,14 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_COMPONENT_HPP
 #define OPERATIONS_LIB_COMPONENTS_COMPONENT_HPP
 
+#include <bs/base/configurations/interface/Configurable.hpp>
+
 #include <operations/components/dependency/interface/Dependency.hpp>
 #include <operations/components/dependency/helpers/ComponentsMap.tpp>
 #include <operations/components/dependents/interface/DependentComponent.hpp>
 #include <operations/common/ComputationParameters.hpp>
 #include <operations/data-units/concrete/holders/GridBox.hpp>
 
-#include <bs/base/configurations/interface/Configurable.hpp>
 
 namespace operations {
     namespace components {

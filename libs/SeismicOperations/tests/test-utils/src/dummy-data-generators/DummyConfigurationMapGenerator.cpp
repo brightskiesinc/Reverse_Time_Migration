@@ -20,8 +20,8 @@
 
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 
-using namespace bs::base::configurations;
 using json = nlohmann::json;
+using namespace bs::base::configurations;
 
 namespace operations {
     namespace testutils {

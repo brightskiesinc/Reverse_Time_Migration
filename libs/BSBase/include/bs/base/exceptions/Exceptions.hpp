@@ -17,8 +17,8 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BS_BASE_EXCEPTIONS_EXCEPTIONS_HPP
-#define BS_BASE_EXCEPTIONS_EXCEPTIONS_HPP
+#ifndef BS_BASE_EXCEPTIONS_MODULE_HEADER_HPP
+#define BS_BASE_EXCEPTIONS_MODULE_HEADER_HPP
 
 /*
  * Exceptions interface.
@@ -44,4 +44,4 @@
 #include <bs/base/exceptions/concrete/UndefinedException.hpp>
 #include <bs/base/exceptions/concrete/UnsupportedFeatureException.hpp>
 
-#endif //BS_BASE_EXCEPTIONS_EXCEPTIONS_HPP
+#endif //BS_BASE_EXCEPTIONS_MODULE_HEADER_HPP

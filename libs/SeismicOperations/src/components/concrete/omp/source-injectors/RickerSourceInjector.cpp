@@ -17,8 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
 #include <math.h>
+
+#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
 
 using namespace operations::components;
 using namespace operations::dataunits;
@@ -52,17 +53,8 @@ void RickerSourceInjector::ApplySource(int time_step) {
         uint location = this->GetInjectionLocation();
         ricker = ricker * this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer()[location];
 
+        float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer();
+        pressure[location] += ricker;
 
-        if (this->mpParameters->GetApproximation() == VTI ||
-            this->mpParameters->GetApproximation() == TTI) {
-            float *pressure_horizontal = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_X)->GetNativePointer();
-            pressure_horizontal[location] += ricker;
-
-            float *pressure_vertical = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
-            pressure_vertical[location] += ricker;
-        } else {
-            float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer();
-            pressure[location] += ricker;
-        }
     }
 }

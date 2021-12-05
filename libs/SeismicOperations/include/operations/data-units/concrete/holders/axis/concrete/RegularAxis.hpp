@@ -99,7 +99,7 @@ namespace operations {
                 inline float
                 GetCellDimension() const override { return this->mCellDimension; }
 
-                inline void SetReferencePoint(T aReferencePoint) { this->mReferencePoint = aReferencePoint; }
+                inline void SetReferencePoint(T aReferencePoint) override { this->mReferencePoint = aReferencePoint; }
 
                 inline T
                 GetReferencePoint() const override { return this->mReferencePoint; }

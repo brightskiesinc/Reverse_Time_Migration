@@ -17,12 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
 #include <operations/data-units/concrete/holders/axis/concrete/RegularAxis.hpp>
 
-#include <bs/base/exceptions/Exceptions.hpp>
-
-using namespace operations::dataunits::axis;
 using namespace bs::base::exceptions;
+using namespace operations::dataunits::axis;
 
 
 template

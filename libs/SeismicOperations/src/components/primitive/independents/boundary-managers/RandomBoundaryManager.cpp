@@ -17,13 +17,15 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/RandomBoundaryManager.hpp"
-
-#include "operations/components/independents/concrete/boundary-managers/extensions/MinExtension.hpp"
-#include "operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp"
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <cstdlib>
 #include <ctime>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/boundary-managers/RandomBoundaryManager.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/MinExtension.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/RandomExtension.hpp>
+#include <operations/configurations/MapKeys.h>
 
 using namespace operations::components;
 using namespace operations::components::addons;
@@ -32,13 +34,28 @@ using namespace operations::dataunits;
 using namespace bs::base::logger;
 
 
-// If the constructor is not given any parameters.
 RandomBoundaryManager::RandomBoundaryManager(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     srand(time(NULL));
     this->mpConfigurationMap = apConfigurationMap;
+    this->mGrainSideLength = 0;
 }
 
-void RandomBoundaryManager::AcquireConfiguration() {}
+void RandomBoundaryManager::AcquireConfiguration() {
+    this->mGrainSideLength = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_GRAIN_SIDE_LENGTH,
+                                                                this->mGrainSideLength);
+
+    LoggerSystem *Logger = LoggerSystem::GetInstance();
+    if (this->mGrainSideLength <= 0) {
+        Logger->Error() << "No valid value provided for key 'grain_side_length'..." << '\n';
+        Logger->Info() << "Using default value for grain_side_length 0f 200" << '\n';
+        this->mGrainSideLength = 200;
+    } else {
+        Logger->Info() << "Random Boundary manager will use grains of side length = " << this->mGrainSideLength
+                       << " meters." << '\n';
+    }
+
+
+}
 
 RandomBoundaryManager::~RandomBoundaryManager() {
     for (auto const &extension : this->mvExtensions) {
@@ -47,44 +64,50 @@ RandomBoundaryManager::~RandomBoundaryManager() {
     this->mvExtensions.clear();
 }
 
-void RandomBoundaryManager::ExtendModel() {
+void
+RandomBoundaryManager::ExtendModel() {
     for (auto const &extension : this->mvExtensions) {
         extension->ExtendProperty();
     }
 }
 
-void RandomBoundaryManager::ReExtendModel() {
+void
+RandomBoundaryManager::ReExtendModel() {
     for (auto const &extension : this->mvExtensions) {
         extension->ExtendProperty();
         extension->ReExtendProperty();
     }
 }
 
-void RandomBoundaryManager::ApplyBoundary(uint kernel_id) {
+void
+RandomBoundaryManager::ApplyBoundary(uint kernel_id) {
     // Do nothing for random boundaries.
 }
 
-void RandomBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+void
+RandomBoundaryManager::SetComputationParameters(ComputationParameters *apParameters) {
+    auto logger = LoggerSystem::GetInstance();
     this->mpParameters = (ComputationParameters *) apParameters;
     if (this->mpParameters == nullptr) {
-        Logger->Error() << "No computation parameters provided... Terminating..." << '\n';
+        logger->Error() << "No computation parameters provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void RandomBoundaryManager::SetGridBox(GridBox *apGridBox) {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
+void
+RandomBoundaryManager::SetGridBox(GridBox *apGridBox) {
+    auto logger = LoggerSystem::GetInstance();
     this->mpGridBox = apGridBox;
     if (this->mpGridBox == nullptr) {
-        Logger->Error() << "No GridBox provided... Terminating..." << '\n';
+        logger->Error() << "No GridBox provided... Terminating..." << '\n';
         exit(EXIT_FAILURE);
     }
     InitializeExtensions();
 }
 
-void RandomBoundaryManager::InitializeExtensions() {
-    this->mvExtensions.push_back(new RandomExtension());
+void
+RandomBoundaryManager::InitializeExtensions() {
+    this->mvExtensions.push_back(new RandomExtension(this->mGrainSideLength));
 
     uint params_size = this->mpGridBox->GetParameters().size();
     for (int i = 0; i < params_size - 1; ++i) {
@@ -104,7 +127,8 @@ void RandomBoundaryManager::InitializeExtensions() {
     }
 }
 
-void RandomBoundaryManager::AdjustModelForBackward() {
+void
+RandomBoundaryManager::AdjustModelForBackward() {
     for (auto const &extension : this->mvExtensions) {
         extension->AdjustPropertyForBackward();
     }

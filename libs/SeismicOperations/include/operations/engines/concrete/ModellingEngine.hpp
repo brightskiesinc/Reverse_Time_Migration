@@ -20,10 +20,10 @@
 #ifndef OPERATIONS_LIB_ENGINES_MODELLING_ENGINE_HPP
 #define OPERATIONS_LIB_ENGINES_MODELLING_ENGINE_HPP
 
-#include <operations/engines/interface/Engine.hpp>
-
-#include <operations/engine-configurations/concrete/ModellingEngineConfigurations.hpp>
 #include <operations/helpers/callbacks/primitive/CallbackCollection.hpp>
+
+#include <operations/engines/interface/Engine.hpp>
+#include <operations/engine-configurations/concrete/ModellingEngineConfigurations.hpp>
 
 
 namespace operations {

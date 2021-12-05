@@ -18,7 +18,7 @@
 
 add_definitions(-DOPERATIONS_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/test-data")
 
-set(OPERATIONS-TESTFILES test_main.cpp)
+set(OPERATIONS-TESTFILES ${CMAKE_CURRENT_SOURCE_DIR}/test_main.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test-utils/include)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test-utils/src)

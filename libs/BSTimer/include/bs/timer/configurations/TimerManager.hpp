@@ -20,15 +20,13 @@
 #ifndef BS_TIMER_CONFIGURATIONS_MANGER_HPP
 #define BS_TIMER_CONFIGURATIONS_MANGER_HPP
 
-#include <ostream>
-
-#include <bs/timer/configurations/TimerChannel.hpp>
-#include <bs/timer/core/interface/Timer.hpp>
-#include <bs/timer/reporter/TimerReporter.hpp>
-
 #include <bs/base//common/Singleton.tpp>
 #include <bs/base/configurations/interface/ConfigurationMap.hpp>
 #include <bs/base/configurations/interface/Configurable.hpp>
+
+#include <bs/timer/configurations/TimerChannel.hpp>
+#include <bs/timer/core/timers/interface/Timer.hpp>
+#include <bs/timer/reporter/TimerReporter.hpp>
 
 namespace bs {
     namespace timer {

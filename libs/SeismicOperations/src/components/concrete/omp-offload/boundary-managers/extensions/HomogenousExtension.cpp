@@ -17,20 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
-
-#include <operations/utils/checks/Checks.hpp>
-
 #include <omp.h>
 
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
+#include <operations/utils/checks/Checks.hpp>
+
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::dataunits;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 
 
 HomogenousExtension::HomogenousExtension(bool use_top_layer) {

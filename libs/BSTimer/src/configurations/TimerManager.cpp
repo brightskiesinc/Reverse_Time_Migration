@@ -17,12 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/timer/configurations/TimerManager.hpp>
-#include <bs/timer/reporter/TimerReporter.hpp>
+#include <iostream>
 
 #include <bs/base/common/ExitCodes.hpp>
 
-#include <iostream>
+#include <bs/timer/configurations/TimerManager.hpp>
+#include <bs/timer/reporter/TimerReporter.hpp>
 
 using namespace bs::timer;
 using namespace bs::timer::core;

@@ -17,11 +17,13 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/utils/filters/noise_filtering.h"
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <cmath>
 #include <iostream>
 #include <cmath>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
+#include <operations/utils/filters/noise_filtering.h>
 
 using namespace bs::base::logger;
 

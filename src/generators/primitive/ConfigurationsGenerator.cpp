@@ -17,17 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
-
-#include <operations/common/DataTypes.h>
-#include <stbx/generators/common/Keys.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <iostream>
 #include <string>
 
-using namespace stbx::generators;
-using namespace bs::base::logger;
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
+#include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
+#include <stbx/generators/common/Keys.hpp>
+
+#include <operations/common/DataTypes.h>
+
+using namespace bs::base::logger;
+using namespace stbx::generators;
 
 ConfigurationsGenerator::ConfigurationsGenerator(nlohmann::json &aMap) {
     this->mMap = aMap;
@@ -90,14 +91,8 @@ ConfigurationsGenerator::GetApproximation() {
     if (wave[K_APPROXIMATION].get<std::string>() == "isotropic") {
         approximation = ISOTROPIC;
         Logger->Info() << "Using Isotropic as approximation" << '\n';
-    } else if (wave[K_APPROXIMATION].get<std::string>() == "vti") {
-        approximation = VTI;
-        Logger->Info() << "Using VTI as approximation" << '\n';
-    } else if (wave[K_APPROXIMATION].get<std::string>() == "tti") {
-        approximation = TTI;
-        Logger->Info() << "Using TTI as approximation" << '\n';
     } else {
-        Logger->Error() << "Invalid value for approximation key : supported values [ isotropic | vti ]" << '\n';
+        Logger->Error() << "Invalid value for approximation key : supported values [ isotropic ]" << '\n';
         Logger->Info() << "Using Acoustic for Isotropic" << '\n';
     }
     return approximation;

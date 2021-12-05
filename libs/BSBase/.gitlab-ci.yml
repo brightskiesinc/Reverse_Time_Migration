@@ -1,35 +1,46 @@
+---
+
 stages:
   - compile
-  - check
   - test
 
-cmake-compile:
+
+compile:openmp:
   stage: compile
   image: pp-openmp-bundle
   tags:
     - pp-runner
   script:
-    - ./config.sh --tests --examples
+    - ./config.sh -b omp --examples
     - ./clean_build.sh
 
-cppcheck:
-  stage: check
-  image: pp-openmp-bundle
-  allow_failure: true
+
+compile:oneapi:
+  stage: compile
+  image: pp-oneapi-bundle
   tags:
     - pp-runner
   script:
-    - ./config.sh --examples
+    - ./config.sh -b dpc --examples --tests
     - ./clean_build.sh
-    - apt update && apt -y install cppcheck
-    - cppcheck --project=bin/compile_commands.json
 
-ctest:
+compile:openmp-offload:
+  stage: compile
+  image: pp-oneapi-bundle
+  tags:
+    - pp-runner
+  script:
+    - ./config.sh -b omp-offload --examples --tests
+    - ./clean_build.sh
+
+
+test:openmp:
   stage: test
+  needs: [ "compile:openmp" ]
   image: pp-openmp-bundle
   tags:
     - pp-runner
   script:
-    - ./config.sh --tests
+    - ./config.sh -b omp --tests
     - ./clean_build.sh
     - cd ./bin && ctest -v

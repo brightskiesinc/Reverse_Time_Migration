@@ -22,9 +22,9 @@
 
 #ifdef USING_DPCPP
 
-#include <operations/backend/OneAPIBackend.hpp>
+#include <bs/base/backend/Backend.hpp>
 
-using namespace operations::backend;
+using namespace bs::base::backend;
 #endif
 
 namespace operations {
@@ -34,7 +34,7 @@ namespace operations {
             int rc = 0;
 #ifdef USING_DPCPP
             sycl::cpu_selector cpu_sel;
-            auto backend = OneAPIBackend::GetInstance();
+            auto backend = Backend::GetInstance();
             if (backend == nullptr) {
                 rc = 1;
             } else {

@@ -17,16 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/NoBoundaryManager.hpp"
+#include <bs/base/api/cpp/BSBase.hpp>
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp"
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <operations/components/independents/concrete/boundary-managers/NoBoundaryManager.hpp>
+#include <operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp>
 
+
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 NoBoundaryManager::NoBoundaryManager(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;

@@ -17,9 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
 
 #include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
-
 #include <operations/common/DataTypes.h>
 #include <operations/data-units/concrete/holders/FrameBuffer.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
@@ -28,7 +28,6 @@
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
 
-#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -117,14 +116,12 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_TI(GridBox *apGridBox,
     ricker_source_injector->SetComputationParameters(apParameters);
     ricker_source_injector->SetSourcePoint(source_point);
 
-    SECTION("GetCutOffTimeStep")
-    {
+    SECTION("GetCutOffTimeStep") {
         uint cut_off_frequency = (1.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
         REQUIRE(ricker_source_injector->GetCutOffTimeStep() == Approx(cut_off_frequency));
     }
 
-    SECTION("ApplySource")
-    {
+    SECTION("ApplySource") {
         // Calculated by hand with time step=1 & dt=1 & source frequency=20
         float ricker = 1;
         ricker = ricker * velocity->GetHostPointer()[location];
@@ -209,14 +206,12 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(GridBox *apGridBox,
     ricker_source_injector->SetComputationParameters(apParameters);
     ricker_source_injector->SetSourcePoint(source_point);
 
-    SECTION("GetCutOffTimeStep")
-    {
+    SECTION("GetCutOffTimeStep") {
         uint cut_off_frequency = (1.0 / apParameters->GetSourceFrequency()) / apGridBox->GetDT();
         REQUIRE(ricker_source_injector->GetCutOffTimeStep() == Approx(cut_off_frequency));
     }
 
-    SECTION("ApplySource")
-    {
+    SECTION("ApplySource") {
         // Calculated by hand with time step=1 & dt=1 & source frequency=20
         float ricker = 1;
         ricker = ricker * velocity->GetHostPointer()[location];
@@ -241,11 +236,6 @@ void TEST_CASE_RICKER_SOURCE_INJECTOR(GridBox *apGridBox,
 
     if (apParameters->GetApproximation() == ISOTROPIC) {
         TEST_CASE_RICKER_SOURCE_INJECTOR_ISO(apGridBox, apParameters, apConfigurationMap);
-    } else if (apParameters->GetApproximation() == VTI ||
-               apParameters->GetApproximation() == TTI) {
-#ifdef USING_OMP
-        TEST_CASE_RICKER_SOURCE_INJECTOR_TI(apGridBox, apParameters, apConfigurationMap);
-#endif
     }
 }
 
@@ -257,66 +247,12 @@ TEST_CASE("RickerSourceInjector - 2D - No Window - ISO", "[No Window],[2D],[ISO]
     TEST_CASE_RICKER_SOURCE_INJECTOR(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("RickerSourceInjector - 2D - Window - ISO", "[Window],[2D],[ISO]") {
     TEST_CASE_RICKER_SOURCE_INJECTOR(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("RickerSourceInjector - 3D - No Window - ISO", "[No Window],[3D],[ISO]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("RickerSourceInjector - 3D - Window - ISO", "[Window],[3D],[ISO]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-/*
- * TI (i.e. VTI & TTI) Test Cases
- */
-
-TEST_CASE("RickerSourceInjector - 2D - No Window - VTI", "[No Window],[2D],[VTI]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, VTI),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("RickerSourceInjector - 2D - Window - TI", "[Window],[2D],[TI]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, VTI),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("RickerSourceInjector - 3D - No Window - TI", "[No Window],[3D],[TI]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, VTI),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("RickerSourceInjector - 3D - Window - TI", "[Window],[3D],[TI]") {
-    TEST_CASE_RICKER_SOURCE_INJECTOR(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, VTI),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }

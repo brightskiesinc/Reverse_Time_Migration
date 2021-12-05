@@ -17,35 +17,31 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
+#include <set>
 
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+#include <bs/io/api/cpp/BSIO.hpp>
+
+#include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
 #include <operations/utils/sampling/Sampler.hpp>
 #include <operations/utils/interpolation/Interpolator.hpp>
 #include <operations/utils/io/read_utils.h>
 #include <operations/configurations/MapKeys.h>
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
-#include <bs/io/api/cpp/BSIO.hpp>
-
-#include <prerequisites/libraries/nlohmann/json.hpp>
-
-#include <set>
-
 using namespace std;
+using namespace bs::base::logger;
+using namespace bs::io::streams;
+using namespace bs::io::dataunits;
+using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::helpers;
 using namespace operations::utils::sampling;
 using namespace operations::utils::io;
-using namespace bs::base::logger;
-using namespace bs::io::streams;
-using namespace bs::io::dataunits;
-using namespace bs::timer;
-
 
 SeismicModelHandler::SeismicModelHandler(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
@@ -465,14 +461,6 @@ void SeismicModelHandler::RegisterWaveFields(uint nx, uint ny, uint nz) {
             this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | CURR);
             this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | PREV);
             this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | NEXT);
-        } else if (this->mpParameters->GetApproximation() == VTI ||
-                   this->mpParameters->GetApproximation() == TTI) {
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | CURR | DIR_Z);
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | PREV | DIR_Z);
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | NEXT | DIR_Z);
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | CURR | DIR_X);
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | PREV | DIR_X);
-            this->WAVE_FIELDS_NAMES.push_back(WAVE | GB_PRSS | NEXT | DIR_X);
         }
     }
 }
@@ -483,18 +471,10 @@ void SeismicModelHandler::RegisterParameters(uint nx, uint ny, uint nz) {
     if (this->mpParameters->GetEquationOrder() == FIRST) {
         this->PARAMS_NAMES.push_back(std::make_pair(PARM | GB_DEN, "density"));
     }
-    if (this->mpParameters->GetApproximation() == VTI ||
-        this->mpParameters->GetApproximation() == TTI) {
-        this->PARAMS_NAMES.push_back(std::make_pair(PARM | GB_DLT, "delta"));
-        this->PARAMS_NAMES.push_back(std::make_pair(PARM | GB_EPS, "epsilon"));
-    }
-    if (this->mpParameters->GetApproximation() == TTI) {
-        this->PARAMS_NAMES.push_back(std::make_pair(PARM | GB_THT, "theta"));
-        this->PARAMS_NAMES.push_back(std::make_pair(PARM | GB_PHI, "phi"));
-    }
 }
 
 void SeismicModelHandler::AllocateWaveFields() {
+
     uint wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     uint wny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
     uint wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
@@ -522,6 +502,7 @@ void SeismicModelHandler::AllocateWaveFields() {
 }
 
 void SeismicModelHandler::AllocateParameters() {
+
     uint nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
     uint nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
@@ -531,7 +512,9 @@ void SeismicModelHandler::AllocateParameters() {
     uint wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
     uint window_size = wnx * wnz * wny;
 
+
     if (this->mpParameters->IsUsingWindow()) {
+
         for (auto const &parameter : this->PARAMS_NAMES) {
             GridBox::Key param_key = parameter.first;
             string param_name = parameter.second;
@@ -548,6 +531,7 @@ void SeismicModelHandler::AllocateParameters() {
             this->mpGridBox->RegisterParameter(param_key, frame_buffer, frame_buffer_window);
         }
     } else {
+
         for (auto const &parameter : this->PARAMS_NAMES) {
             GridBox::Key param_key = parameter.first;
             string param_name = parameter.second;
@@ -589,15 +573,7 @@ float SeismicModelHandler::GetSuitableDT
     /// The sum of absolute values for second derivative id
     /// du per dx ( one dimension only )
     a2 += fabs(coefficients[0]);
-    if (this->mpParameters->GetApproximation() == VTI) {
-        a2 *= (2 + 4 * maximums["epsilon"] + sqrtf(1 + 2 * maximums["delta"]));
-    } else if (this->mpParameters->GetApproximation() == TTI) {
-        float tti_coefficients = (powf(cos(maximums["theta"]), 2) * sin(2 * maximums["phi"])) +
-                                 (sin(2 * maximums["theta"]) * (sin(maximums["phi"]) + cos(maximums["phi"])));
-        float b1 = (1 + 2 * maximums["epsilon"]) * (2 - tti_coefficients);
-        float b2 = sqrtf(1 + 2 * maximums["delta"]);
-        a2 *= (b1 + b2);
-    }
+
     float dt = ((sqrtf(a1 / a2)) * distanceM) / maximums["velocity"] * dt_relax;
     return dt;
 }
@@ -682,6 +658,6 @@ void SeismicModelHandler::PostProcessMigration(MigrationData *apMigrationData) {
     apMigrationData->SetGridSize(Z_AXIS, base_nz);
     apMigrationData->SetGridSize(Y_AXIS, base_ny);
     apMigrationData->SetCellDimensions(X_AXIS, mpGridBox->GetInitialAxis()->GetXAxis().GetCellDimension());
-    apMigrationData->SetCellDimensions(Z_AXIS, mpGridBox->GetInitialAxis()->GetYAxis().GetCellDimension());
-    apMigrationData->SetCellDimensions(Y_AXIS, mpGridBox->GetInitialAxis()->GetZAxis().GetCellDimension());
+    apMigrationData->SetCellDimensions(Y_AXIS, mpGridBox->GetInitialAxis()->GetYAxis().GetCellDimension());
+    apMigrationData->SetCellDimensions(Z_AXIS, mpGridBox->GetInitialAxis()->GetZAxis().GetCellDimension());
 }

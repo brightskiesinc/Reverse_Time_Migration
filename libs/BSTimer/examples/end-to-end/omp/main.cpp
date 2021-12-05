@@ -16,12 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
+
+#include <bs/timer/api/cpp/BSTimer.hpp>
 
 #define SIZE 1000
 
@@ -51,7 +50,7 @@ int main() {
         test_function();
     }
 
-    std::vector<std::ostream *> streams;
+    std::vector < std::ostream * > streams;
     streams.emplace_back(&std::cout);
     std::ofstream ofs;
     ofs.open(BS_TIMER_WRITE_PATH

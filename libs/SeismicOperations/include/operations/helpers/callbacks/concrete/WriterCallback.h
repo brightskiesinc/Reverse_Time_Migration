@@ -20,11 +20,11 @@
 #ifndef OPERATIONS_LIB_HELPERS_CALLBACKS_WRITER_CALLBACK_H
 #define OPERATIONS_LIB_HELPERS_CALLBACKS_WRITER_CALLBACK_H
 
-#include <operations/helpers/callbacks/interface/Callback.hpp>
-#include <bs/io/api/cpp/BSIO.hpp>
-
 #include <string>
 #include <vector>
+
+#include <bs/io/api/cpp/BSIO.hpp>
+#include <operations/helpers/callbacks/interface/Callback.hpp>
 
 namespace operations {
     namespace helpers {

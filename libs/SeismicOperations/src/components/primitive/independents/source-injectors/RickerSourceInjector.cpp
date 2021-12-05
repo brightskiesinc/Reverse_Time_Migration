@@ -17,18 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
-
-#include <operations/configurations/MapKeys.h>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-
 #include <iostream>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
+#include <operations/configurations/MapKeys.h>
+
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 
 RickerSourceInjector::RickerSourceInjector(bs::base::configurations::ConfigurationMap *apConfigurationMap) {

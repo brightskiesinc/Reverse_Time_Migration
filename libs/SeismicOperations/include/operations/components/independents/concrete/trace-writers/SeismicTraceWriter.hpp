@@ -20,9 +20,10 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_WRITERS_SEISMIC_TRACE_WRITER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_WRITERS_SEISMIC_TRACE_WRITER_HPP
 
+#include <bs/io/api/cpp/BSIO.hpp>
+
 #include <operations/components/independents/primitive/TraceWriter.hpp>
 #include <operations/components/dependency/concrete/HasNoDependents.hpp>
-#include <bs/io/api/cpp/BSIO.hpp>
 
 namespace operations {
     namespace components {

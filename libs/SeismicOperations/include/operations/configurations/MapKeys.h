@@ -51,6 +51,7 @@ namespace operations {
 #define OP_K_MAX_FREQ_AMP_PERCENT      "max-freq-amplitude-percentage"
 #define OP_K_DIP_ANGLE                 "dip-angle"
 #define OP_K_DEPTH_SAMPLING_SCALING    "depth-sampling-scaling"
+#define OP_K_GRAIN_SIDE_LENGTH         "grain-side-length"
 
     } //namespace configuration
 } //namespace operations

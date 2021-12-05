@@ -17,12 +17,13 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
 #include <operations/common/DataTypes.h>
 #include <operations/data-units/concrete/holders/FrameBuffer.hpp>
-#include <operations/backend/OneAPIBackend.hpp>
 
+using namespace bs::base::backend;
 using namespace operations::dataunits;
-using namespace operations::backend;
 
 template
 class operations::dataunits::FrameBuffer<float>;
@@ -49,6 +50,8 @@ template float *FrameBuffer<float>::GetNativePointer();
 
 template float *FrameBuffer<float>::GetHostPointer();
 
+template float *FrameBuffer<float>::GetDiskFlushPointer();
+
 template void FrameBuffer<float>::SetNativePointer(float *ptr);
 
 template void FrameBuffer<float>::ReflectOnNative();
@@ -69,6 +72,8 @@ template int *FrameBuffer<int>::GetNativePointer();
 
 template int *FrameBuffer<int>::GetHostPointer();
 
+template int *FrameBuffer<int>::GetDiskFlushPointer();
+
 template void FrameBuffer<int>::SetNativePointer(int *ptr);
 
 template void FrameBuffer<int>::ReflectOnNative();
@@ -88,6 +93,8 @@ template void FrameBuffer<uint>::Free();
 template uint *FrameBuffer<uint>::GetNativePointer();
 
 template uint *FrameBuffer<uint>::GetHostPointer();
+
+template uint *FrameBuffer<uint>::GetDiskFlushPointer();
 
 template void FrameBuffer<uint>::SetNativePointer(uint *ptr);
 
@@ -114,8 +121,8 @@ FrameBuffer<T>::~FrameBuffer() {
 template<typename T>
 void FrameBuffer<T>::Allocate(uint aSize, const std::string &aName) {
     mAllocatedBytes = sizeof(T) * aSize;
-    auto dev = OneAPIBackend::GetInstance()->GetDeviceQueue()->get_device();
-    auto ctxt = OneAPIBackend::GetInstance()->GetDeviceQueue()->get_context();
+    auto dev = Backend::GetInstance()->GetDeviceQueue()->get_device();
+    auto ctxt = Backend::GetInstance()->GetDeviceQueue()->get_context();
 
     mpDataPointer = (T *) malloc_device(mAllocatedBytes, dev, ctxt);
 }
@@ -123,8 +130,8 @@ void FrameBuffer<T>::Allocate(uint aSize, const std::string &aName) {
 template<typename T>
 void FrameBuffer<T>::Allocate(uint aSize, HALF_LENGTH aHalfLength, const std::string &aName) {
     mAllocatedBytes = sizeof(T) * aSize;
-    auto dev = OneAPIBackend::GetInstance()->GetDeviceQueue()->get_device();
-    auto ctxt = OneAPIBackend::GetInstance()->GetDeviceQueue()->get_context();
+    auto dev = Backend::GetInstance()->GetDeviceQueue()->get_device();
+    auto ctxt = Backend::GetInstance()->GetDeviceQueue()->get_context();
 
     mpDataPointer = (T *) malloc_device(mAllocatedBytes, dev, ctxt);
 }
@@ -132,10 +139,10 @@ void FrameBuffer<T>::Allocate(uint aSize, HALF_LENGTH aHalfLength, const std::st
 template<typename T>
 void FrameBuffer<T>::Free() {
     if (mpDataPointer != nullptr) {
-        sycl::free(mpDataPointer, *OneAPIBackend::GetInstance()->GetDeviceQueue());
+        sycl::free(mpDataPointer, *Backend::GetInstance()->GetDeviceQueue());
         mpDataPointer = nullptr;
         if (mpHostDataPointer != nullptr) {
-            sycl::free(mpHostDataPointer, *OneAPIBackend::GetInstance()->GetDeviceQueue());
+            sycl::free(mpHostDataPointer, *Backend::GetInstance()->GetDeviceQueue());
             mpHostDataPointer = nullptr;
         }
     }
@@ -150,7 +157,7 @@ T *FrameBuffer<T>::GetNativePointer() {
 template<typename T>
 T *FrameBuffer<T>::GetHostPointer() {
     if (mAllocatedBytes > 0) {
-        auto ctxt = OneAPIBackend::GetInstance()->GetDeviceQueue()->get_context();
+        auto ctxt = Backend::GetInstance()->GetDeviceQueue()->get_context();
         if (mpHostDataPointer == nullptr) {
             mpHostDataPointer = (T *) malloc_host(mAllocatedBytes, ctxt);
         }
@@ -158,6 +165,11 @@ T *FrameBuffer<T>::GetHostPointer() {
                        Device::COPY_DEVICE_TO_HOST);
     }
     return mpHostDataPointer;
+}
+
+template<typename T>
+T *FrameBuffer<T>::GetDiskFlushPointer() {
+    return this->GetHostPointer();
 }
 
 template<typename T>
@@ -172,15 +184,15 @@ void FrameBuffer<T>::ReflectOnNative() {
 
 
 void Device::MemSet(void *apDst, int aVal, uint aSize) {
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
         cgh.memset(apDst, aVal, aSize);
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }
 
 void Device::MemCpy(void *apDst, const void *apSrc, uint aSize, CopyDirection aCopyDirection) {
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
         cgh.memcpy(apDst, apSrc, aSize);
     });
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }

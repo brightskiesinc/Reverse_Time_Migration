@@ -17,10 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/memory/data-units/string_list.h>
-
 #include <stdlib.h>
 #include <string.h>
+
+#include <bs/base/memory/data-units/string_list.h>
 
 namespace bs {
     namespace base {

@@ -24,8 +24,6 @@
 #include <bs/timer/configurations/TimerManager.hpp>
 #include <bs/timer/utils/stats/StatisticsHelper.hpp>
 
-#include <string>
-
 namespace bs {
     namespace timer {
         namespace reporter {
@@ -64,22 +62,29 @@ namespace bs {
                 FlushReport(const std::string &aFilePath);
 
                 /**
-                 *
                  * @param aChannelName
                  * @return Report map of given channel.
-                 *
                  */
                 std::map<std::string, double>
                 GetMap(const std::string &aChannelName);
 
+                /**
+                 * @brief Channel Statistics getter.
+                 */
                 std::map<std::string, dataunits::ChannelStats>
                 GetStats();
 
                 /**
-                 * Resolves all snapshots for reporting.
+                 * @brief Resolves all snapshots for reporting.
                  */
                 void
                 Resolve();
+
+                /**
+                 * @brief Precision given as number to unit given as string.
+                 */
+                static std::string
+                PrecisionToUnit(double aPrecision);
 
             private:
                 static int

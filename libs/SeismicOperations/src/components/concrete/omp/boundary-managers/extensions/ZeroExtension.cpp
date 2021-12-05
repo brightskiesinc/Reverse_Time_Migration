@@ -17,7 +17,7 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp"
+#include <operations/components/independents/concrete/boundary-managers/extensions/ZeroExtension.hpp>
 
 using namespace std;
 using namespace operations::components;

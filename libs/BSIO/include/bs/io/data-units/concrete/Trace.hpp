@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -20,12 +20,13 @@
 #ifndef BS_IO_DATA_UNITS_TRACE_HPP
 #define BS_IO_DATA_UNITS_TRACE_HPP
 
-#include <bs/io/data-units/data-types/TraceHeaderKey.hpp>
-#include <bs/base/common/assertions.h>
-
 #include <unordered_map>
 #include <memory>
 #include <sstream>
+
+#include <bs/base/common/assertions.h>
+
+#include <bs/io/data-units/data-types/TraceHeaderKey.hpp>
 
 namespace bs {
     namespace io {
@@ -71,7 +72,8 @@ namespace bs {
                  * point to the end of map.
                  */
                 template<typename T>
-                inline T GetTraceHeaderKeyValue(TraceHeaderKey aTraceHeaderKey) {
+                inline T
+                GetTraceHeaderKeyValue(TraceHeaderKey aTraceHeaderKey) {
                     ASSERT_T_TEMPLATE(T);
                     std::stringstream ss;
                     ss << this->mTraceHeaderMap[aTraceHeaderKey];
@@ -90,11 +92,13 @@ namespace bs {
                  * @return
                  * True if an entry exists for it.
                  */
-                bool HasTraceHeader(TraceHeaderKey aTraceHeaderKey) {
+                bool
+                HasTraceHeader(TraceHeaderKey aTraceHeaderKey) {
                     return this->mTraceHeaderMap.find(aTraceHeaderKey) != this->mTraceHeaderMap.end();
                 }
 
-                const std::unordered_map<TraceHeaderKey, std::string> *GetTraceHeaders() {
+                const std::unordered_map<TraceHeaderKey, std::string> *
+                GetTraceHeaders() {
                     return &this->mTraceHeaderMap;
                 }
 
@@ -108,7 +112,8 @@ namespace bs {
                  * Value to set for the corresponding key
                  */
                 template<typename T>
-                inline void SetTraceHeaderKeyValue(TraceHeaderKey aTraceHeaderKey, T aValue) {
+                inline void
+                SetTraceHeaderKeyValue(TraceHeaderKey aTraceHeaderKey, T aValue) {
                     ASSERT_T_TEMPLATE(T);
                     this->mTraceHeaderMap[aTraceHeaderKey] = std::to_string(aValue);
                 }
@@ -116,7 +121,8 @@ namespace bs {
                 /**
                  * @brief Setter for trace data.
                  */
-                inline void SetTraceData(float *apTraceData) {
+                inline void
+                SetTraceData(float *apTraceData) {
                     return this->mpTraceData.reset(apTraceData);
                 }
 
@@ -125,7 +131,8 @@ namespace bs {
                  *
                  * @return Pointer to trace data.
                  */
-                inline float *GetTraceData() {
+                inline float *
+                GetTraceData() {
                     return this->mpTraceData.get();
                 }
 
@@ -134,7 +141,8 @@ namespace bs {
                  *
                  * @return Number of samples value.
                  */
-                inline unsigned short GetNumberOfSamples() {
+                inline unsigned short
+                GetNumberOfSamples() {
                     TraceHeaderKey trace_header_key(TraceHeaderKey::NS);
                     return this->GetTraceHeaderKeyValue<unsigned short>(trace_header_key);
                 }

@@ -17,11 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
-
 #include <omp.h>
 #include <vector>
 #include <cmath>
+
+#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
 
 #define EPSILON 1e-20
 
@@ -80,10 +80,6 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
         nyEnd = 1;
     }
 
-    float *src_ptr, *rec_ptr, *correlation_output, *source_i, *receive_i;
-    uint b_offset = 0;
-    float value = 0;
-
     const uint block_x = mpParameters->GetBlockX();
     const uint block_y = mpParameters->GetBlockY();
     const uint block_z = mpParameters->GetBlockZ();
@@ -99,6 +95,9 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
                 int iyEnd = fmin(by + block_y, nyEnd);
                 int ixEnd = fmin(block_x, nxEnd - bx);
 
+                float *src_ptr, *rec_ptr, *correlation_output, *source_i, *receive_i;
+                uint b_offset = 0;
+                float value = 0;
 
                 for (int iy = by; iy < iyEnd; ++iy) {
                     for (int iz = bz; iz < izEnd; ++iz) {
@@ -167,9 +166,6 @@ void CrossCorrelationKernel::Stack() {
 
     int device_num = omp_get_default_device();
 
-    float *input, *output, *input_src, *input_rcv;
-    uint offset_full, offset_window;
-
 #pragma omp target is_device_ptr(in, out, in_src, in_rcv) device(device_num)
 #pragma omp teams distribute parallel for collapse(3)                    \
     num_teams((ny / block_y) * (nz / block_z) * (nx / block_x)) \
@@ -177,6 +173,9 @@ void CrossCorrelationKernel::Stack() {
     for (int by = y_start; by < y_end; by += block_y) {
         for (int bz = offset; bz < z_end; bz += block_z) {
             for (int bx = offset; bx < x_end; bx += block_x) {
+
+                float *input, *output, *input_src, *input_rcv;
+                uint offset_full, offset_window;
 
                 int izEnd = fmin(bz + block_z, z_end);
                 int iyEnd = fmin(by + block_y, y_end);

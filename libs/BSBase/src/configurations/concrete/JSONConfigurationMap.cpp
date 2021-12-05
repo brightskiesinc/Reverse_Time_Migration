@@ -17,10 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
 #include <sstream>
 #include <utility>
+
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
 
 using namespace bs::base::configurations;
 
@@ -125,8 +125,20 @@ JSONConfigurationMap::ToString() {
 }
 
 std::vector<bs::base::configurations::ConfigurationMap *>
-JSONConfigurationMap::GetConfigurationArray(std::string &aMapKey) {
-    auto temp_map = this->mJson[aMapKey];
+JSONConfigurationMap::GetConfigurationArray(std::string &aSectionKey) {
+    auto temp_map = this->mJson[aSectionKey];
+    std::vector<bs::base::configurations::ConfigurationMap *> submaps;
+
+    for (auto &m : temp_map) {
+        submaps.push_back(new JSONConfigurationMap(m));
+    }
+    return submaps;
+}
+
+std::vector<bs::base::configurations::ConfigurationMap *>
+JSONConfigurationMap::GetConfigurationArray(std::string &aPropertyKey,
+                                            std::string &aSectionKey) {
+    auto temp_map = this->mJson[aPropertyKey][aSectionKey];
     std::vector<bs::base::configurations::ConfigurationMap *> submaps;
 
     for (auto &m : temp_map) {
@@ -139,3 +151,13 @@ bool
 JSONConfigurationMap::HasKey(const std::string &aSectionKey) {
     return mJson.contains(aSectionKey);
 }
+
+std::string JSONConfigurationMap::GetKeyValue(const std::string &aPropertyKey,
+                                              const std::string &aDefaultValue) {
+    std::string val = aDefaultValue;
+    if (this->HasKey(aPropertyKey)) {
+        val = this->mJson[aPropertyKey].get<std::string>();
+    }
+    return val;
+}
+

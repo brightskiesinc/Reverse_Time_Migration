@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,26 +17,26 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/io/streams/concrete/readers/JsonReader.hpp>
+#include <fstream>
 
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/common/ExitCodes.hpp>
+#include <bs/base/exceptions/Exceptions.hpp>
+
+#include <bs/io/streams/concrete/readers/JsonReader.hpp>
 #include <bs/io/utils/convertors/KeysConvertor.hpp>
 #include <bs/io/utils/synthetic-generators/concrete/ParameterMetaDataGenerator.hpp>
 #include <bs/io/utils/synthetic-generators/concrete/ShotsMetaDataGenerator.hpp>
 #include <bs/io/utils/synthetic-generators/concrete/PlaneReflectorGenerator.hpp>
-#include <bs/base/common/ExitCodes.hpp>
-#include <bs/base/exceptions/Exceptions.hpp>
 #include <bs/io/configurations/MapKeys.h>
 
-#include <prerequisites/libraries/nlohmann/json.hpp>
-
-#include <fstream>
-
 using namespace std;
+using namespace bs::base::exceptions;
 using namespace bs::io::streams;
 using namespace bs::io::dataunits;
 using namespace bs::io::generators;
 using namespace bs::io::utils::convertors;
-using namespace bs::base::exceptions;
 
 JsonReader::JsonReader(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
@@ -115,9 +115,9 @@ void
 JsonReader::FillTraceData(std::vector<Gather *> &aGathers) {
     for (auto &g : aGathers) {
         auto traces = g->GetAllTraces();
-        for (auto &trace : traces) {
-            float ix = trace->GetTraceHeaderKeyValue<int>(TraceHeaderKey::SYN_X_IND);
-            float iy = trace->GetTraceHeaderKeyValue<int>(TraceHeaderKey::SYN_Y_IND);
+        for (auto &t : traces) {
+            float ix = t->GetTraceHeaderKeyValue<int>(TraceHeaderKey::SYN_X_IND);
+            float iy = t->GetTraceHeaderKeyValue<int>(TraceHeaderKey::SYN_Y_IND);
             vector<pair<float, int>> reflector_pairs;
             for (int i = 0; i < this->mReflectorGenerators.size(); i++) {
                 float depth = this->mReflectorGenerators[i]->GetReflectorDepth(ix, iy);
@@ -128,14 +128,14 @@ JsonReader::FillTraceData(std::vector<Gather *> &aGathers) {
                      return a.first < b.first;
                  });
             int reflector_index = 0;
-            for (int iz = 0; iz < trace->GetNumberOfSamples(); iz++) {
+            for (int iz = 0; iz < t->GetNumberOfSamples(); iz++) {
                 auto &reflector = reflector_pairs[reflector_index];
                 if (iz < reflector.first) {
                     auto gen = this->mReflectorGenerators[reflector.second];
-                    trace->GetTraceData()[iz] = gen->GetBeforeValue();
+                    t->GetTraceData()[iz] = gen->GetBeforeValue();
                 } else if (reflector_index == this->mReflectorGenerators.size() - 1) {
                     auto gen = this->mReflectorGenerators[reflector.second];
-                    trace->GetTraceData()[iz] = gen->GetAfterValue();
+                    t->GetTraceData()[iz] = gen->GetAfterValue();
                 } else {
                     while (reflector_index < this->mReflectorGenerators.size() - 1 &&
                            iz > reflector_pairs[reflector_index + 1].first) {
@@ -144,7 +144,7 @@ JsonReader::FillTraceData(std::vector<Gather *> &aGathers) {
                     auto &reflector_before = reflector_pairs[reflector_index];
                     if (reflector_index == this->mReflectorGenerators.size() - 1) {
                         auto gen = this->mReflectorGenerators[reflector_before.second];
-                        trace->GetTraceData()[iz] = gen->GetAfterValue();
+                        t->GetTraceData()[iz] = gen->GetAfterValue();
                     } else {
                         auto &reflector_after = reflector_pairs[reflector_index + 1];
                         auto value_before = this->mReflectorGenerators[reflector_before.second]->GetAfterValue();
@@ -153,11 +153,11 @@ JsonReader::FillTraceData(std::vector<Gather *> &aGathers) {
                         auto depth_after = reflector_after.first;
                         auto divisor = (depth_after - depth_before);
                         if (divisor == 0) {
-                            trace->GetTraceData()[iz] = value_after;
+                            t->GetTraceData()[iz] = value_after;
                         } else {
-                            trace->GetTraceData()[iz] = value_before +
-                                                        ((value_after - value_before) * (iz - depth_before)) /
-                                                        (depth_after - depth_before);
+                            t->GetTraceData()[iz] = value_before +
+                                                    ((value_after - value_before) * (iz - depth_before)) /
+                                                    (depth_after - depth_before);
                         }
                     }
                 }
@@ -168,7 +168,7 @@ JsonReader::FillTraceData(std::vector<Gather *> &aGathers) {
 
 std::vector<Gather *>
 JsonReader::ReadAll() {
-    // Vector to be returned.
+    /* Vector to be returned. */
     std::vector<Gather *> return_gathers = this->mpMetaGenerator->GetAllTraces();
     if (!this->mEnableHeaderOnly) {
         this->FillTraceData(return_gathers);
@@ -178,7 +178,7 @@ JsonReader::ReadAll() {
 
 std::vector<Gather *>
 JsonReader::Read(std::vector<std::vector<std::string>> aHeaderValues) {
-    // Vector to be returned.
+    /* Vector to be returned. */
     std::vector<Gather *> return_gathers = this->mpMetaGenerator->GetTraces(aHeaderValues);
     if (!this->mEnableHeaderOnly) {
         this->FillTraceData(return_gathers);
@@ -218,7 +218,7 @@ JsonReader::GenerateComponents() {
     } else if (type == "traces") {
         this->mpMetaGenerator = new ShotsMetaDataGenerator(meta_data);
     } else {
-        throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
+        throw UNSUPPORTED_FEATURE_EXCEPTION();
     }
     this->mpMetaGenerator->SetGenerationKey(this->mGatherKeys);
     for (auto const &ptr : this->mReflectorGenerators) {
@@ -237,7 +237,7 @@ JsonReader::GenerateComponents() {
                     gen->ParseValues(object);
                     this->mReflectorGenerators.push_back(gen);
                 } else {
-                    throw bs::base::exceptions::UNSUPPORTED_FEATURE_EXCEPTION();
+                    throw UNSUPPORTED_FEATURE_EXCEPTION();
                 }
             }
         }

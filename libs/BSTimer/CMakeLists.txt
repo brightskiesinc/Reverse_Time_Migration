@@ -27,6 +27,17 @@ if ("${BS_TIMER_WORKLOAD_PATH}" STREQUAL "")
     SET(BS_TIMER_WORKLOAD_PATH "./workloads")
 endif ()
 
+# Intel Parallel Studio tools should be Sourced
+# when using the cmake command or with the build script
+if ("${USE_INTEL}" STREQUAL "")
+    SET(USE_INTEL "NO")
+endif ()
+
+option(USE_OMP "Use OpenMP technology" OFF)
+option(USE_DPC "Use DPC++ technology" OFF)
+option(USE_OMP_OFFLOAD "Use OpenMP Offload technology" OFF)
+option(USE_CPP "Use Standard C++" OFF)
+
 if (USE_OMP)
     get_directory_property(CMAKE_PARENT_DIR PARENT_DIRECTORY)
     if (NOT CMAKE_PARENT_DIR)

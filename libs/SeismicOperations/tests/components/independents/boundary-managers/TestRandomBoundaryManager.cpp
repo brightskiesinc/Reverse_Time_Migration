@@ -18,19 +18,21 @@
  */
 
 
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
+
+#include <prerequisites/libraries/catch/catch.hpp>
+
 #include <operations/components/independents/concrete/boundary-managers/RandomBoundaryManager.hpp>
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
-
 #include <operations/common/DataTypes.h>
+#include <operations/configurations/MapKeys.h>
 #include <operations/test-utils/dummy-data-generators/DummyConfigurationMapGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyGridBoxGenerator.hpp>
 #include <operations/test-utils/dummy-data-generators/DummyParametersGenerator.hpp>
 #include <operations/test-utils/NumberHelpers.hpp>
 #include <operations/test-utils/EnvironmentHandler.hpp>
-
-#include <prerequisites/libraries/catch/catch.hpp>
-
-#include <unordered_set>
 
 using namespace std;
 using namespace bs::base::configurations;
@@ -76,7 +78,6 @@ void TEST_CASE_RANDOM(GridBox *apGridBox,
     uint window_size = wnx * wny * wnz;
     uint size = nx * ny * nz;
 
-
     pressure_curr->Allocate(window_size);
     pressure_prev->Allocate(window_size);
     velocity->Allocate(size);
@@ -106,26 +107,42 @@ void TEST_CASE_RANDOM(GridBox *apGridBox,
     int location = (wnx / 2) + (wnz / 2) * wnx + (wny / 2) * wnx * wnz;
     h_pressure[location] = 1;
 
-    auto RandomConfigurationMap = new JSONConfigurationMap(R"(
-                {
+    auto boundary_manager_map = new JSONConfigurationMap(R"(
+                 {
                     "wave": {
                         "physics": "acoustic",
                         "approximation": "isotropic",
                         "equation-order": "second",
                         "grid-sampling": "uniform"
                     },
-                            "type": "random",
-                            "properties": {
-                                "use-top-layer": true,
-                                "reflect-coeff": 0.03,
-                                "shift-ratio": 0.2,
-                                "relax-cp": 0.9
-                             }
+                    "type": "random",
+                    "properties": {
+                        "use-top-layer": false,
+                        "reflect-coeff": 0.03,
+                        "shift-ratio": 0.2,
+                        "relax-cp": 0.9,
+                        "grain-side-length": 20
+                     }
                 }
-            )"_json);
+    )"_json);
 
-    auto boundary_manager = new RandomBoundaryManager(RandomConfigurationMap);
-    auto computation_kernel = new SecondOrderComputationKernel(RandomConfigurationMap);
+    auto computation_kernel_map = new JSONConfigurationMap(R"(
+                 {
+                    "wave": {
+                        "physics": "acoustic",
+                        "approximation": "isotropic",
+                        "equation-order": "second",
+                        "grid-sampling": "uniform"
+                    }
+                }
+    )"_json);
+
+
+    /* Some parsing should be done for having the value of grain,
+     * check the test of get parameter. */
+
+    auto boundary_manager = new RandomBoundaryManager(boundary_manager_map);
+    auto computation_kernel = new SecondOrderComputationKernel(computation_kernel_map);
 
     boundary_manager->SetComputationParameters(apParameters);
     computation_kernel->SetComputationParameters(apParameters);
@@ -145,96 +162,118 @@ void TEST_CASE_RANDOM(GridBox *apGridBox,
 
     float *v = velocity->GetHostPointer();
 
-    int start_y = 0;
-    int end_y = 1;
+    int start_x = hl;
+    int start_y = hl;
+    int start_z = hl;
+
+    int end_x = apGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - hl;
+    int end_y = apGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() - hl;
+    int end_z = apGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - hl;
+
+    float dx = apGridBox->GetAfterSamplingAxis()->GetXAxis().GetCellDimension();
+    float dy = apGridBox->GetAfterSamplingAxis()->GetYAxis().GetCellDimension();
+    float dz = apGridBox->GetAfterSamplingAxis()->GetZAxis().GetCellDimension();
+
 
     if (ny > 1) {
         start_y = hl + bl;
         end_y = ny - hl;
     }
 
-    unordered_set<float> isUnique, isUnique_r;
+    // Grain size in meters.
+    int grain_side_length = 0;
+    grain_side_length = boundary_manager_map->GetValue(OP_K_PROPRIETIES, OP_K_GRAIN_SIDE_LENGTH, grain_side_length);
 
-    for (int iy = start_y; iy < end_y; iy++) {
-        for (int iz = hl + bl; iz < nz - hl; iz++) {
-            for (int ix = hl; ix < bl + hl; ix++) {
-                int idx = (iy * nz * nx) + (iz * nx) + ix;
-                int idx_r = (iy * nz * nx) + (iz * nx) + (nx - ix - 1);
-                REQUIRE(isUnique.insert(v[idx]).second);
-                REQUIRE(isUnique_r.insert(v[idx_r]).second);
+
+    int stride_x = grain_side_length / dx;
+    int stride_z = grain_side_length / dz;
+    int stride_y = grain_side_length / dy;
+
+    if (ny != 1) {
+        stride_y = grain_side_length / dy;
+    }
+
+    vector<float> seeds;
+    vector<float> seeds_l;
+    vector<float> seeds_r;
+
+    int id_x;
+    int id_z;
+
+    int horizontal_seeds = ((end_z - bl - start_z - bl) / stride_z + 1) * (bl / stride_x);
+
+    int vertical_seeds = (bl / stride_z + 1) * ((end_x - start_x) / stride_x);
+
+
+    int index = 0;
+
+    for (int row = 0; row < bl; row++) {
+        for (int column = start_x; column < end_x; column++) {
+
+            index = (end_z - row - 1) * nx + column;
+
+            if (find(seeds.begin(), seeds.end(), v[index]) == seeds.end()) {
+                seeds.emplace_back(v[index]);
+
             }
+
         }
     }
 
-    isUnique.clear();
-    isUnique_r.clear();
+    REQUIRE(seeds.size() >= vertical_seeds);
 
-    for (int iy = start_y; iy < end_y; iy++) {
-        for (int iz = hl; iz < bl + hl; iz++) {
-            for (int ix = hl + bl; ix < nx - hl; ix++) {
-                int idx = (iy * nz * nx) + (iz * nx) + ix;
-                int idx_r = (iy * nz * nx) + ((nz - iz - 1) * nx) + ix;
-                if (v[idx] != 0) {
-                    REQUIRE(isUnique.insert(v[idx]).second);
-                }
-                REQUIRE(isUnique_r.insert(v[idx_r]).second);
+
+    seeds.clear();
+
+    int index_l = 0;
+    int index_r = 0;
+
+    for (int row = start_z + bl; row < end_z - bl; row++) {
+        for (int column = 0; column < bl; column++) {
+
+            index_l = row * nx + column;
+            index_r = row * nx + (end_x - 1 - column);
+
+            if (find(seeds_l.begin(), seeds_l.end(), v[index_l]) == seeds_l.end()) {
+                seeds_l.emplace_back(v[index_l]);
+
             }
+
+            if (find(seeds_r.begin(), seeds_r.end(), v[index_r]) == seeds_r.end()) {
+                seeds_r.emplace_back(v[index_r]);
+
+            }
+
         }
     }
 
 
-    if (ny > 1) {
-        isUnique.clear();
-        isUnique_r.clear();
-        for (int iy = hl; iy < bl + hl; iy++) {
-            for (int iz = hl + bl; iz < nz - hl; iz++) {
-                for (int ix = hl + bl; ix < nx - hl; ix++) {
-                    int idx = (iy * nz * nx) + (iz * nx) + ix;
-                    int idx_r = (ny - iy - 1) * nz * nx + iz * nx + nx - ix - 1;
-                    REQUIRE(isUnique.insert(v[idx]).second);
-                    REQUIRE(isUnique_r.insert(v[idx_r]).second);
-                }
-            }
-        }
-    }
+    REQUIRE(seeds_l.size() >= horizontal_seeds);
+    REQUIRE(seeds_r.size() >= horizontal_seeds);
+
+
+    seeds.clear();
+
 
     delete apGridBox;
     delete apParameters;
     delete apConfigurationMap;
-    delete RandomConfigurationMap;
+
+    delete boundary_manager_map;
     delete pressure_curr;
     delete pressure_prev;
-
 }
 
 TEST_CASE("Random Boundary Manager - 2D - No Window", "[No Window],[2D]") {
     TEST_CASE_RANDOM(
             generate_grid_box(OP_TU_2D, OP_TU_NO_WIND),
             generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }
 
 TEST_CASE("Random Boundary Manager - 2D - Window", "[Window],[2D]") {
     TEST_CASE_RANDOM(
             generate_grid_box(OP_TU_2D, OP_TU_INC_WIND),
             generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Random Boundary Manager - 3D - No Window", "[No Window],[3D]") {
-    TEST_CASE_RANDOM(
-            generate_grid_box(OP_TU_3D, OP_TU_NO_WIND),
-            generate_computation_parameters(OP_TU_NO_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
-}
-
-TEST_CASE("Random Boundary Manager - 3D - Window", "[Window],[3D]") {
-    TEST_CASE_RANDOM(
-            generate_grid_box(OP_TU_3D, OP_TU_INC_WIND),
-            generate_computation_parameters(OP_TU_INC_WIND, ISOTROPIC),
-            generate_average_case_configuration_map_wave()
-    );
+            generate_average_case_configuration_map_wave());
 }

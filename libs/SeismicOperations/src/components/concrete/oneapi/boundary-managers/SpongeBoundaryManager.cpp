@@ -17,18 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp"
-#include <operations/backend/OneAPIBackend.hpp>
-
 #include <iostream>
 #include <cmath>
 
-using namespace cl::sycl;
+#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
+#include <bs/base/backend/Backend.hpp>
+
 using namespace std;
+using namespace cl::sycl;
+using namespace bs::base::backend;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
 
 /// Based on
 /// https://pubs.geoscienceworld.org/geophysics/article-abstract/50/4/705/71992/A-nonreflecting-boundary-condition-for-discrete?redirectedFrom=fulltext
@@ -63,7 +63,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
         y_end = 1;
     }
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(original_nx,
                                   y_end - y_start,
                                   (half_length + bound_length - 1) - (half_length) + 1),
@@ -78,7 +78,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
                          });
     });
 
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>((half_length + bound_length - 1) - (half_length) + 1,
                                   y_end - y_start,
                                   original_nz),
@@ -95,19 +95,18 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
 
 
     if (ny > 1) {
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
-            cgh.parallel_for(
-                    range<3>(original_nx,
-                             (half_length + bound_length - 1) - (half_length) + 1,
-                             original_nz), [=](id<3> i) {
-                        int ix = i[0] + (half_length + bound_length);
-                        int iy = (half_length + bound_length - 1) - 1 - i[1] + 1;
-                        int iz = i[2] + (half_length + bound_length);
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+            cgh.parallel_for(range<3>(original_nx,
+                                      (half_length + bound_length - 1) - (half_length) + 1,
+                                      original_nz), [=](id<3> i) {
+                int ix = i[0] + (half_length + bound_length);
+                int iy = (half_length + bound_length - 1) - 1 - i[1] + 1;
+                int iz = i[2] + (half_length + bound_length);
 
-                        next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iy - half_length];
-                        next[(iy + lny - 2 * iy - 1) * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iy -
-                                                                                                    half_length];
-                    });
+                next[iy * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iy - half_length];
+                next[(iy + lny - 2 * iy - 1) * nx * nz + iz * nx + ix] *= dev_sponge_coeffs[iy -
+                                                                                            half_length];
+            });
         });
 
     }
@@ -121,7 +120,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     int nz_nx = nx * nz;
 
     // Zero-Corners in the boundaries nx-nz boundary intersection--boundaries not needed.
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+    Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
         cgh.parallel_for(range<3>(end_y - start_y,
                                   bound_length,
                                   bound_length), [=](id<3> i) {
@@ -144,7 +143,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
     // If 3-D, zero corners in the y-x and y-z plans.
     if (ny > 1) {
         // Zero-Corners in the boundaries ny-nz boundary intersection--boundaries not needed.
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             cgh.parallel_for(range<3>(bound_length,
                                       bound_length,
                                       end_x - start_x), [=](id<3> i) {
@@ -164,7 +163,7 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
             });
         });
 
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+        Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
             cgh.parallel_for(range<3>(bound_length,
                                       end_z - start_z,
                                       bound_length), [=](id<3> i) {
@@ -184,5 +183,5 @@ void SpongeBoundaryManager::ApplyBoundaryOnField(float *next) {
             });
         });
     }
-    OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+    Backend::GetInstance()->GetDeviceQueue()->wait();
 }

@@ -17,11 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string>
+
 #include <operations/utils/sampling/Sampler.hpp>
 
 #include <operations/utils/interpolation/Interpolator.hpp>
-
-#include <string>
 
 using namespace operations::utils::sampling;
 using namespace operations::dataunits;

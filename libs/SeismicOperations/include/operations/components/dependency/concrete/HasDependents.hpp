@@ -20,13 +20,15 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_HAS_DEPENDENTS_HPP
 #define OPERATIONS_LIB_COMPONENTS_HAS_DEPENDENTS_HPP
 
+#include <cstdlib>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
 #include <operations/components/dependency/interface/Dependency.hpp>
 #include <operations/components/dependency/helpers/ComponentsMap.tpp>
 #include <operations/components/dependents/interface/DependentComponent.hpp>
 #include <operations/common/ComputationParameters.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
-#include <cstdlib>
 
 namespace operations {
     namespace components {

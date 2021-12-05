@@ -17,7 +17,7 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/trace-writers/SeismicTraceWriter.hpp"
+#include <operations/components/independents/concrete/trace-writers/SeismicTraceWriter.hpp>
 
 
 using namespace std;

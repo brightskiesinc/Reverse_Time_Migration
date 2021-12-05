@@ -25,14 +25,17 @@ using namespace operations::common;
 
 void SeismicModelHandler::SetupWindow() {
     if (this->mpParameters->IsUsingWindow()) {
+
         int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
         int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
         int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+        int ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
         int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
 
         uint sx = this->mpGridBox->GetWindowStart(X_AXIS);
+        uint sy = this->mpGridBox->GetWindowStart(Y_AXIS);
         uint sz = this->mpGridBox->GetWindowStart(Z_AXIS);
 
         uint offset = this->mpParameters->GetHalfLength() +
@@ -42,15 +45,25 @@ void SeismicModelHandler::SetupWindow() {
         uint start_z = offset;
         uint end_z = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - offset;
 
-        for (uint iz = start_z; iz < end_z; iz++) {
-            for (uint ix = start_x; ix < end_x; ix++) {
-                uint offset_window = iz * wnx + ix;
-                uint offset_full = (iz + sz) * nx + ix + sx;
+        uint start_y = 0;
+        uint end_y = 1;
 
-                for (auto const &parameter : this->mpGridBox->GetParameters()) {
-                    float *window_param = this->mpGridBox->Get(WIND | parameter.first)->GetNativePointer();
-                    float *param_ptr = this->mpGridBox->Get(parameter.first)->GetNativePointer();
-                    window_param[offset_window] = param_ptr[offset_full];
+        if (ny != 1) {
+            start_y = offset;
+            end_y = this->mpGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() - offset;
+
+        }
+        for (uint iy = start_y; iy < end_y; iy++) {
+            for (uint iz = start_z; iz < end_z; iz++) {
+                for (uint ix = start_x; ix < end_x; ix++) {
+                    uint offset_window = iy * wnx * wnz + iz * wnx + ix;
+                    uint offset_full = (iy + sy) * nx * nz + (iz + sz) * nx + ix + sx;
+
+                    for (auto const &parameter : this->mpGridBox->GetParameters()) {
+                        float *window_param = this->mpGridBox->Get(WIND | parameter.first)->GetNativePointer();
+                        float *param_ptr = this->mpGridBox->Get(parameter.first)->GetNativePointer();
+                        window_param[offset_window] = param_ptr[offset_full];
+                    }
                 }
             }
         }
@@ -60,3 +73,4 @@ void SeismicModelHandler::SetupWindow() {
 void SeismicModelHandler::SetupPadding() {
 
 }
+

@@ -157,7 +157,7 @@ press [here](https://gitlab.brightskiesinc.com/parallel-programming/reversetimem
 
 ---
 
-## OpenMP Offload Version
+## OpenMP Offload
 
 ### Building OpenMP Offload Version
 

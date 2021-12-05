@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,9 +17,10 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
+
 #include <bs/io/utils/convertors/NumbersConvertor.hpp>
 
-#include <prerequisites/libraries/catch/catch.hpp>
 
 using namespace bs::io::utils::convertors;
 
@@ -31,14 +32,12 @@ TEST_NUM_CONV() {
      * FloatingPointFormatter.cpp file
      */
 
-    SECTION("Short Int Little Endian")
-    {
+    SECTION("Short Int Little Endian") {
         short int x = 258;
         REQUIRE(NumbersConvertor::ToLittleEndian(x) == 513);
     }
 
-    SECTION("Short Int Array Little Endian")
-    {
+    SECTION("Short Int Array Little Endian") {
         short int x[] = {258, 257, -2};
         short int *y = NumbersConvertor::ToLittleEndian(x, 3);
         short int g[] = {513, 257, -257};
@@ -47,14 +46,12 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Unsigned Short Int Little Endian")
-    {
+    SECTION("Unsigned Short Int Little Endian") {
         unsigned short int x = 258;
         REQUIRE(NumbersConvertor::ToLittleEndian(x) == 513);
     }
 
-    SECTION("Unsigned Short Int Array Little Endian")
-    {
+    SECTION("Unsigned Short Int Array Little Endian") {
         unsigned short int x[] = {258, 257, 256};
         unsigned short int *y = NumbersConvertor::ToLittleEndian(x, 3);
         unsigned short int g[] = {513, 257, 1};
@@ -63,14 +60,12 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Int Little Endian")
-    {
+    SECTION("Int Little Endian") {
         int x = 1074266625;                   // 2^0 + 2^9 + 2^19 + 2^30
         REQUIRE(NumbersConvertor::ToLittleEndian(x) == 16910400);
     }
 
-    SECTION("Int Array Little Endian")
-    {
+    SECTION("Int Array Little Endian") {
         int x[] = {1, 256, -2};
         int *y = NumbersConvertor::ToLittleEndian(x, 3);
         int g[] = {16777216, 65536, -16777217};
@@ -79,14 +74,12 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Unsigned Int Little Endian")
-    {
+    SECTION("Unsigned Int Little Endian") {
         unsigned int x = 1074266625;                   // 2^0 + 2^9 + 2^19 + 2^30
         REQUIRE(NumbersConvertor::ToLittleEndian(x) == 16910400);
     }
 
-    SECTION("Unsigned Int Array Little Endian")
-    {
+    SECTION("Unsigned Int Array Little Endian") {
         unsigned int x[] = {1, 256, 16777216};
         unsigned int *y = NumbersConvertor::ToLittleEndian(x, 3);
         unsigned int g[] = {16777216, 65536, 1};
@@ -95,8 +88,7 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Float Little Endian")
-    {
+    SECTION("Float Little Endian") {
         float x = 1.1;
         auto g = (unsigned char *) &x;
         float y = NumbersConvertor::ToLittleEndian(x);
@@ -106,8 +98,7 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Float Array Little Endian")
-    {
+    SECTION("Float Array Little Endian") {
         float x[] = {1.1, 2.0, -3.1};
         float temp[3];
         memcpy(temp, x, 3 * sizeof(float));
@@ -129,14 +120,12 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("Signed Char Little Endian")
-    {
+    SECTION("Signed Char Little Endian") {
         signed char x = 'O';
         REQUIRE(NumbersConvertor::ToLittleEndian(x) == 'O');
     }
 
-    SECTION("Signed Char Array Little Endian")
-    {
+    SECTION("Signed Char Array Little Endian") {
         signed char x[] = {'O', 'P', 'Q', 'R'};
         signed char g[] = {'O', 'P', 'Q', 'R'};
         signed char *y = NumbersConvertor::ToLittleEndian(x, 4);
@@ -145,8 +134,7 @@ TEST_NUM_CONV() {
         }
     }
 
-    SECTION("To Little Endian")
-    {
+    SECTION("To Little Endian") {
         int x[] = {1, 256, -2};
         char *temp = (char *) x;
         int g_int[] = {16777216, 65536, -16777217};
@@ -180,5 +168,4 @@ TEST_NUM_CONV() {
 
 TEST_CASE("Numbers Convertor") {
     TEST_NUM_CONV();
-
 }

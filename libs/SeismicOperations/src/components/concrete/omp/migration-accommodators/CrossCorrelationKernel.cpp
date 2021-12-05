@@ -17,12 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
+#include <cmath>
+#include <vector>
 
 #include <bs/timer/api/cpp/BSTimer.hpp>
 
-#include <cmath>
-#include <vector>
+#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
 
 #define EPSILON 1e-20f
 
@@ -31,7 +31,6 @@ using namespace bs::timer;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-
 
 template void CrossCorrelationKernel::Correlation<true, NO_COMPENSATION>(GridBox *apGridBox);
 
@@ -72,6 +71,7 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
     float *source_i;
     float *receive_i;
     float *correlation_output;
+
     uint offset = mpParameters->GetHalfLength();
     int nxEnd = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - offset;
     int nzEnd = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - offset;
@@ -87,10 +87,10 @@ void CrossCorrelationKernel::Correlation(GridBox *apGridBox) {
                        size, 5, true,
                        flops_per_second);
     timer.Start();
+
 #pragma omp parallel default(shared)
     {
         const uint block_x = mpParameters->GetBlockX();
-        const uint block_y = mpParameters->GetBlockY();
         const uint block_z = mpParameters->GetBlockZ();
 
 #pragma omp for schedule(static, 1) collapse(2)
@@ -136,10 +136,8 @@ void CrossCorrelationKernel::Stack() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-
     int constant = this->mpGridBox->GetWindowStart(X_AXIS) +
-                   this->mpGridBox->GetWindowStart(Z_AXIS) * nx +
-                   this->mpGridBox->GetWindowStart(Y_AXIS) * nx * nz;
+                   this->mpGridBox->GetWindowStart(Z_AXIS) * nx;
 
     float *in = this->mpShotCorrelation->GetNativePointer();
     float *out = this->mpTotalCorrelation->GetNativePointer() + constant;
@@ -169,6 +167,7 @@ void CrossCorrelationKernel::Stack() {
                        flops_per_second);
     timer.Start();
 #pragma omp parallel for schedule(static, 1) collapse(2)
+
     for (int bz = offset; bz < z_end; bz += block_z) {
         for (int bx = offset; bx < x_end; bx += block_x) {
 

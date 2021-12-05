@@ -20,17 +20,15 @@
 #ifndef OPERATIONS_LIB_ENGINE_CONFIGURATIONS_RTM_ENGINE_CONFIGURATION_HPP
 #define OPERATIONS_LIB_ENGINE_CONFIGURATIONS_RTM_ENGINE_CONFIGURATION_HPP
 
-#include "operations/engine-configurations/interface/EngineConfigurations.hpp"
-
-#include "operations/components/independents/primitive/BoundaryManager.hpp"
-#include "operations/components/independents/primitive/ComputationKernel.hpp"
-#include "operations/components/independents/primitive/MigrationAccommodator.hpp"
-#include "operations/components/independents/primitive/ForwardCollector.hpp"
-#include "operations/components/independents/primitive/ModelHandler.hpp"
-#include "operations/components/independents/primitive/SourceInjector.hpp"
-#include "operations/components/independents/primitive/TraceManager.hpp"
-
-#include "operations/components/dependents/primitive/MemoryHandler.hpp"
+#include <operations/engine-configurations/interface/EngineConfigurations.hpp>
+#include <operations/components/independents/primitive/BoundaryManager.hpp>
+#include <operations/components/independents/primitive/ComputationKernel.hpp>
+#include <operations/components/independents/primitive/MigrationAccommodator.hpp>
+#include <operations/components/independents/primitive/ForwardCollector.hpp>
+#include <operations/components/independents/primitive/ModelHandler.hpp>
+#include <operations/components/independents/primitive/SourceInjector.hpp>
+#include <operations/components/independents/primitive/TraceManager.hpp>
+#include <operations/components/dependents/primitive/MemoryHandler.hpp>
 
 namespace operations {
     namespace configurations {

@@ -20,32 +20,54 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_EXTENSIONS_RANDOM_EXTENSION_HPP
 #define OPERATIONS_LIB_COMPONENTS_EXTENSIONS_RANDOM_EXTENSION_HPP
 
+#include <stdlib.h>
+#include <random>
 #include <operations/components/independents/concrete/boundary-managers/extensions/Extension.hpp>
 
 namespace operations {
     namespace components {
         namespace addons {
 
+            /**
+             * @brief generates a random value based on the values of bound_l and x between 0 and 1
+             * 
+             */
+#define GET_RANDOM_VALUE(bound_l, x) ((float) rand() / RAND_MAX) * ((float) (bound_l - (x)) / bound_l)
+            /**
+             * @brief generates a random float number between 0 and 1
+             * 
+             */
+#define RANDOM_VALUE (float) rand() / RAND_MAX
+
             class RandomExtension : public Extension {
+
+            public:
+                RandomExtension(int aGrainSideLength) :
+                        mGrainSideLength(aGrainSideLength) {}
+
             private:
-                void VelocityExtensionHelper(float *property_array,
-                                             int start_x, int start_y, int start_z,
-                                             int end_x, int end_y, int end_z,
-                                             int nx, int ny, int nz,
-                                             uint boundary_length) override;
+                void VelocityExtensionHelper(float *apPropertyArray,
+                                             int aStartX, int aStartY, int aStartZ,
+                                             int aEndX, int aEndY, int aEndZ,
+                                             int aNx, int aNy, int aNz,
+                                             uint aBoundaryLength) override;
 
-                void TopLayerExtensionHelper(float *property_array,
-                                             int start_x, int start_y, int start_z,
-                                             int end_x, int end_y, int end_z,
-                                             int nx, int ny, int nz,
-                                             uint boundary_length) override;
+                void TopLayerExtensionHelper(float *apPropertyArray,
+                                             int aStartX, int aStartY, int aStartZ,
+                                             int aEndX, int aEndY, int aEndZ,
+                                             int aNx, int aNy, int aNz,
+                                             uint aBoundaryLength) override;
 
-                void TopLayerRemoverHelper(float *property_array,
-                                           int start_x, int start_y, int start_z,
-                                           int end_x, int end_y, int end_z,
-                                           int nx, int ny, int nz,
-                                           uint boundary_length) override;
+                void TopLayerRemoverHelper(float *apPropertyArray,
+                                           int aStartX, int aStartY, int aStartZ,
+                                           int aEndX, int aEndY, int aEndZ,
+                                           int aNx, int aNy, int aNz,
+                                           uint aBoundaryLength) override;
+
+                /// Grain side length.
+                int mGrainSideLength;
             };
+
         }//namespace addons
     }//namespace components
 }//namespace operations

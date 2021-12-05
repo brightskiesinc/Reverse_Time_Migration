@@ -20,10 +20,10 @@
 #ifndef BS_BASE_LOGGER_FILE_LOGGER_HPP
 #define BS_BASE_LOGGER_FILE_LOGGER_HPP
 
+#include <fstream>
+
 #include <bs/base/logger/interface/Logger.hpp>
 #include <bs/base/logger/concrete/GeneralLogger.hpp>
-
-#include <fstream>
 
 namespace bs {
     namespace base {
@@ -58,8 +58,7 @@ namespace bs {
             };
 
         } //namespace logger
-    } //namespace helpers
-} //namespace operations
-
+    } //namespace base
+} //namespace bs
 
 #endif //BS_BASE_LOGGER_FILE_LOGGER_HPP

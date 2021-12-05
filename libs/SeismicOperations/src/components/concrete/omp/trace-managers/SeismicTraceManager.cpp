@@ -17,15 +17,16 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp"
 #include <bs/base/memory/MemoryManager.hpp>
+
+#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
 
 
 using namespace std;
+using namespace bs::base::memory;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace bs::base::memory;
 
 
 void SeismicTraceManager::ApplyTraces(int time_step) {
@@ -48,13 +49,5 @@ void SeismicTraceManager::ApplyTraces(int time_step) {
         pressure[offset] +=
                 traces[(trace_step) * trace_size + i] *
                 velocity[offset];
-
-        if (this->mpParameters->GetApproximation() == VTI ||
-            this->mpParameters->GetApproximation() == TTI) {
-            float *horizontal_pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_X)->GetNativePointer();
-            horizontal_pressure[offset] +=
-                    traces[(trace_step) * trace_size + i] *
-                    velocity[offset];
-        }
     }
 }

@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -17,10 +17,11 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/io/utils/convertors/KeysConvertor.hpp>
+#include <iostream>
 
 #include <prerequisites/libraries/catch/catch.hpp>
-#include <iostream>
+
+#include <bs/io/utils/convertors/KeysConvertor.hpp>
 
 using namespace bs::io::utils::convertors;
 using namespace bs::io::dataunits;
@@ -29,8 +30,7 @@ using std::string;
 
 void
 TEST_KEY_CONV() {
-    SECTION("ToTraceHeaderKeyTest")
-    {
+    SECTION("ToTraceHeaderKeyTest") {
         string temp("FLDR");
         REQUIRE(KeysConvertor::ToTraceHeaderKey(temp) == TraceHeaderKey::FLDR);
 
@@ -60,5 +60,4 @@ TEST_KEY_CONV() {
 
 TEST_CASE("Keys Convertor") {
     TEST_KEY_CONV();
-
 }

@@ -22,15 +22,13 @@
 /// Seismic Engine Modelling execution.
 ///
 
-#include <stbx/agents/Agents.h>
-#include <stbx/writers/Writers.h>
-#include <stbx/parsers/Parser.hpp>
-#include <stbx/parsers/ArgumentsParser.hpp>
-#include <stbx/generators/Generator.hpp>
-#include <operations/engines/concrete/ModellingEngine.hpp>
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/base/logger/concrete/FileLogger.hpp>
 #include <bs/base/logger/concrete/ConsoleLogger.hpp>
+
+#include <stbx/parsers/Parser.hpp>
+#include <stbx/parsers/ArgumentsParser.hpp>
+#include <stbx/generators/Generator.hpp>
 
 using namespace std;
 using namespace stbx::parsers;
@@ -39,8 +37,8 @@ using namespace stbx::writers;
 using namespace operations::dataunits;
 using namespace operations::engines;
 using namespace bs::base::logger;
-using namespace bs::timer;
 using namespace bs::timer::configurations;
+
 
 int main(int argc, char *argv[]) {
     string parameter_file = WORKLOAD_PATH "/computation_parameters.json";
@@ -66,20 +64,22 @@ int main(int argc, char *argv[]) {
                            write_path,
                            argc, argv);
 
-    Parser *p = Parser::GetInstance();
-    p->RegisterFile(parameter_file);
-    p->RegisterFile(configuration_file);
-    p->RegisterFile(callback_file);
-    p->RegisterFile(system_file);
-    p->BuildMap();
+    auto parser = Parser::GetInstance();
+    parser->RegisterFile(parameter_file);
+    parser->RegisterFile(configuration_file);
+    parser->RegisterFile(callback_file);
+    parser->RegisterFile(system_file);
+    parser->BuildMap();
 
-    auto g = new Generator(p->GetMap());
-    auto cp = g->GenerateParameters();
-    auto engine_configuration = g->GenerateModellingEngineConfiguration(write_path);
-    auto cbs = g->GenerateCallbacks(write_path);
+    auto generator = new Generator(parser->GetMap());
+    auto cp = generator->GenerateParameters();
+    auto engine_configuration = generator->GenerateModellingEngineConfiguration(write_path);
+    auto cbs = generator->GenerateCallbacks(write_path);
     auto engine = new ModellingEngine(engine_configuration, cp, cbs);
 
-    auto agent = g->GenerateAgent();
+    TimerManager::GetInstance()->Configure(generator->GenerateTimerConfiguration());
+
+    auto agent = generator->GenerateAgent();
     agent->AssignEngine(engine);
     agent->AssignArgs(argc, argv);
     agent->Execute();
@@ -89,11 +89,14 @@ int main(int argc, char *argv[]) {
     delete cp;
     delete engine;
 
-    auto writer = g->GenerateWriter();
+    auto writer = generator->GenerateWriter();
     writer->WriteTimeResults(write_path);
 
     TimerManager::GetInstance()->Terminate(true);
     TimerManager::Kill();
 
-    return 0;
+    delete parser;
+    delete generator;
+
+    return EXIT_SUCCESS;
 }

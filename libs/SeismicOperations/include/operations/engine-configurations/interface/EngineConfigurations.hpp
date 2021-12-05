@@ -20,9 +20,9 @@
 #ifndef OPERATIONS_LIB_ENGINE_CONFIGURATIONS_ENGINE_CONFIGURATION_HPP
 #define OPERATIONS_LIB_ENGINE_CONFIGURATIONS_ENGINE_CONFIGURATION_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
-#include "operations/components/dependents/interface/DependentComponent.hpp"
-#include "operations/components/dependency/helpers/ComponentsMap.tpp"
+#include <operations/components/independents/interface/Component.hpp>
+#include <operations/components/dependents/interface/DependentComponent.hpp>
+#include <operations/components/dependency/helpers/ComponentsMap.tpp>
 
 namespace operations {
     namespace configurations {

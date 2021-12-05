@@ -17,17 +17,16 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+
 #include <operations/utils/interpolation/Interpolator.hpp>
 #include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <bs/base/memory/MemoryManager.hpp>
 
-#include <iostream>
-
-using namespace operations::utils::interpolation;
-using namespace operations::dataunits;
 using namespace bs::base::logger;
 using namespace bs::base::memory;
-
+using namespace operations::utils::interpolation;
+using namespace operations::dataunits;
 
 float lerp1(float t, float a, float b);
 

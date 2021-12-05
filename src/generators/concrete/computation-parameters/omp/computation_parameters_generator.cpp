@@ -17,24 +17,23 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
+#include <iostream>
+#include <omp.h>
 
-#include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
 #include <operations/common/ComputationParameters.hpp>
 #include <operations/common/DataTypes.h>
 
-#include <prerequisites/libraries/nlohmann/json.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <omp.h>
+#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
+#include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 
-#include <iostream>
-
+using json = nlohmann::json;
+using namespace bs::base::logger;
 using namespace stbx::generators;
 using namespace operations::common;
-using namespace bs::base::logger;
-using json = nlohmann::json;
-
 
 void print_parameters(ComputationParameters *parameters) {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
@@ -107,6 +106,7 @@ generate_parameters(json &map) {
     back_win = w.back_win;
     depth_win = w.depth_win;
     use_window = w.use_window;
+
 
     if (order == -1) {
         Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';

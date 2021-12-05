@@ -17,8 +17,6 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bs/base/logger/concrete/ConsoleLogger.hpp>
-
 #include <iostream>
 
 #ifdef USING_SPDLOG
@@ -31,6 +29,8 @@
 #include <iomanip>
 
 #endif
+
+#include <bs/base/logger/concrete/ConsoleLogger.hpp>
 
 using namespace std;
 using namespace bs::base::logger;

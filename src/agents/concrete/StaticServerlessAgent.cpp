@@ -19,9 +19,9 @@
 
 #if defined(USING_MPI)
 
-#include <stbx/agents/concrete/StaticServerlessAgent.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <mpi.h>
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <stbx/agents/concrete/StaticServerlessAgent.hpp>
 
 using namespace std;
 using namespace stbx::agents;

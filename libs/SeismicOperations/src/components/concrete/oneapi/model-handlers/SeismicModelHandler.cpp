@@ -17,18 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
+
+#include <bs/base/api/cpp/BSBase.hpp>
+
 #include <operations/components/independents/concrete/model-handlers/SeismicModelHandler.hpp>
-#include <operations/backend/OneAPIBackend.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
 #define make_divisible(v, d) (v + (d - (v % d)))
 
+using namespace std;
 using namespace cl::sycl;
+using namespace bs::base::backend;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
-using namespace bs::base::logger;
 
 void SeismicModelHandler::SetupWindow() {
     if (mpParameters->IsUsingWindow()) {
@@ -58,23 +61,31 @@ void SeismicModelHandler::SetupWindow() {
             end_y = mpGridBox->GetWindowAxis()->GetYAxis().GetLogicalAxisSize() - offset;
 
         }
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
-            auto global_range = range<3>(end_x - start_x, end_y - start_y, end_z - start_z);
 
-            auto local_range = range<3>(1, 1, 1);
-            auto global_nd_range = nd_range<3>(global_range, local_range);
-            float *vel = mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
-            float *w_vel = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
-            cgh.parallel_for(global_nd_range, [=](sycl::nd_item<3> it) {
-                int x = it.get_global_id(0) + start_x;
-                int y = it.get_global_id(1) + start_y;
-                int z = it.get_global_id(2) + start_z;
-                uint offset_window = y * wnx * wnz + z * wnx + x;
-                uint offset_full = (y + sy) * nx * nz + (z + sz) * nx + x + sx;
-                w_vel[offset_window] = vel[offset_full];
+
+        vector<uint> gridDims{end_x - start_x, end_y - start_y, end_z - start_z};
+        vector<uint> blockDims{1, 1, 1};
+        auto configs = Backend::GetInstance()->CreateKernelConfiguration(gridDims, blockDims);
+
+        for (auto const &parameter : mpGridBox->GetParameters()) {
+
+            Backend::GetInstance()->GetDeviceQueue()->submit([&](sycl::handler &cgh) {
+                auto global_nd_range = nd_range<3>(configs.mGridDimensions, configs.mBlockDimensions);
+
+                float *vel = mpGridBox->Get(parameter.first)->GetNativePointer();
+                float *w_vel = mpGridBox->Get(WIND | parameter.first)->GetNativePointer();
+
+                cgh.parallel_for(global_nd_range, [=](sycl::nd_item<3> it) {
+                    int x = it.get_global_id(0) + start_x;
+                    int y = it.get_global_id(1) + start_y;
+                    int z = it.get_global_id(2) + start_z;
+                    uint offset_window = y * wnx * wnz + z * wnx + x;
+                    uint offset_full = (y + sy) * nx * nz + (z + sz) * nx + x + sx;
+                    w_vel[offset_window] = vel[offset_full];
+                });
             });
-        });
-        OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+            Backend::GetInstance()->GetDeviceQueue()->wait();
+        }
     }
 }
 

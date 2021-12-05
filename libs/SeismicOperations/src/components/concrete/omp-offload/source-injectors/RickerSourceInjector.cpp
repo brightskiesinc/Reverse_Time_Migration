@@ -17,18 +17,17 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
-
-#include <operations/utils/checks/Checks.hpp>
-
 #include <iostream>
 #include <math.h>
 
+#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
+#include <operations/utils/checks/Checks.hpp>
+
+using namespace bs::base::exceptions;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
 using namespace operations::utils::checks;
-using namespace bs::base::exceptions;
 
 
 /**
@@ -74,20 +73,9 @@ void RickerSourceInjector::ApplySource(int time_step) {
 
         float *vel = this->mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
 
-        if (this->mpParameters->GetApproximation() == VTI ||
-            this->mpParameters->GetApproximation() == TTI) {
-
-            float *pressure_horizontal = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_X)->GetNativePointer();
-#pragma omp target is_device_ptr(pressure_horizontal, vel) device(device_num)
-            ApplySourceOnPressure(temp, location, pressure_horizontal, vel);
-
-            float *pressure_vertical = this->mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
-#pragma omp target is_device_ptr(pressure_vertical, vel) device(device_num)
-            ApplySourceOnPressure(temp, location, pressure_vertical, vel);
-        } else {
-            float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer();
+        float *pressure = this->mpGridBox->Get(WAVE | GB_PRSS | CURR)->GetNativePointer();
 #pragma omp target is_device_ptr(pressure, vel) device(device_num)
-            ApplySourceOnPressure(temp, location, pressure, vel);
-        }
+        ApplySourceOnPressure(temp, location, pressure, vel);
+
     }
 }

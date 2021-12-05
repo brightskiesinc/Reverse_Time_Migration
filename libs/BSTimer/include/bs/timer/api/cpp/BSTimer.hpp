@@ -20,13 +20,19 @@
 #ifndef BS_TIMER_API_CPP_BS_TIMER_H
 #define BS_TIMER_API_CPP_BS_TIMER_H
 
+/// COMMON
+#include <bs/timer/common/Definitions.hpp>
+
 /// CONFIGURATIONS
 #include <bs/timer/configurations/TimerManager.hpp>
 
-/// CORE
-#include <bs/timer/core/concrete/ElasticTimer.hpp>
-#include <bs/timer/core/concrete/ScopeTimer.hpp>
-#include <bs/timer/core/concrete/LazyTimer.hpp>
+/// TIMERS
+#include <bs/timer/core/timers/concrete/ElasticTimer.hpp>
+#include <bs/timer/core/timers/concrete/ScopeTimer.hpp>
+#include <bs/timer/core/timers/concrete/LazyTimer.hpp>
+
+/// SNAPSHOTS
+#include <bs/timer/core/snapshots/helpers/GenericSnapshot.hpp>
 
 /// UTILS
 #include <bs/timer/utils/stats/StatisticsHelper.hpp>

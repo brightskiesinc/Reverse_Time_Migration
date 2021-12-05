@@ -20,15 +20,15 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_HPP
 #define OPERATIONS_LIB_COMPONENTS_MODEL_HANDLER_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
-
-#include "operations/common/DataTypes.h"
-#include "operations/data-units/concrete/migration/MigrationData.hpp"
-#include <operations/components/independents/primitive/ComputationKernel.hpp>
-
 #include <string>
 #include <vector>
 #include <map>
+
+#include <operations/components/independents/interface/Component.hpp>
+#include <operations/components/independents/primitive/ComputationKernel.hpp>
+#include <operations/common/DataTypes.h>
+#include <operations/data-units/concrete/migration/MigrationData.hpp>
+
 
 namespace operations {
     namespace components {

@@ -17,24 +17,23 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
+#include <iostream>
+#include <omp.h>
 
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
+#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 
 #include <operations/common/ComputationParameters.hpp>
 #include <operations/common/DataTypes.h>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 
-#include <prerequisites/libraries/nlohmann/json.hpp>
-#include <omp.h>
-
-#include <iostream>
-
+using json = nlohmann::json;
+using namespace bs::base::logger;
 using namespace stbx::generators;
 using namespace operations::common;
-using namespace bs::base::logger;
-using json = nlohmann::json;
-
 
 void print_parameters(ComputationParameters *parameters) {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
@@ -74,7 +73,7 @@ void print_parameters(ComputationParameters *parameters) {
 operations::common::ComputationParameters *
 generate_parameters(json &map) {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
-    Logger->Info() << "Parsing OpenMP computation properties..." << '\n';
+    Logger->Info() << "Parsing OpenMP Offload computation properties..." << '\n';
     json computation_parameters_map = map["computation-parameters"];
 
     int boundary_length = -1, block_x = -1, block_z = -1, block_y = -1, order = -1;
@@ -101,6 +100,7 @@ generate_parameters(json &map) {
     back_win = w.back_win;
     depth_win = w.depth_win;
     use_window = w.use_window;
+
 
     if (order == -1) {
         Logger->Error() << "No valid value provided for key 'stencil-order'..." << '\n';
@@ -188,6 +188,12 @@ generate_parameters(json &map) {
     parameters->SetEquationOrder(configurationsGenerator->GetEquationOrder());
     parameters->SetApproximation(configurationsGenerator->GetApproximation());
     parameters->SetPhysics(configurationsGenerator->GetPhysics());
+
+    /// OMP
+    //  parameters->SetThreadCount(n_threads);
+    parameters->SetBlockX(block_x);
+    parameters->SetBlockZ(block_z);
+    parameters->SetBlockY(block_y);
 
     print_parameters(parameters);
     return parameters;

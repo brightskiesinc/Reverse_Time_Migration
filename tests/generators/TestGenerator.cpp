@@ -17,6 +17,8 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <prerequisites/libraries/catch/catch.hpp>
+
 #include <stbx/generators/Generator.hpp>
 
 #include <stbx/generators/primitive/CallbacksGenerator.hpp>
@@ -24,21 +26,20 @@
 #include <stbx/generators/primitive/ConfigurationsGenerator.hpp>
 #include <stbx/test-utils/utils.h>
 
-#include <prerequisites/libraries/catch/catch.hpp>
+using namespace std;
+
+using namespace bs::base::exceptions;
+using namespace bs::base::configurations;
 
 using namespace stbx::agents;
 using namespace stbx::writers;
 using namespace stbx::generators;
 using namespace stbx::testutils;
 
-using namespace bs::base::configurations;
 using namespace operations::configurations;
 using namespace operations::common;
 using namespace operations::helpers::callbacks;
 using namespace operations::components;
-using namespace bs::base::exceptions;
-
-using namespace std;
 
 
 void TEST_CASE_GENERATOR() {
@@ -131,7 +132,7 @@ void TEST_CASE_GENERATOR() {
     "isotropic-radius": 5,
     "dt-relax": 0.9,
     "algorithm": "cpu",
-    "Device": "none",
+    "device": "none",
     "cache-blocking": {
       "block-x": 128,
       "block-z": 16,
@@ -167,7 +168,8 @@ void TEST_CASE_GENERATOR() {
     "boundary-manager": {
       "type": "none",
       "properties": {
-        "use-top-layer": false
+        "use-top-layer": false,
+        "grain-side-length": 200
       }
     },
     "migration-accommodator": {
@@ -220,19 +222,16 @@ void TEST_CASE_GENERATOR() {
 
     auto *generator = new Generator(ground_truth_map);
 
-    SECTION("Instance not null")
-    {
+    SECTION("Instance not null") {
         REQUIRE(instanceof<Generator>(generator));
         REQUIRE(generator != nullptr);
     }
 
-    SECTION("GenerateCallbacks Function Testing")
-    {
+    SECTION("GenerateCallbacks Function Testing") {
         REQUIRE(instanceof<CallbackCollection>(generator->GenerateCallbacks(WRITE_PATH)));
     }
 
-    SECTION("GenerateModellingEngineConfiguration Function Testing")
-    {
+    SECTION("GenerateModellingEngineConfiguration Function Testing") {
         auto *configuration = generator->GenerateModellingEngineConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ModellingEngineConfigurations>(configuration));
@@ -244,8 +243,7 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(instanceof<TraceWriter>(configuration->GetTraceWriter()));
     }
 
-    SECTION("GenerateParameters Function Testing")
-    {
+    SECTION("GenerateParameters Function Testing") {
         auto *computationParameters = generator->GenerateParameters();
 
         REQUIRE(instanceof<ComputationParameters>(computationParameters));
@@ -265,8 +263,8 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(computationParameters->GetBlockY() == 1);
         REQUIRE(computationParameters->GetBlockZ() == 16);
 
-    }SECTION("GenerateRTMConfiguration Function Testing")
-    {
+    }
+    SECTION("GenerateRTMConfiguration Function Testing") {
         RTMEngineConfigurations *configuration = generator->GenerateRTMConfiguration(WRITE_PATH);
 
         REQUIRE(instanceof<ComputationKernel>(configuration->GetComputationKernel()));
@@ -278,14 +276,12 @@ void TEST_CASE_GENERATOR() {
         REQUIRE(instanceof<TraceManager>(configuration->GetTraceManager()));
     }
 
-    SECTION("GenerateAgent Function Testing")
-    {
+    SECTION("GenerateAgent Function Testing") {
         Agent *agent = generator->GenerateAgent();
         REQUIRE(instanceof<Agent>(agent));
     }
 
-    SECTION("GenerateWriter Function Testing")
-    {
+    SECTION("GenerateWriter Function Testing") {
         Writer *writer = generator->GenerateWriter();
         REQUIRE(instanceof<Writer>(writer));
     }
@@ -293,5 +289,4 @@ void TEST_CASE_GENERATOR() {
 
 TEST_CASE("Generator Class Testing", "[Generators]") {
     TEST_CASE_GENERATOR();
-
 }

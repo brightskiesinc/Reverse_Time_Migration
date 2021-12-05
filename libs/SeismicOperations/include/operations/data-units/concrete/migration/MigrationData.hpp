@@ -20,16 +20,15 @@
 #ifndef OPERATIONS_LIB_DATA_UNITS_MIGRATION_MIGRATION_DATA_HPP
 #define OPERATIONS_LIB_DATA_UNITS_MIGRATION_MIGRATION_DATA_HPP
 
+#include <utility>
+#include <vector>
+
+#include <bs/base/exceptions/Exceptions.hpp>
+#include <bs/io/data-units/concrete/Gather.hpp>
+
 #include <operations/data-units/interface/DataUnit.hpp>
 #include <operations/data-units/concrete/migration/Result.hpp>
 #include <operations/common/DataTypes.h>
-
-#include <bs/io/data-units/concrete/Gather.hpp>
-
-#include <bs/base/exceptions/Exceptions.hpp>
-
-#include <utility>
-#include <vector>
 
 namespace operations {
     namespace dataunits {

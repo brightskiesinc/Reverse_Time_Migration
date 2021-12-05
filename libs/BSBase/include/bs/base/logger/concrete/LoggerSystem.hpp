@@ -103,7 +103,7 @@ namespace bs {
             };
 
         } //namespace logger
-    } //namespace helpers
-} //namespace operations
+    } //namespace base
+} //namespace bs
 
 #endif //BS_BASE_LOGGER_LOGGER_SYSTEM_HPP

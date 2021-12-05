@@ -17,13 +17,13 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/data-units/concrete/holders/GridBox.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/api/cpp/BSBase.hpp>
 
-using namespace operations::dataunits;
+#include <operations/data-units/concrete/holders/GridBox.hpp>
+
 using namespace bs::base::exceptions;
 using namespace bs::base::logger;
-
+using namespace operations::dataunits;
 
 GridBox::GridBox() {
 
@@ -52,6 +52,7 @@ void GridBox::SetDT(float _dt) {
 }
 
 void GridBox::SetNT(float _nt) {
+
     if (_nt <= 0) {
         throw bs::base::exceptions::ILLOGICAL_EXCEPTION();
     }
@@ -66,6 +67,7 @@ void GridBox::SetNT(float _nt) {
  * @throw ILLOGICAL_EXCEPTION()
  */
 void GridBox::SetWindowStart(uint axis, uint val) {
+
     if (is_out_of_range(axis)) {
         throw AXIS_EXCEPTION();
     }
@@ -80,6 +82,7 @@ void GridBox::SetWindowStart(uint axis, uint val) {
 }
 
 uint GridBox::GetWindowStart(uint axis) {
+
     if (is_out_of_range(axis)) {
         throw AXIS_EXCEPTION();
     }
@@ -97,6 +100,7 @@ uint GridBox::GetWindowStart(uint axis) {
 
 
 void GridBox::RegisterWaveField(u_int16_t key, FrameBuffer<float> *ptr_wave_field) {
+
     key |= WAVE;
     this->mWaveFields[key] = ptr_wave_field;
 }
@@ -104,6 +108,7 @@ void GridBox::RegisterWaveField(u_int16_t key, FrameBuffer<float> *ptr_wave_fiel
 void GridBox::RegisterParameter(u_int16_t key,
                                 FrameBuffer<float> *ptr_parameter,
                                 FrameBuffer<float> *ptr_parameter_window) {
+
     key |= PARM;
     this->mParameters[key] = ptr_parameter;
 
@@ -126,6 +131,7 @@ float *GridBox::GetMasterWaveField() {
 }
 
 FrameBuffer<float> *GridBox::Get(u_int16_t key) {
+
     if (this->mWaveFields.find(key) != this->mWaveFields.end()) {
         return this->mWaveFields[key];
     } else if (this->mParameters.find(key) != this->mParameters.end()) {
@@ -137,6 +143,7 @@ FrameBuffer<float> *GridBox::Get(u_int16_t key) {
 }
 
 void GridBox::Set(u_int16_t key, FrameBuffer<float> *val) {
+
     if (this->mWaveFields.find(key) != this->mWaveFields.end()) {
         this->mWaveFields[key] = val;
     } else if (this->mParameters.find(key) != this->mParameters.end()) {
@@ -149,6 +156,7 @@ void GridBox::Set(u_int16_t key, FrameBuffer<float> *val) {
 }
 
 void GridBox::Set(u_int16_t key, float *val) {
+
     if (this->mWaveFields.find(key) != this->mWaveFields.end()) {
         this->mWaveFields[key]->SetNativePointer(val);
     } else if (this->mParameters.find(key) != this->mParameters.end()) {
@@ -182,12 +190,14 @@ void GridBox::Swap(u_int16_t _src, u_int16_t _dst) {
 }
 
 void GridBox::Clone(GridBox *apGridBox) {
+
     this->CloneMetaData(apGridBox);
     this->CloneWaveFields(apGridBox);
     this->CloneParameters(apGridBox);
 }
 
 void GridBox::CloneMetaData(GridBox *apGridBox) {
+
     apGridBox->SetNT(this->GetNT());
     apGridBox->SetDT(this->GetDT());
     apGridBox->SetInitialAxis(new Axis3D<unsigned int>(*this->GetInitialAxis()));
@@ -198,6 +208,7 @@ void GridBox::CloneMetaData(GridBox *apGridBox) {
 
 
 void GridBox::CloneWaveFields(GridBox *apGridBox) {
+
     for (auto const &parameter : this->GetParameters()) {
         apGridBox->RegisterWaveField(parameter.first,
                                      parameter.second);
@@ -206,6 +217,7 @@ void GridBox::CloneWaveFields(GridBox *apGridBox) {
 
 
 void GridBox::CloneParameters(GridBox *apGridBox) {
+
     for (auto const &parameter : this->GetParameters()) {
         apGridBox->RegisterParameter(parameter.first,
                                      this->Get(parameter.first),

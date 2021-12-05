@@ -17,6 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <string>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
+
 #include <stbx/generators/Generator.hpp>
 
 #include <stbx/generators/common/Keys.hpp>
@@ -25,26 +31,22 @@
 #include <stbx/generators/concrete/computation-parameters/computation_parameters_generator.h>
 #include <stbx/generators/primitive/ComponentsGenerator.hpp>
 
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-
-#include <iostream>
-#include <string>
 
 using namespace std;
+
+using namespace bs::base::exceptions;
+using namespace bs::base::logger;
+using namespace bs::base::configurations;
 
 using namespace stbx::agents;
 using namespace stbx::writers;
 using namespace stbx::generators;
 
-using namespace bs::base::configurations;
 using namespace operations::configurations;
 using namespace operations::common;
 using namespace operations::helpers::callbacks;
 using namespace operations::engines;
 using namespace operations::components;
-using namespace bs::base::exceptions;
-using namespace bs::base::logger;
 
 
 Generator::Generator(const nlohmann::json &mMap) {
@@ -58,20 +60,20 @@ Generator::Generator(const nlohmann::json &mMap) {
 
 CallbackCollection *
 Generator::GenerateCallbacks(const string &aWritePath) {
-    nlohmann::json callbacks_map = this->mMap[K_CALLBACKS];
-    auto *callbacksGenerator = new CallbacksGenerator(aWritePath, callbacks_map);
-    return callbacksGenerator->GenerateCallbacks();
+    auto callbacks_map = this->mMap[K_CALLBACKS];
+    auto callbacks_generator = new CallbacksGenerator(aWritePath, callbacks_map);
+    return callbacks_generator->GenerateCallbacks();
 }
 
 ModellingEngineConfigurations *
 Generator::GenerateModellingEngineConfiguration(const string &aWritePath) {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
-    auto *configuration = new ModellingEngineConfigurations();
+    auto logger = LoggerSystem::GetInstance();
+    auto configuration = new ModellingEngineConfigurations();
 
-    Logger->Info() << "Reading model files..." << '\n';
+    logger->Info() << "Reading model files..." << '\n';
     configuration->SetModelFiles(this->mConfigurationsGenerator->GetModelFiles());
 
-    Logger->Info() << "Reading trace files..." << '\n';
+    logger->Info() << "Reading trace files..." << '\n';
     configuration->SetTraceFiles(this->mConfigurationsGenerator->GetTraceFiles());
     configuration->SetSortMin(this->mConfigurationsGenerator->GetTracesMin());
     configuration->SetSortMax(this->mConfigurationsGenerator->GetTracesMax());
@@ -90,7 +92,7 @@ Generator::GenerateModellingEngineConfiguration(const string &aWritePath) {
         configuration->SetTraceManager(g->GenerateTraceManager());
         configuration->SetTraceWriter(g->GenerateTraceWriter());
     } else {
-        Logger->Error() << "Unsupported settings" << '\n';
+        logger->Error() << "Unsupported settings" << '\n';
         exit(EXIT_FAILURE);
     }
     return configuration;
@@ -103,13 +105,13 @@ Generator::GenerateParameters() {
 
 RTMEngineConfigurations *
 Generator::GenerateRTMConfiguration(const string &aWritePath) {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
-    auto *configuration = new RTMEngineConfigurations();
+    auto logger = LoggerSystem::GetInstance();
+    auto configuration = new RTMEngineConfigurations();
 
-    Logger->Info() << "Reading model files..." << '\n';
+    logger->Info() << "Reading model files..." << '\n';
     configuration->SetModelFiles(this->mConfigurationsGenerator->GetModelFiles());
 
-    Logger->Info() << "Reading trace files..." << '\n';
+    logger->Info() << "Reading trace files..." << '\n';
     configuration->SetTraceFiles(this->mConfigurationsGenerator->GetTraceFiles());
     configuration->SetSortMin(this->mConfigurationsGenerator->GetTracesMin());
     configuration->SetSortMax(this->mConfigurationsGenerator->GetTracesMax());
@@ -129,7 +131,7 @@ Generator::GenerateRTMConfiguration(const string &aWritePath) {
         configuration->SetMigrationAccommodator(g->GenerateMigrationAccommodator());
         configuration->SetTraceManager(g->GenerateTraceManager());
     } else {
-        Logger->Error() << "Unsupported settings" << '\n';
+        logger->Error() << "Unsupported settings" << '\n';
         exit(EXIT_FAILURE);
     }
     return configuration;
@@ -137,29 +139,29 @@ Generator::GenerateRTMConfiguration(const string &aWritePath) {
 
 Agent *
 Generator::GenerateAgent() {
-    LoggerSystem *Logger = LoggerSystem::GetInstance();
-    nlohmann::json agents_map = this->mMap[K_SYSTEM][K_AGENT];
+    auto logger = LoggerSystem::GetInstance();
+    auto agents_map = this->mMap[K_SYSTEM][K_AGENT];
 
     Agent *agent;
     if (agents_map[OP_K_TYPE].get<string>() == "normal") {
         agent = new NormalAgent();
-        Logger->Info() << "using single Agent" << '\n';
+        logger->Info() << "using single Agent" << '\n';
     }
 #if defined(USING_MPI)
         else if (agents_map[OP_K_TYPE].get<string>() == "mpi-static-server") {
-            Logger->Info() << "Using MPI Shot Distribution: "
+            logger->Info() << "Using MPI Shot Distribution: "
                               "\n\tDistribution Type: Static With Server" << '\n';
             agent = new StaticServerAgent();
         } else if (agents_map[OP_K_TYPE].get<string>() == "mpi-static-serverless") {
-            Logger->Info() << "Using MPI Shot Distribution: "
+            logger->Info() << "Using MPI Shot Distribution: "
                               "\n\tDistribution Type: Static Without Server" << '\n';
             agent = new StaticServerlessAgent();
         } else if (agents_map[OP_K_TYPE].get<string>() == "mpi-dynamic-server") {
-            Logger->Info() << "Using MPI Shot Distribution: "
+            logger->Info() << "Using MPI Shot Distribution: "
                               "\n\tDistribution Type: Dynamic With Server" << '\n';
             agent = new DynamicServerAgent();
         } else if (agents_map[OP_K_TYPE].get<string>() == "mpi-dynamic-serverless") {
-            Logger->Info() << "Using MPI Shot Distribution:"
+            logger->Info() << "Using MPI Shot Distribution:"
                               "\n\tDistribution Type: Dynamic Without Server" << '\n';
             agent = new DynamicServerlessAgent();
         }
@@ -172,14 +174,17 @@ Generator::GenerateAgent() {
 
 Writer *
 Generator::GenerateWriter() {
-    nlohmann::json migration_accommodator_map = this->mMap[K_COMPONENTS][K_MIGRATION_ACCOMMODATOR];
+    auto migration_accommodator_map = this->mMap[K_COMPONENTS][K_MIGRATION_ACCOMMODATOR];
+    auto writer_map = this->mMap[K_SYSTEM][K_WRITER];
 
     Writer *writer;
     // If common image gather type, create specified writer. Otherwise,
-    // use normal one(should make it smarter by supporting stacking
-    // option inside the writer if we have an output with gathers.
-    if (migration_accommodator_map[OP_K_TYPE].get<string>() == "adcig") {
-        writer = new ADCIGWriter();
+    // use normal one (i.e. Should make it smarter by supporting stacking
+    // option inside the writer if we have an output with gathers).
+    if (!migration_accommodator_map.empty()) {
+        writer = new NormalWriter();
+    } else if (!writer_map.empty()) {
+        writer = new NormalWriter();
     } else {
         writer = new NormalWriter();
     }
@@ -221,19 +226,19 @@ Generator::GenerateEngine(const string &aWritePath) {
     return engine;
 }
 
-bs::base::configurations::ConfigurationMap *
+ConfigurationMap *
 Generator::GenerateTimerConfiguration() {
-    //to-do: Check if timer is configured
-    auto unit = this->mMap[K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT];
+    /// @todo: Check if timer is configured
+    auto unit = this->mMap[K_SYSTEM][K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT];
     if (unit == "sec") {
-        this->mMap[K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT] = 1;
+        unit = 1;
     } else if (unit == "milli") {
-        this->mMap[K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT] = 1e-3;
+        unit = 1e-3;
     } else if (unit == "micro") {
-        this->mMap[K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT] = 1e-6;
+        unit = 1e-6;
     } else if (unit == "nano") {
-        this->mMap[K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT] = 1e-9;
+        unit = 1e-9;
     }
-    return new bs::base::configurations::JSONConfigurationMap(this->mMap[K_TIMER]);
+    this->mMap[K_SYSTEM][K_TIMER][K_TIMER_PROPERTIES][K_TIME_UNIT] = unit;
+    return new JSONConfigurationMap(this->mMap[K_SYSTEM][K_TIMER]);
 }
-

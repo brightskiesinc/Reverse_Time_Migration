@@ -17,12 +17,12 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/helpers/callbacks/concrete/NormWriter.h>
-
-#include <operations/helpers/callbacks/interface/Extensions.hpp>
-
 #include <cmath>
 #include <sys/stat.h>
+
+#include <operations/helpers/callbacks/concrete/NormWriter.h>
+#include <operations/helpers/callbacks/interface/Extensions.hpp>
+
 
 #define CAT_STR(a, b) (a + b)
 
@@ -70,7 +70,9 @@ NormWriter::~NormWriter() {
 }
 
 void
-NormWriter::BeforeInitialization(ComputationParameters *apParameters) {}
+NormWriter::BeforeInitialization(ComputationParameters *apParameters) {
+    this->offset = apParameters->GetBoundaryLength() + apParameters->GetHalfLength();
+}
 
 void
 NormWriter::AfterInitialization(GridBox *apGridBox) {}
@@ -144,9 +146,20 @@ NormWriter::AfterMigration(
 float NormWriter::Solve(const float *apMatrix, uint nx, uint nz, uint ny) {
     float sum = 0;
     uint nx_nz = nx * nz;
-    for (int iy = 0; iy < ny; iy++) {
-        for (int iz = 0; iz < nz; iz++) {
-            for (int ix = 0; ix < nx; ix++) {
+
+    int end_x = nx - this->offset;
+    int end_z = nz - this->offset;
+    int start_y = 0;
+    int end_y = 1;
+
+    if (ny > 1) {
+        start_y = this->offset;
+        end_y = ny - this->offset;
+    }
+
+    for (int iy = start_y; iy < end_y; iy++) {
+        for (int iz = this->offset; iz < end_z; iz++) {
+            for (int ix = this->offset; ix < end_x; ix++) {
                 auto value = apMatrix[iy * nx_nz + nx * iz + ix];
                 sum += (value * value);
             }

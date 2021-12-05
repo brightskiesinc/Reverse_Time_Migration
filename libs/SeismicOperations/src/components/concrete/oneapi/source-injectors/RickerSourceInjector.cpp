@@ -17,16 +17,18 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
-#include <operations/backend/OneAPIBackend.hpp>
 #include <iostream>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/source-injectors/RickerSourceInjector.hpp>
+
 using namespace cl::sycl;
+using namespace bs::base::backend;
 using namespace operations::components;
 using namespace operations::dataunits;
 using namespace operations::common;
-using namespace operations::backend;
 
 /**
  * Implementation based on
@@ -49,14 +51,14 @@ void RickerSourceInjector::ApplySource(int time_step) {
             // ricker function required should have negative polarity
             float ricker = (1 - a2 * 2 * t2) * exp(-a2 * t2);
 
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
+            Backend::GetInstance()->GetDeviceQueue()->submit([&](handler &cgh) {
                 auto pressure = mpGridBox->Get(WAVE | GB_PRSS | CURR | DIR_Z)->GetNativePointer();
                 auto win_vel = mpGridBox->Get(PARM | WIND | GB_VEL)->GetNativePointer();
                 cgh.single_task([=]() {
                     pressure[location] += (ricker * win_vel[location]);
                 });
             });
-            OneAPIBackend::GetInstance()->GetDeviceQueue()->wait();
+            Backend::GetInstance()->GetDeviceQueue()->wait();
         }
     }
 }

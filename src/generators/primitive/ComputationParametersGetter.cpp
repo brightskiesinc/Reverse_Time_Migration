@@ -17,20 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
-
-#include <stbx/generators/common/Keys.hpp>
-
-#include <operations/common/DataTypes.h>
-
-#include <prerequisites/libraries/nlohmann/json.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
 #include <iostream>
 
+#include <prerequisites/libraries/nlohmann/json.hpp>
+
+#include <bs/base/logger/concrete/LoggerSystem.hpp>
+
+#include <stbx/generators/primitive/ComputationParametersGetter.hpp>
+#include <stbx/generators/common/Keys.hpp>
+#include <operations/common/DataTypes.h>
+
+
 using namespace std;
-using namespace stbx::generators;
-using namespace bs::base::logger;
 using json = nlohmann::json;
+using namespace bs::base::logger;
+using namespace stbx::generators;
 
 
 ComputationParametersGetter::ComputationParametersGetter(const json &aMap) : mMap(aMap) {}
@@ -173,3 +174,7 @@ int ComputationParametersGetter::GetIsotropicCircle() {
     }
     return value;
 }
+
+
+
+

@@ -76,9 +76,6 @@ namespace operations {
 
             COMPENSATION_TYPE mCompensationType;
 
-            /// Dip angle in degrees.
-            double mDipAngle;
-
             dataunits::FrameBuffer<float> *mpShotCorrelation = nullptr;
             dataunits::FrameBuffer<float> *mpSourceIllumination = nullptr;
             dataunits::FrameBuffer<float> *mpReceiverIllumination = nullptr;

@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2021 by Brightskies inc
  *
- * This file is part of Thoth (I/O Library).
+ * This file is part of BS I/O.
  *
- * Thoth (I/O Library) is free software: you can redistribute it and/or modify it
+ * BS I/O is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Thoth (I/O Library) is distributed in the hope that it will be useful,
+ * BS I/O is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -18,23 +18,20 @@
  */
 
 #include <bs/io/streams/concrete/readers/SeismicReader.hpp>
-
 #include <bs/io/streams/concrete/readers/SegyReader.hpp>
 #include <bs/io/streams/concrete/readers/JsonReader.hpp>
-
-#include <bs/base/exceptions/Exceptions.hpp>
+#include <bs/io/streams/concrete/readers/SUReader.hpp>
 
 using namespace std;
+using namespace bs::base::configurations;
 using namespace bs::io::streams;
 using namespace bs::io::dataunits;
-using namespace bs::base::configurations;
-using namespace bs::base::exceptions;
 
 
 std::unordered_map<std::string, ReaderType> SeismicReader::mReaderMap = {
         {"segy", ReaderType::SEGY},
         {"json", ReaderType::JSON},
-        {"su",   ReaderType::SU}
+        {"su", ReaderType::SU},
 };
 
 SeismicReader::SeismicReader(ReaderType aType, ConfigurationMap *apConfigurationMap) {
@@ -45,8 +42,9 @@ SeismicReader::SeismicReader(ReaderType aType, ConfigurationMap *apConfiguration
         case ReaderType::JSON:
             this->mpReader = new JsonReader(apConfigurationMap);
             break;
-        default:
-            throw UNSUPPORTED_FEATURE_EXCEPTION();
+        case ReaderType::SU:
+//            this->mpReader = new SUReader(apConfigurationMap);
+            break;
     }
 }
 

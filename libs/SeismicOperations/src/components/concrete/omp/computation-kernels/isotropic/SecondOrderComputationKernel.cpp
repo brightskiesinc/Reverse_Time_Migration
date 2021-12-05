@@ -18,12 +18,11 @@
  */
 #include <cmath>
 
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
 #include <operations/components/independents/concrete/computation-kernels/isotropic/SecondOrderComputationKernel.hpp>
 #include <operations/components/independents/concrete/computation-kernels/BaseComputationHelpers.hpp>
-
 #include <operations/components/dependents/concrete/memory-handlers/WaveFieldsMemoryHandler.hpp>
-
-#include <bs/timer/api/cpp/BSTimer.hpp>
 
 using namespace std;
 using namespace bs::timer;
@@ -34,8 +33,7 @@ using namespace operations::common;
 FORWARD_DECLARE_COMPUTE_TEMPLATE(SecondOrderComputationKernel, Compute)
 
 template<KERNEL_MODE KERNEL_MODE_, bool IS_2D_, HALF_LENGTH HALF_LENGTH_>
-void
-SecondOrderComputationKernel::Compute() {
+void SecondOrderComputationKernel::Compute() {
     /*
      * Read parameters into local variables to be shared.
      */
@@ -49,20 +47,15 @@ SecondOrderComputationKernel::Compute() {
     float *coeff_x = mpCoeffX->GetNativePointer();
     float *coeff_z = mpCoeffZ->GetNativePointer();
     int *vertical_index = mpVerticalIdx->GetNativePointer();
-    int *frontal_index = mpFrontalIdx->GetNativePointer();
-
 
     int wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
     int wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
-
 
     int block_x = this->mpParameters->GetBlockX();
     int block_z = this->mpParameters->GetBlockZ();
 
     int nx_end = this->mpGridBox->GetWindowAxis()->GetXAxis().GetLogicalAxisSize() - HALF_LENGTH_;
-    int ny_end = 1;
     int nz_end = this->mpGridBox->GetWindowAxis()->GetZAxis().GetLogicalAxisSize() - HALF_LENGTH_;
-
 
     int size = (wnx - 2 * HALF_LENGTH_) * (wnz - 2 * HALF_LENGTH_);
 
@@ -119,31 +112,20 @@ SecondOrderComputationKernel::Compute() {
                         /// instructions.
                         float value = 0;
 
-                        if constexpr(KERNEL_MODE_ == KERNEL_MODE::ADJOINT) {
-                            value = fma(curr[ix] * vel[ix], mCoeffXYZ, value);
-                            /// Calculate in x-direction
-                            DERIVE_SEQ_AXIS_EQ_OFF(ix, 1, +, curr, coeff_x, value, vel)
-                            /// Calculate Finite Difference in the z-direction.
-                            DERIVE_ARRAY_AXIS_EQ_OFF(ix, vertical_index, +, curr, coeff_z, value, vel)
-                            /// Calculate the next pressure value according to
-                            /// the second order acoustic wave equation.
-                            next[ix] = (2 * curr[ix]) - prev[ix] + value;
-                        } else {
-                            /*
-                             * 1 floating point operation
-                             */
-                            value = fma(curr[ix], mCoeffXYZ, value);
-                            /// Calculate Finite Difference in the x-direction.
-                            /// 3 floating point operations
-                            DERIVE_SEQ_AXIS_EQ_OFF(ix, 1, +, curr, coeff_x, value)
-                            /// Calculate Finite Difference in the z-direction.
-                            /// 3 floating point operations
-                            DERIVE_ARRAY_AXIS_EQ_OFF(ix, vertical_index, +, curr, coeff_z, value)
-                            /// Calculate the next pressure value according to
-                            /// the second order acoustic wave equation.
-                            /// 4 floating point operations.
-                            next[ix] = (2 * curr[ix]) - prev[ix] + (vel[ix] * value);
-                        }
+                        /*
+                                * 1 floating point operation
+                                */
+                        value = fma(curr[ix], mCoeffXYZ, value);
+                        /// Calculate Finite Difference in the x-direction.
+                        /// 3 floating point operations
+                        DERIVE_SEQ_AXIS_EQ_OFF(ix, 1, +, curr, coeff_x, value)
+                        /// Calculate Finite Difference in the z-direction.
+                        /// 3 floating point operations
+                        DERIVE_ARRAY_AXIS_EQ_OFF(ix, vertical_index, +, curr, coeff_z, value)
+                        /// Calculate the next pressure value according to
+                        /// the second order acoustic wave equation.
+                        /// 4 floating point operations.
+                        next[ix] = (2 * curr[ix]) - prev[ix] + (vel[ix] * value);
                     }
                 }
             }
@@ -152,8 +134,7 @@ SecondOrderComputationKernel::Compute() {
     timer.Stop();
 }
 
-void
-SecondOrderComputationKernel::PreprocessModel() {
+void SecondOrderComputationKernel::PreprocessModel() {
     int nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     int nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
@@ -163,7 +144,6 @@ SecondOrderComputationKernel::PreprocessModel() {
     float *velocity_values = this->mpGridBox->Get(PARM | GB_VEL)->GetNativePointer();
 
     int full_nx = nx;
-    int full_nx_nz = nx * nz;
     /// Preprocess the velocity model by calculating the
     /// dt2 * c2 component of the wave equation.
 #pragma omp parallel default(shared)
@@ -176,6 +156,5 @@ SecondOrderComputationKernel::PreprocessModel() {
                         value * value * dt2;
             }
         }
-
     }
 }

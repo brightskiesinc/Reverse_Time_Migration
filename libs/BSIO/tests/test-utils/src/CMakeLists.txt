@@ -1,7 +1,7 @@
-set(IO_TESTFILES
+set(BS_IO_TESTFILES
 
         ${CMAKE_CURRENT_SOURCE_DIR}/DataGenerator.cpp
 
-        ${IO_TESTFILES}
+        ${BS_IO_TESTFILES}
         PARENT_SCOPE
         )

@@ -17,21 +17,21 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
-
-#include <operations/configurations/MapKeys.h>
-#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-
 #include <iostream>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/boundary-managers/SpongeBoundaryManager.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <operations/components/independents/concrete/boundary-managers/extensions/HomogenousExtension.hpp>
+
 using namespace std;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::components::addons;
 using namespace operations::common;
 using namespace operations::dataunits;
-using namespace bs::base::logger;
 
 
 /// Based on

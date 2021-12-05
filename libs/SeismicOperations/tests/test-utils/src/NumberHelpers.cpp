@@ -17,10 +17,9 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <limits>
 
 #include <operations/test-utils/NumberHelpers.hpp>
-
-#include <limits>
 
 namespace operations {
     namespace testutils {

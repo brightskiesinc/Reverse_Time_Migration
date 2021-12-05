@@ -17,31 +17,30 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
-
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <operations/utils/sampling/Sampler.hpp>
-#include <operations/configurations/MapKeys.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+
+#include <operations/components/independents/concrete/migration-accommodators/CrossCorrelationKernel.hpp>
+#include <operations/utils/sampling/Sampler.hpp>
+#include <operations/configurations/MapKeys.h>
+
 #define EPSILON 1e-20
 
 using namespace std;
+using namespace bs::base::logger;
 using namespace operations::components;
 using namespace operations::common;
 using namespace operations::dataunits;
 using namespace operations::utils::sampling;
-using namespace bs::base::logger;
 
 
 CrossCorrelationKernel::CrossCorrelationKernel(bs::base::configurations::ConfigurationMap *apConfigurationMap) {
     this->mpConfigurationMap = apConfigurationMap;
     this->mCompensationType = NO_COMPENSATION;
-    this->mDipAngle = 90.0f;
 }
 
 CrossCorrelationKernel::~CrossCorrelationKernel() {
@@ -53,10 +52,6 @@ CrossCorrelationKernel::~CrossCorrelationKernel() {
 
 void CrossCorrelationKernel::AcquireConfiguration() {
     LoggerSystem *Logger = LoggerSystem::GetInstance();
-    this->mDipAngle = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_DIP_ANGLE, this->mDipAngle);
-
-    Logger->Info() << "\tusing stack dip angle = " << this->mDipAngle << '\n';
-    this->mDipAngle = this->mDipAngle * M_PI / 180.0f;
 
     string compensation = "no";
     compensation = this->mpConfigurationMap->GetValue(OP_K_PROPRIETIES, OP_K_COMPENSATION, compensation);
@@ -155,18 +150,21 @@ void CrossCorrelationKernel::SetGridBox(GridBox *apGridBox) {
 
 void CrossCorrelationKernel::InitializeInternalElements() {
     // Grid.
+
     uint nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
+    uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();
     uint nz = this->mpGridBox->GetAfterSamplingAxis()->GetZAxis().GetActualAxisSize();
 
-    uint grid_size = nx * nz;
+    uint grid_size = nx * ny * nz;
     uint grid_bytes = grid_size * sizeof(float);
 
     /* Window initialization. */
 
     uint wnx = this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize();
+    uint wny = this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize();
     uint wnz = this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
-    uint window_size = wnx * wnz;
+    uint window_size = wnx * wny * wnz;
     uint window_bytes = window_size * sizeof(float);
 
 
@@ -188,8 +186,10 @@ void CrossCorrelationKernel::InitializeInternalElements() {
 }
 
 void CrossCorrelationKernel::ResetShotCorrelation() {
+
     uint window_bytes = sizeof(float) *
                         this->mpGridBox->GetWindowAxis()->GetXAxis().GetActualAxisSize() *
+                        this->mpGridBox->GetWindowAxis()->GetYAxis().GetActualAxisSize() *
                         this->mpGridBox->GetWindowAxis()->GetZAxis().GetActualAxisSize();
 
     Device::MemSet(this->mpShotCorrelation->GetNativePointer(), 0, window_bytes);
@@ -207,6 +207,7 @@ FrameBuffer<float> *CrossCorrelationKernel::GetStackedShotCorrelation() {
 
 MigrationData *CrossCorrelationKernel::GetMigrationData() {
     vector<Result *> results;
+
 
     uint nx = this->mpGridBox->GetAfterSamplingAxis()->GetXAxis().GetActualAxisSize();
     uint ny = this->mpGridBox->GetAfterSamplingAxis()->GetYAxis().GetActualAxisSize();

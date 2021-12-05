@@ -20,13 +20,12 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_TRACE_MANAGER_HPP
 #define OPERATIONS_LIB_COMPONENTS_TRACE_MANAGER_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
-
-#include "operations/common/DataTypes.h"
-#include "operations/data-units/concrete/holders/TracesHolder.hpp"
-
 #include <string>
 #include <vector>
+
+#include <operations/components/independents/interface/Component.hpp>
+#include <operations/common/DataTypes.h>
+#include <operations/data-units/concrete/holders/TracesHolder.hpp>
 
 namespace operations {
     namespace components {

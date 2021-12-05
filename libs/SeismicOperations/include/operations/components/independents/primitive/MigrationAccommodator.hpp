@@ -20,10 +20,10 @@
 #ifndef OPERATIONS_LIB_COMPONENTS_MIGRATION_ACCOMMODATOR_HPP
 #define OPERATIONS_LIB_COMPONENTS_MIGRATION_ACCOMMODATOR_HPP
 
-#include "operations/components/independents/interface/Component.hpp"
+#include <operations/components/independents/interface/Component.hpp>
 
-#include "operations/common/DataTypes.h"
-#include "operations/data-units/concrete/migration/MigrationData.hpp"
+#include <operations/common/DataTypes.h>
+#include <operations/data-units/concrete/migration/MigrationData.hpp>
 
 namespace operations {
     namespace components {

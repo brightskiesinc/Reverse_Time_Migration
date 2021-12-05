@@ -17,31 +17,29 @@
  * License along with GEDLIB. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
-
-#include <operations/configurations/MapKeys.h>
-#include <operations/utils/interpolation/Interpolator.hpp>
-#include <operations/utils/io/read_utils.h>
-
-#include <bs/base/configurations/concrete/JSONConfigurationMap.hpp>
-#include <bs/base/logger/concrete/LoggerSystem.hpp>
-#include <bs/base/memory/MemoryManager.hpp>
-#include <bs/timer/api/cpp/BSTimer.hpp>
-
 #include <iostream>
 #include <utility>
 #include <cmath>
 
+#include <bs/base/api/cpp/BSBase.hpp>
+#include <bs/timer/api/cpp/BSTimer.hpp>
+
+#include <operations/components/independents/concrete/trace-managers/SeismicTraceManager.hpp>
+#include <operations/configurations/MapKeys.h>
+#include <operations/utils/interpolation/Interpolator.hpp>
+#include <operations/utils/io/read_utils.h>
+
 using namespace std;
-using namespace operations::components;
-using namespace operations::common;
-using namespace operations::dataunits;
-using namespace operations::utils::interpolation;
 using namespace bs::base::logger;
 using namespace bs::base::memory;
 using namespace bs::timer;
 using namespace bs::io::streams;
 using namespace bs::io::dataunits;
+using namespace operations::components;
+using namespace operations::common;
+using namespace operations::dataunits;
+using namespace operations::utils::interpolation;
+
 
 SeismicTraceManager::SeismicTraceManager(
         bs::base::configurations::ConfigurationMap *apConfigurationMap) {
