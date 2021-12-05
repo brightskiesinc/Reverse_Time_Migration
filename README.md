@@ -120,12 +120,12 @@ Alternatively, approaches to reduce the IO bottleneck or remove it completely to
 
 1. Clone the basic project
     ```shell script
-    git clone https://gitlab.brightskiesinc.com/parallel-programming/SeismicToolbox
+    git clone https://github.com/brightskiesinc/Reverse_Time_Migration
     ```
 
 2. Change directory to the project base directory
     ```shell script
-    cd SeismicToolbox/
+    cd Reverse_Time_Migration/
     ```
 3. To install and download everything you can easily run the ```setup.sh``` script found in ```/prerequisites``` folder
     ```shell script
