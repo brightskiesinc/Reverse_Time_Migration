@@ -204,7 +204,7 @@ ComponentsGenerator::GenerateMigrationAccommodator() {
 
     if (correlation_kernel == nullptr) {
         logger->Error()
-                << "Invalid value for migration-accommodator key : supported values [ ""cross-correlation | isic | adcig | pstm]"
+                << "Invalid value for migration-accommodator key : supported values [cross-correlation]"
                 << '\n';
         logger->Error() << "Terminating..." << '\n';
         exit(EXIT_FAILURE);

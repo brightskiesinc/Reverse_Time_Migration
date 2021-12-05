@@ -24,7 +24,6 @@
 #include <operations/common/DataTypes.h>
 #include <operations/components/Components.hpp>
 #include <operations/engine-configurations/concrete/RTMEngineConfigurations.hpp>
-#include <operations/engine-configurations/concrete/PSTMEngineConfigurations.hpp>
 #include <operations/engine-configurations/concrete/ModellingEngineConfigurations.hpp>
 #include <operations/engines/concrete/RTMEngine.hpp>
 #include <operations/engines/concrete/ModellingEngine.hpp>
@@ -84,14 +83,6 @@ namespace stbx {
              */
             operations::configurations::RTMEngineConfigurations *
             GenerateRTMConfiguration(const std::string &aWritePath);
-
-            /**
-             * @brief Extracts of Engine Configuration
-             * component from parsed map and returns Writer instance.
-             * @return EngineConfiguration       EngineConfiguration instance
-             */
-            operations::configurations::PSTMEngineConfigurations *
-            GeneratePSTMConfiguration(const std::string &aWritePath);
 
             /**
              * @brief Extracts of Callbacks component from parsed map

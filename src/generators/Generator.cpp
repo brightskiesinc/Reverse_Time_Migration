@@ -137,31 +137,6 @@ Generator::GenerateRTMConfiguration(const string &aWritePath) {
     return configuration;
 }
 
-PSTMEngineConfigurations *
-Generator::GeneratePSTMConfiguration(const string &aWritePath) {
-    auto configuration = new PSTMEngineConfigurations();
-
-    cout << "Reading model files..." << std::endl;
-    configuration->SetModelFiles(this->mConfigurationsGenerator->GetModelFiles());
-
-    cout << "Reading trace files..." << std::endl;
-    configuration->SetTraceFiles(this->mConfigurationsGenerator->GetTraceFiles());
-    configuration->SetSortMin(this->mConfigurationsGenerator->GetTracesMin());
-    configuration->SetSortMax(this->mConfigurationsGenerator->GetTracesMax());
-    configuration->SetSortKey(this->mConfigurationsGenerator->GetTracesSortKey());
-
-    auto g = new ComponentsGenerator(this->mMap[K_COMPONENTS],
-                                     this->mOrder,
-                                     this->mSampling,
-                                     this->mApproximation);
-
-    configuration->SetModelHandler(g->GenerateModelHandler());
-    configuration->SetMigrationAccommodator(g->GenerateMigrationAccommodator());
-    configuration->SetTraceManager(g->GenerateTraceManager());
-
-    return configuration;
-}
-
 Agent *
 Generator::GenerateAgent() {
     auto logger = LoggerSystem::GetInstance();
