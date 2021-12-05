@@ -10,7 +10,7 @@ v4.1.0
 
 * Added ``BSTimer`` package.
 * Do a full ``BSTimer`` library integration with the Seismic Toolbox, updating the timing utilities to be fully dependent on ``BSTimer`` and remove old library dependency.
-* Added new random boundary approach (OpenMP backend only).
+* Added new random boundary approach.
 * Added support to staggered first order computation kernel for DPC++.
 * Added support to staggered first order CPML boundary manager for DPC++.
 * Added support to staggered first order computation kernel for OpenMP Offload.
